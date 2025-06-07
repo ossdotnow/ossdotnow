@@ -1,13 +1,10 @@
 'use client';
 
-import {
-  useMutation,
-  // useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation } from '@tanstack/react-query';
+import { track } from '@vercel/analytics/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
@@ -21,10 +18,6 @@ const formSchema = z.object({
 function useWaitlistCount() {
   const trpc = useTRPC();
 
-  const queryClient = useQueryClient();
-
-  // const query = useQuery(trpc.earlyAccess.getWaitlistCount.queryOptions());
-
   const [success, setSuccess] = useState(false);
 
   const { mutate } = useMutation(
@@ -32,18 +25,16 @@ function useWaitlistCount() {
       onSuccess: () => {
         setSuccess(true);
 
-        // queryClient.setQueryData([trpc.earlyAccess.getWaitlistCount.queryKey()], {
-        //   count: (query.data?.count ?? 0) + 1,
-        // });
+        track('waitlist_join_success');
       },
       onError: () => {
         toast.error('Something went wrong. Please try again.');
+        track('waitlist_join_error');
       },
     }),
   );
 
   return {
-    // count: query.data?.count ?? 0,
     mutate,
     success,
   };
