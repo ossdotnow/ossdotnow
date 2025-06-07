@@ -23,7 +23,7 @@
     },
     "db:migrate": {
       "cache": false,
-      "env": ["DATABASE_URL", "NODE_ENV", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+      "env": ["DATABASE_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "db:push": {
