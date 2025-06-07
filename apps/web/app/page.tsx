@@ -1,4 +1,5 @@
 import { WaitlistForm } from '@/components/waitlist-form';
+import Icons from '@/components/icons';
 import Image from 'next/image';
 
 export default function Page() {
@@ -20,6 +21,18 @@ export default function Page() {
             A place to share your open source projects and find new ones. Coming soon.
           </p>
           <WaitlistForm />
+        </div>
+        <div className="z-10 mt-20 flex w-full max-w-lg flex-col items-center gap-6">
+          <p className="z-10 text-sm font-medium uppercase tracking-wider text-[#494949]">
+            Created by the people behind
+          </p>
+          <div className="z-10 flex items-center gap-8">
+            <Icons.zero className="z-10 h-10 w-10 fill-[#494949]" />
+            <Icons.arc className="z-10 h-10 w-10 fill-[#494949]" />
+            <Icons.cupola className="z-10 h-10 w-10 fill-[#494949]" />
+            <Icons.analog className="z-10 h-10 w-10 fill-[#494949]" />
+            <Icons.sword className="z-10 h-10 w-10 fill-[#494949]" />
+          </div>
         </div>
       </div>
     </div>

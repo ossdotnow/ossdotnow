@@ -24,7 +24,6 @@ function useWaitlistCount() {
     trpc.earlyAccess.joinWaitlist.mutationOptions({
       onSuccess: () => {
         setSuccess(true);
-
         track('waitlist_join_success');
       },
       onError: () => {
