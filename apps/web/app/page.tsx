@@ -13,7 +13,7 @@ export default function Page() {
           height={860}
           className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-bottom object-right mix-blend-screen"
         />
-        <div className="z-10 -mt-16 flex w-full max-w-lg flex-col items-center gap-12">
+        <div className="z-10 mt-0 flex w-full max-w-lg flex-col items-center gap-12 sm:-mt-16">
           <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
           </h1>
@@ -27,11 +27,11 @@ export default function Page() {
             Created by the people behind
           </p>
           <div className="z-10 flex items-center gap-8">
-            <Icons.zero className="z-10 h-10 w-10 fill-[#494949]" />
-            <Icons.arc className="z-10 h-10 w-10 fill-[#494949]" />
-            <Icons.cupola className="z-10 h-10 w-10 fill-[#494949]" />
-            <Icons.analog className="z-10 h-10 w-10 fill-[#494949]" />
-            <Icons.sword className="z-10 h-10 w-10 fill-[#494949]" />
+            <Icons.zero className="z-10 h-8 w-8 fill-[#494949] sm:h-10 sm:w-10" />
+            <Icons.arc className="z-10 h-8 w-8 fill-[#494949] sm:h-10 sm:w-10" />
+            <Icons.cupola className="z-10 h-8 w-8 fill-[#494949] sm:h-10 sm:w-10" />
+            <Icons.analog className="z-10 h-8 w-8 fill-[#494949] sm:h-10 sm:w-10" />
+            <Icons.sword className="z-10 h-8 w-8 fill-[#494949] sm:h-10 sm:w-10" />
           </div>
         </div>
       </div>
