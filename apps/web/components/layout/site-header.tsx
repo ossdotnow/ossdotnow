@@ -12,12 +12,12 @@ const SiteHeader = () => {
         </span>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="rounded-none">
-            <Link href="https://l.oss.now/gh/" target="_blank">
+            <Link href="https://l.oss.now/gh/" target="_blank" rel="noopener noreferrer">
               <Icons.github className="size-5 fill-white" />
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="rounded-none">
-            <Link href="https://l.oss.now/x/" target="_blank">
+            <Link href="https://l.oss.now/x/" target="_blank" rel="noopener noreferrer">
               <Icons.twitter className="size-5 fill-white" />
             </Link>
           </Button>
