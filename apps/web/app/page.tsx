@@ -1,5 +1,4 @@
-import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
+import { WaitlistForm } from '@/components/waitlist-form';
 import Image from 'next/image';
 
 export default function Page() {
@@ -11,21 +10,16 @@ export default function Page() {
           alt="background"
           width={960}
           height={860}
-          className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-bottom object-right"
+          className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-bottom object-right mix-blend-screen"
         />
-        <div className="z-10 flex w-full max-w-lg flex-col items-center gap-12">
-          <h1 className="text-4xl font-medium sm:text-7xl">
+        <div className="z-10 -mt-16 flex w-full max-w-lg flex-col items-center gap-12">
+          <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
           </h1>
-          <p className="mx-auto max-w-sm text-center text-[#9f9f9f]">
+          <p className="z-10 mx-auto max-w-sm text-center text-[#9f9f9f]">
             A place to share your open source projects and find new ones. Coming soon.
           </p>
-          {/* <div className="flex w-full items-center gap-2">
-            <Input className="rounded-none bg-[#2e2e2e] opacity-100 placeholder:text-[#9f9f9f]" />
-            <Button variant="default" className="rounded-none">
-              Join Waitlist
-            </Button>
-          </div> */}
+          {/* <WaitlistForm /> */}
         </div>
       </div>
     </div>

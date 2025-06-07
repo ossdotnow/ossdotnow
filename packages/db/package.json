@@ -1,0 +1,32 @@
+{
+  "name": "@workspace/db",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "dev": "drizzle-kit studio",
+    "lint": "eslint .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "format": "prettier --write \"**/*.{ts,tsx,css,,md}\""
+  },
+  "dependencies": {
+    "@workspace/env": "workspace:*",
+    "drizzle-orm": "^0.43.1",
+    "postgres": "^3.4.5",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "drizzle-kit": "^0.31.1",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

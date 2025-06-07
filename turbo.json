@@ -15,7 +15,27 @@
     },
     "dev": {
       "cache": false,
+      "env": ["DATABASE_URL", "NODE_ENV", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
       "persistent": true
+    },
+    "db:generate": {
+      "cache": false
+    },
+    "db:migrate": {
+      "cache": false,
+      "env": ["DATABASE_URL", "NODE_ENV", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
+    },
+    "db:push": {
+      "cache": false,
+      "env": ["DATABASE_URL"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
+    },
+    "db:studio": {
+      "persistent": true,
+      "cache": false,
+      "env": ["DATABASE_URL"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
     }
   }
 }

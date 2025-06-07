@@ -1,0 +1,36 @@
+{
+  "name": "@workspace/api",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/root.ts",
+    "./trpc": "./src/trpc.ts",
+    "./providers/types": "./src/providers/types.ts"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "@trpc/server": "^11.1.2",
+    "better-auth": "1.2.9-beta.8",
+    "next": "^15",
+    "server-only": "^0.0.1",
+    "superjson": "^2.2.2",
+    "zod": "^3.24.4"
+  },
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.9",
+    "@workspace/auth": "workspace:*",
+    "@workspace/db": "workspace:*",
+    "@workspace/env": "workspace:*",
+    "drizzle-orm": "^0.43.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@workspace/auth",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    "./client": "./src/client.ts",
+    "./server": "./src/server.ts"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "peerDependencies": {
+    "better-auth": "1.2.9-beta.8",
+    "server-only": "^0.0.1"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "@workspace/env": "workspace:*",
+    "drizzle-orm": "^0.43.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}
