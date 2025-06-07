@@ -63,13 +63,18 @@ export function WaitlistForm() {
     waitlist.mutate({ email });
   }
 
-  return (
+  return waitlist.success ? (
+    <div className="flex flex-col items-center justify-center gap-4 text-center">
+      <p className="text-lg font-semibold">You&apos;re on the waitlist! 🎉</p>
+      <p className="text-[#9f9f9f]">We&apos;ll let you know when we&#39;re ready to launch.</p>
+    </div>
+  ) : (
     <form
       onSubmit={handleSubmit(joinWaitlist)}
       className="z-10 flex w-full items-center gap-2 px-2"
     >
       <Input
-        className="z-10 rounded-none bg-[#2e2e2e]/100 placeholder:text-[#9f9f9f]"
+        className="z-10 rounded-none bg-[#2e2e2e]/100 text-base placeholder:text-[#9f9f9f]"
         placeholder="hello@0.email"
         {...register('email')}
       />
