@@ -18,9 +18,11 @@
     "@trpc/server": "^11.3.1",
     "@trpc/tanstack-react-query": "^11.3.1",
     "@vercel/analytics": "^1.5.0",
-    "@workspace/api": "workspace:^",
+    "@workspace/api": "workspace:*",
+    "@workspace/auth": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "better-auth": "^1.2.8",
     "lucide-react": "^0.475.0",
     "next": "^15.2.4",
     "next-themes": "^0.4.4",
@@ -35,7 +37,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@workspace/eslint-config": "workspace:^",
+    "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "typescript": "^5.7.3"
   }
