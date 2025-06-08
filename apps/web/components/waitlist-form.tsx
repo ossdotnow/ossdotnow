@@ -4,7 +4,7 @@ import { Form, FormField } from '@workspace/ui/components/form';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ComponentProps, FC, useState } from 'react';
+import { ComponentProps, FC, useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { track } from '@vercel/analytics/react';
 import { cn } from '@workspace/ui/lib/utils';
@@ -16,13 +16,21 @@ import { z } from 'zod';
 
 function useWaitlistCount() {
   const trpc = useTRPC();
-
+  const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setSuccess(localStorage.getItem('waitlist-joined') === 'true');
+  }, []);
 
   const { mutate } = useMutation(
     trpc.earlyAccess.joinWaitlist.mutationOptions({
       onSuccess: () => {
         setSuccess(true);
+        if (isMounted) {
+          localStorage.setItem('waitlist-joined', 'true');
+        }
         track('waitlist_join_success');
       },
       onError: () => {
