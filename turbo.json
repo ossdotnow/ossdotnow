@@ -10,7 +10,9 @@
         "NODE_ENV",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
-        "BETTER_AUTH_SECRET"
+        "BETTER_AUTH_SECRET",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
@@ -27,7 +29,9 @@
         "NODE_ENV",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
-        "BETTER_AUTH_SECRET"
+        "BETTER_AUTH_SECRET",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET"
       ],
       "persistent": true
     },

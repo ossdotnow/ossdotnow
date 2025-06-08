@@ -54,14 +54,20 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0(next@15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0))(react@19.0.0)
       '@workspace/api':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/api
+      '@workspace/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@workspace/env':
         specifier: workspace:*
         version: link:../../packages/env
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      better-auth:
+        specifier: ^1.2.8
+        version: 1.2.8
       lucide-react:
         specifier: ^0.475.0
         version: 0.475.0(react@19.0.0)
@@ -100,7 +106,7 @@ importers:
         specifier: ^19
         version: 19.0.4(@types/react@19.0.10)
       '@workspace/eslint-config':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/eslint-config
       '@workspace/typescript-config':
         specifier: workspace:*
@@ -1526,6 +1532,9 @@ packages:
   basic-ftp@5.0.5:
     resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
     engines: {node: '>=10.0.0'}
+
+  better-auth@1.2.8:
+    resolution: {integrity: sha512-y8ry7ZW3/3ZIr82Eo1zUDtMzdoQlFnwNuZ0+b0RxoNZgqmvgTIc/0tCDC7NDJerqSu4UCzer0dvYxBsv3WMIGg==}
 
   better-auth@1.2.9-beta.8:
     resolution: {integrity: sha512-QWtFQ4+2eETgxptQmOxTfyPlLxSL5/IqAoL4oFpl5V8ZdTQvSb/deQlXGmUlSiHCF23NzEb9dITQwTTyTPDoQQ==}
@@ -4403,6 +4412,21 @@ snapshots:
   base64-js@1.5.1: {}
 
   basic-ftp@5.0.5: {}
+
+  better-auth@1.2.8:
+    dependencies:
+      '@better-auth/utils': 0.2.5
+      '@better-fetch/fetch': 1.1.18
+      '@noble/ciphers': 0.6.0
+      '@noble/hashes': 1.8.0
+      '@simplewebauthn/browser': 13.1.0
+      '@simplewebauthn/server': 13.1.1
+      better-call: 1.0.9
+      defu: 6.1.4
+      jose: 5.10.0
+      kysely: 0.28.2
+      nanostores: 0.11.4
+      zod: 3.25.56
 
   better-auth@1.2.9-beta.8:
     dependencies:
