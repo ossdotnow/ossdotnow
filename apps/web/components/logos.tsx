@@ -1,8 +1,7 @@
 'use client';
 
-import { track } from '@vercel/analytics/react';
 import Icons from '@/components/icons';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 export function Logos() {
   return (
@@ -15,7 +14,7 @@ export function Logos() {
           className="group z-10"
           href="https://0.email"
           target="_blank"
-          onClick={() => track('clicked_zero_email_logo')}
+          event="clicked_zero_email_logo"
         >
           <Icons.zero className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
@@ -23,7 +22,7 @@ export function Logos() {
           className="group z-10"
           href="https://witharc.co"
           target="_blank"
-          onClick={() => track('clicked_with_arc_logo')}
+          event="clicked_with_arc_logo"
         >
           <Icons.arc className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
@@ -31,7 +30,7 @@ export function Logos() {
           className="group z-10"
           href="https://x.com/cupolalabs"
           target="_blank"
-          onClick={() => track('clicked_cupola_labs_logo')}
+          event="clicked_cupola_labs_logo"
         >
           <Icons.cupola className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
@@ -39,7 +38,7 @@ export function Logos() {
           className="group z-10"
           href="https://analog.now"
           target="_blank"
-          onClick={() => track('clicked_analog_now_logo')}
+          event="clicked_analog_now_logo"
         >
           <Icons.analog className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
@@ -47,7 +46,7 @@ export function Logos() {
           className="group z-10"
           href="https://sword.so"
           target="_blank"
-          onClick={() => track('clicked_sword_so_logo')}
+          event="clicked_sword_so_logo"
         >
           <Icons.sword className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
@@ -55,7 +54,7 @@ export function Logos() {
           className="group z-10"
           href="https://x.com/usetesseract"
           target="_blank"
-          onClick={() => track('clicked_tesseract_logo')}
+          event="clicked_tesseract_logo"
         >
           <Icons.tesseract className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
