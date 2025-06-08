@@ -1,5 +1,6 @@
 'use client';
 
+import { Form, FormField } from '@workspace/ui/components/form';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,13 +8,10 @@ import { useMutation } from '@tanstack/react-query';
 import { track } from '@vercel/analytics/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
+import { waitlistForm } from '@/forms';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-const formSchema = z.object({
-  email: z.string().email(),
-});
 
 function useWaitlistCount() {
   const trpc = useTRPC();
@@ -40,8 +38,8 @@ function useWaitlistCount() {
 }
 
 export function WaitlistForm() {
-  const { register, handleSubmit } = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof waitlistForm>>({
+    resolver: zodResolver(waitlistForm),
     defaultValues: {
       email: '',
     },
@@ -49,7 +47,7 @@ export function WaitlistForm() {
 
   const waitlist = useWaitlistCount();
 
-  function joinWaitlist({ email }: z.infer<typeof formSchema>) {
+  function joinWaitlist({ email }: z.infer<typeof waitlistForm>) {
     waitlist.mutate({ email });
   }
 
@@ -59,18 +57,26 @@ export function WaitlistForm() {
       <p className="text-[#9f9f9f]">We&apos;ll let you know when we&#39;re ready to launch.</p>
     </div>
   ) : (
-    <form
-      onSubmit={handleSubmit(joinWaitlist)}
-      className="z-10 flex w-full items-center gap-2 px-2"
-    >
-      <Input
-        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-        placeholder="hello@0.email"
-        {...register('email')}
-      />
-      <Button variant="default" className="z-10 rounded-none">
-        Join Waitlist
-      </Button>
-    </form>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(joinWaitlist)}
+        className="z-10 flex w-full items-center gap-2 px-2"
+      >
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <Input
+              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+              placeholder="hello@0.email"
+              {...field}
+            />
+          )}
+        />
+        <Button type="submit" variant="default" className="z-10 rounded-none">
+          Join Waitlist
+        </Button>
+      </form>
+    </Form>
   );
 }

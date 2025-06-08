@@ -18,7 +18,8 @@ export default function Page() {
             Open source it, <br /> right now.
           </h1>
           <p className="z-10 mx-auto max-w-sm text-center text-[#9f9f9f]">
-            A place to share your open source projects and find new ones. Coming soon.
+            A platform for open source project discovery, collaboration, and growth - connecting
+            project owners with contributors. Coming soon.
           </p>
           <WaitlistForm />
         </div>
