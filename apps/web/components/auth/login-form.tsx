@@ -1,27 +1,20 @@
 'use client';
 
-import { Form, FormField } from '@workspace/ui/components/form';
-import { Separator } from '@workspace/ui/components/separator';
 import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ComponentProps, FC, useState } from 'react';
 import { authClient } from '@workspace/auth/client';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
-import { useForm } from 'react-hook-form';
 import Icons from '@/components/icons';
-import { loginForm } from '@/forms';
+import { ComponentProps } from 'react';
 import { toast } from 'sonner';
-import Link from 'next/link';
-import { z } from 'zod';
 
-const LoginForm: FC<ComponentProps<'div'> & { redirectUrl?: string }> = ({
+export function LoginForm({
   className,
   redirectUrl = '/profile',
   ...props
-}) => {
-  const [loading, setLoading] = useState(false);
+}: ComponentProps<'div'> & { redirectUrl?: string }) {
+  {
+    /*const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginForm>>({
     resolver: zodResolver(loginForm),
@@ -30,6 +23,9 @@ const LoginForm: FC<ComponentProps<'div'> & { redirectUrl?: string }> = ({
       password: '',
     },
   });
+
+  */
+  }
 
   const signInWithProvider = async (providerId: ProviderId) => {
     await authClient.signIn.social(
@@ -110,6 +106,4 @@ const LoginForm: FC<ComponentProps<'div'> & { redirectUrl?: string }> = ({
       </div>
     </div>
   );
-};
-
-export default LoginForm;
+}

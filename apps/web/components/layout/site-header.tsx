@@ -2,7 +2,7 @@ import { Button } from '@workspace/ui/components/button';
 import Icons from '@/components/icons';
 import Link from 'next/link';
 
-const SiteHeader = () => {
+export function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 w-full bg-[#101010]">
       <div className="border-border mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-l border-r px-4 sm:px-8">
@@ -25,6 +25,4 @@ const SiteHeader = () => {
       </div>
     </header>
   );
-};
-
-export default SiteHeader;
+}

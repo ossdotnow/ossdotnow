@@ -4,9 +4,7 @@ import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
 import { redirect } from 'next/navigation';
 
-type Props = {};
-
-const Profile = (props: Props) => {
+export function Profile() {
   const signOut = async () => {
     await authClient.signOut();
     redirect('/login');
@@ -17,6 +15,4 @@ const Profile = (props: Props) => {
       <Button onClick={signOut}>Sign out</Button>
     </div>
   );
-};
-
-export default Profile;
+}

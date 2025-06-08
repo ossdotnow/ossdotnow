@@ -1,10 +1,10 @@
 'use client';
 
 import { Form, FormField } from '@workspace/ui/components/form';
+import { ComponentProps, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ComponentProps, FC, useEffect, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { track } from '@vercel/analytics/react';
 import { cn } from '@workspace/ui/lib/utils';
@@ -46,7 +46,7 @@ function useWaitlistCount() {
   };
 }
 
-export const WaitlistForm: FC<ComponentProps<'div'>> = ({ className, ...props }) => {
+export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
   const form = useForm<z.infer<typeof waitlistForm>>({
     resolver: zodResolver(waitlistForm),
     defaultValues: {
@@ -99,4 +99,4 @@ export const WaitlistForm: FC<ComponentProps<'div'>> = ({ className, ...props })
       </Form>
     </div>
   );
-};
+}

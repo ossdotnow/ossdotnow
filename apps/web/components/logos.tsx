@@ -4,7 +4,7 @@ import { track } from '@vercel/analytics/react';
 import Icons from '@/components/icons';
 import Link from 'next/link';
 
-const Logos = () => {
+export function Logos() {
   return (
     <div className="z-10 mt-20 flex w-full max-w-lg flex-col items-center gap-6">
       <p className="z-10 text-sm font-medium uppercase tracking-wider text-[#494949]">
@@ -62,6 +62,4 @@ const Logos = () => {
       </div>
     </div>
   );
-};
-
-export default Logos;
+}
