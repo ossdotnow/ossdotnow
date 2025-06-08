@@ -1,7 +1,7 @@
 'use client';
 
-import { authClient } from '@workspace/auth/client';
 import { Button } from '@workspace/ui/components/button';
+import { authClient } from '@workspace/auth/client';
 import { redirect } from 'next/navigation';
 
 export function Profile() {
@@ -14,5 +14,5 @@ export function Profile() {
       <span>Profile</span>
       <Button onClick={signOut}>Sign out</Button>
     </div>
-  )
+  );
 }

@@ -61,5 +61,5 @@ export function Logos() {
         </Link>
       </div>
     </div>
-  )
+  );
 }

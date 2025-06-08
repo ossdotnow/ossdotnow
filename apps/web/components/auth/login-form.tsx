@@ -1,10 +1,10 @@
 'use client';
 
-import Icons from '@/components/icons';
-import { ProviderId } from '@/lib/constants';
-import { authClient } from '@workspace/auth/client';
 import { Button } from '@workspace/ui/components/button';
+import { authClient } from '@workspace/auth/client';
 import { cn } from '@workspace/ui/lib/utils';
+import { ProviderId } from '@/lib/constants';
+import Icons from '@/components/icons';
 import { ComponentProps } from 'react';
 import { toast } from 'sonner';
 
@@ -13,7 +13,8 @@ export function LoginForm({
   redirectUrl = '/profile',
   ...props
 }: ComponentProps<'div'> & { redirectUrl?: string }) {
-  {/*const [loading, setLoading] = useState(false);
+  {
+    /*const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof loginForm>>({
     resolver: zodResolver(loginForm),
@@ -23,7 +24,8 @@ export function LoginForm({
     },
   });
 
-  */}
+  */
+  }
 
   const signInWithProvider = async (providerId: ProviderId) => {
     await authClient.signIn.social(

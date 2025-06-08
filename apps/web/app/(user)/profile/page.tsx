@@ -13,4 +13,4 @@ export default async function ProfilePage() {
     redirect('/login');
   }
   return <Profile />;
-};
+}
