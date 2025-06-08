@@ -51,6 +51,14 @@ const Logos = () => {
         >
           <Icons.sword className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
         </Link>
+        <Link
+          className="group z-10"
+          href="https://x.com/usetesseract"
+          target="_blank"
+          onClick={() => track('clicked_tesseract_logo')}
+        >
+          <Icons.tesseract className="z-10 h-8 w-8 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-10 sm:w-10" />
+        </Link>
       </div>
     </div>
   );
