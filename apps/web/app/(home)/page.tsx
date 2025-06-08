@@ -17,9 +17,10 @@ export default function Page() {
           <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
           </h1>
-          <p className="z-10 mx-auto max-w-sm text-center text-[#9f9f9f]">
+          <p className="z-10 mx-auto max-w-md text-balance text-center text-[#9f9f9f]">
             A platform for open source project discovery, collaboration, and growth - connecting
-            project owners with contributors. Coming soon.
+            project owners with contributors.{' '}
+            <span className="font-medium text-white">Coming soon.</span>
           </p>
           <WaitlistForm />
         </div>
