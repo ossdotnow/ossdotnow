@@ -1,5 +1,5 @@
 import { WaitlistForm } from '@/components/waitlist-form';
-import Logos from '@/components/logos';
+import { Logos } from '@/components/logos';
 import Image from 'next/image';
 
 export default function Page() {

@@ -1,17 +1,6 @@
-import SiteHeader from '@/components/layout/site-header';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { SiteHeader } from '@/components/layout/site-header';
 import '@workspace/ui/globals.css';
 import { Metadata } from 'next';
-
-const fontSans = Geist({
-  subsets: ['latin'],
-  variable: '--font-sans',
-});
-
-const fontMono = Geist_Mono({
-  subsets: ['latin'],
-  variable: '--font-mono',
-});
 
 export const metadata: Metadata = {
   title: 'oss.now | Coming soon',

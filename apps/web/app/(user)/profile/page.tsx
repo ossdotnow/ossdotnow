@@ -1,9 +1,9 @@
+import { Profile } from '@/components/user/profile';
 import { authClient } from '@workspace/auth/client';
-import Profile from '@/components/user/profile';
 import { env } from '@workspace/env/server';
 import { redirect } from 'next/navigation';
 
-const ProfilePage = async () => {
+export default async function ProfilePage() {
   if (env.NODE_ENV === 'production') {
     redirect('/');
   }
@@ -14,5 +14,3 @@ const ProfilePage = async () => {
   }
   return <Profile />;
 };
-
-export default ProfilePage;

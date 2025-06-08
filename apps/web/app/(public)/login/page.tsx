@@ -1,4 +1,4 @@
-import LoginForm from '@/components/auth/login-form';
+import { LoginForm } from '@/components/auth/login-form';
 import { env } from '@workspace/env/server';
 import { redirect } from 'next/navigation';
 import Icons from '@/components/icons';

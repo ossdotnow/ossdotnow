@@ -31,6 +31,7 @@ export const config = [
     rules: {
       ...pluginNext.configs.recommended.rules,
       ...pluginNext.configs["core-web-vitals"].rules,
+      "@next/next/no-img-element": "off",
     },
   },
   {
