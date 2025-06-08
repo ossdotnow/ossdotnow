@@ -64,7 +64,7 @@ export function WaitlistForm() {
       className="z-10 flex w-full items-center gap-2 px-2"
     >
       <Input
-        className="z-10 rounded-none border-none !bg-[#2e2e2e]/100 text-base placeholder:text-[#9f9f9f]"
+        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
         placeholder="hello@0.email"
         {...register('email')}
       />
