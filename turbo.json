@@ -5,7 +5,13 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": ["DATABASE_URL", "NODE_ENV", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+      "env": [
+        "DATABASE_URL",
+        "NODE_ENV",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "BETTER_AUTH_SECRET"
+      ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {
@@ -16,7 +22,13 @@
     },
     "dev": {
       "cache": false,
-      "env": ["DATABASE_URL", "NODE_ENV", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+      "env": [
+        "DATABASE_URL",
+        "NODE_ENV",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "BETTER_AUTH_SECRET"
+      ],
       "persistent": true
     },
     "db:generate": {
