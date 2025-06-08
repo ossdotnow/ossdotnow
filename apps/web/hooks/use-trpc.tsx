@@ -28,17 +28,13 @@ interface TRPCReactProviderProps {
 }
 
 export function TRPCReactProvider(props: Readonly<TRPCReactProviderProps>) {
-  // NOTE: Avoid useState when initializing the query client if you don't
-  //       have a suspense boundary between this and the code that may
-  //       suspend because React will throw away the client on the initial
-  //       render if it suspends and there is no boundary
   const queryClient = getQueryClient();
   const [trpcClient] = useState(() =>
     createTRPCClient<AppRouter>({
       links: [
         loggerLink({
           enabled: (op) =>
-            process.env.NEXT_PUBLIC_ENV === 'development' ||
+            env.NEXT_PUBLIC_ENV === 'development' ||
             (op.direction === 'down' && op.result instanceof Error),
         }),
         httpBatchStreamLink({
