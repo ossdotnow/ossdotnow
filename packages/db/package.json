@@ -17,14 +17,14 @@
   },
   "dependencies": {
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.43.1",
-    "postgres": "^3.4.5",
+    "drizzle-orm": "^0.44.2",
+    "postgres": "^3.4.7",
     "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9",
     "typescript": "^5"

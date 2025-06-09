@@ -10,13 +10,13 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@t3-oss/env-nextjs": "^0.13.4",
-    "zod": "^3.24.4"
+    "@t3-oss/env-nextjs": "^0.13.6",
+    "zod": "^3.25.56"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "eslint": "^9",
     "typescript": "^5"
   }

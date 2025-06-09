@@ -16,10 +16,10 @@
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.43.1"
+    "drizzle-orm": "^0.44.2"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9",

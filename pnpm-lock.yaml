@@ -39,8 +39,8 @@ importers:
   apps/web:
     dependencies:
       '@hookform/resolvers':
-        specifier: ^5.1.0
-        version: 5.1.0(react-hook-form@7.57.0(react@19.1.0))
+        specifier: ^5.1.1
+        version: 5.1.1(react-hook-form@7.57.0(react@19.1.0))
       '@tanstack/react-query':
         specifier: ^5.80.6
         version: 5.80.6(react@19.1.0)
@@ -72,19 +72,19 @@ importers:
         specifier: ^1.2.8
         version: 1.2.8
       lucide-react:
-        specifier: ^0.475.0
-        version: 0.475.0(react@19.1.0)
+        specifier: ^0.513.0
+        version: 0.513.0(react@19.1.0)
       next:
-        specifier: ^15.2.4
+        specifier: ^15.3.3
         version: 15.3.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       next-themes:
-        specifier: ^0.4.4
+        specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
-        specifier: ^19.0.0
+        specifier: ^19.1.0
         version: 19.1.0
       react-dom:
-        specifier: ^19.0.0
+        specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
       react-hook-form:
         specifier: ^7.57.0
@@ -100,8 +100,8 @@ importers:
         version: 3.25.56
     devDependencies:
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@types/react':
         specifier: ^19
         version: 19.1.6
@@ -115,7 +115,7 @@ importers:
         specifier: workspace:*
         version: link:../../packages/typescript-config
       typescript:
-        specifier: ^5.7.3
+        specifier: ^5.8.3
         version: 5.8.3
 
   packages/api:
@@ -127,7 +127,7 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(@upstash/redis@1.35.0)
       '@upstash/redis':
-        specifier: ^1.34.9
+        specifier: ^1.35.0
         version: 1.35.0
       '@workspace/auth':
         specifier: workspace:*
@@ -142,8 +142,8 @@ importers:
         specifier: 1.2.9-beta.8
         version: 1.2.9-beta.8
       drizzle-orm:
-        specifier: ^0.43.1
-        version: 0.43.1(kysely@0.28.2)(postgres@3.4.7)
+        specifier: ^0.44.2
+        version: 0.44.2(@upstash/redis@1.35.0)(kysely@0.28.2)(postgres@3.4.7)
       next:
         specifier: ^15
         version: 15.3.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -158,8 +158,8 @@ importers:
         version: 3.25.56
     devDependencies:
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@workspace/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -185,15 +185,15 @@ importers:
         specifier: 1.2.9-beta.8
         version: 1.2.9-beta.8
       drizzle-orm:
-        specifier: ^0.43.1
-        version: 0.43.1(kysely@0.28.2)(postgres@3.4.7)
+        specifier: ^0.44.2
+        version: 0.44.2(@upstash/redis@1.35.0)(kysely@0.28.2)(postgres@3.4.7)
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
     devDependencies:
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@workspace/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -213,18 +213,18 @@ importers:
         specifier: workspace:*
         version: link:../env
       drizzle-orm:
-        specifier: ^0.43.1
-        version: 0.43.1(kysely@0.28.2)(postgres@3.4.7)
+        specifier: ^0.44.2
+        version: 0.44.2(@upstash/redis@1.35.0)(kysely@0.28.2)(postgres@3.4.7)
       postgres:
-        specifier: ^3.4.5
+        specifier: ^3.4.7
         version: 3.4.7
       server-only:
         specifier: ^0.0.1
         version: 0.0.1
     devDependencies:
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@workspace/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -244,15 +244,15 @@ importers:
   packages/env:
     dependencies:
       '@t3-oss/env-nextjs':
-        specifier: ^0.13.4
+        specifier: ^0.13.6
         version: 0.13.6(typescript@5.8.3)(zod@3.25.56)
       zod:
-        specifier: ^3.24.4
+        specifier: ^3.25.56
         version: 3.25.56
     devDependencies:
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@workspace/eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
@@ -269,13 +269,13 @@ importers:
   packages/eslint-config:
     devDependencies:
       '@eslint/js':
-        specifier: ^9.26.0
+        specifier: ^9.28.0
         version: 9.28.0
       '@next/eslint-plugin-next':
-        specifier: ^15.3.2
+        specifier: ^15.3.3
         version: 15.3.3
       eslint:
-        specifier: ^9.26.0
+        specifier: ^9.28.0
         version: 9.28.0(jiti@2.4.2)
       eslint-config-prettier:
         specifier: ^10.1.5
@@ -290,16 +290,16 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.28.0(jiti@2.4.2))
       eslint-plugin-turbo:
-        specifier: ^2.5.3
+        specifier: ^2.5.4
         version: 2.5.4(eslint@9.28.0(jiti@2.4.2))(turbo@2.5.4)
       globals:
-        specifier: ^16.1.0
+        specifier: ^16.2.0
         version: 16.2.0
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
       typescript-eslint:
-        specifier: ^8.32.1
+        specifier: ^8.33.1
         version: 8.33.1(eslint@9.28.0(jiti@2.4.2))(typescript@5.8.3)
 
   packages/typescript-config: {}
@@ -307,8 +307,8 @@ importers:
   packages/ui:
     dependencies:
       '@hookform/resolvers':
-        specifier: ^5.1.0
-        version: 5.1.0(react-hook-form@7.57.0(react@19.1.0))
+        specifier: ^5.1.1
+        version: 5.1.1(react-hook-form@7.57.0(react@19.1.0))
       '@radix-ui/react-avatar':
         specifier: ^1.1.10
         version: 1.1.10(@types/react-dom@19.1.6(@types/react@19.1.6))(@types/react@19.1.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -322,7 +322,7 @@ importers:
         specifier: ^1.1.7
         version: 1.1.7(@types/react-dom@19.1.6(@types/react@19.1.6))(@types/react@19.1.6)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@radix-ui/react-slot':
-        specifier: ^1.1.2
+        specifier: ^1.2.3
         version: 1.2.3(@types/react@19.1.6)(react@19.1.0)
       class-variance-authority:
         specifier: ^0.7.1
@@ -331,16 +331,16 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       lucide-react:
-        specifier: ^0.475.0
-        version: 0.475.0(react@19.1.0)
+        specifier: ^0.513.0
+        version: 0.513.0(react@19.1.0)
       next-themes:
-        specifier: ^0.4.4
+        specifier: ^0.4.6
         version: 0.4.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
-        specifier: ^19.0.0
+        specifier: ^19.1.0
         version: 19.1.0
       react-dom:
-        specifier: ^19.0.0
+        specifier: ^19.1.0
         version: 19.1.0(react@19.1.0)
       react-hook-form:
         specifier: ^7.57.0
@@ -349,24 +349,24 @@ importers:
         specifier: ^2.0.5
         version: 2.0.5(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       tailwind-merge:
-        specifier: ^3.0.1
+        specifier: ^3.3.0
         version: 3.3.0
       tw-animate-css:
-        specifier: ^1.2.4
+        specifier: ^1.3.4
         version: 1.3.4
       zod:
-        specifier: ^3.24.2
+        specifier: ^3.25.56
         version: 3.25.56
     devDependencies:
       '@tailwindcss/postcss':
-        specifier: ^4.0.8
+        specifier: ^4.1.8
         version: 4.1.8
       '@turbo/gen':
-        specifier: ^2.4.2
-        version: 2.5.4(@types/node@20.19.0)(typescript@5.8.3)
+        specifier: ^2.5.4
+        version: 2.5.4(@types/node@22.15.30)(typescript@5.8.3)
       '@types/node':
-        specifier: ^20
-        version: 20.19.0
+        specifier: ^22
+        version: 22.15.30
       '@types/react':
         specifier: ^19
         version: 19.1.6
@@ -380,10 +380,10 @@ importers:
         specifier: workspace:*
         version: link:../typescript-config
       tailwindcss:
-        specifier: ^4.0.8
+        specifier: ^4.1.8
         version: 4.1.8
       typescript:
-        specifier: ^5.7.3
+        specifier: ^5.8.3
         version: 5.8.3
 
 packages:
@@ -762,8 +762,8 @@ packages:
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
 
-  '@hookform/resolvers@5.1.0':
-    resolution: {integrity: sha512-A5tY8gxqvvR0lFfropqpy/gUDOxjwT7LZCxJ8lNA9puK7nFNRl/O0egGKxzdF4JSz/pnnT1O8g76P/YMyTBEFw==}
+  '@hookform/resolvers@5.1.1':
+    resolution: {integrity: sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg==}
     peerDependencies:
       react-hook-form: ^7.55.0
 
@@ -1538,8 +1538,8 @@ packages:
   '@types/minimatch@5.1.2':
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
 
-  '@types/node@20.19.0':
-    resolution: {integrity: sha512-hfrc+1tud1xcdVTABC2JiomZJEklMcXYNTVtZLAeqTVWD+qL5jkHKT+1lOtqDdGxt+mB53DTtiz673vfjU8D1Q==}
+  '@types/node@22.15.30':
+    resolution: {integrity: sha512-6Q7lr06bEHdlfplU6YRbgG1SFBdlsfNC4/lX+SkhiTs0cpJkOElmWls8PxDFv4yY/xKb8Y6SO0OmSX4wgqTZbA==}
 
   '@types/react-dom@19.1.6':
     resolution: {integrity: sha512-4hOiT/dwO8Ko0gV1m/TJZYk3y0KBnY9vzDh7W+DH17b2HFSOGgdj33dhihPeuy3l0q23+4e+hoXHV6hCC4dCXw==}
@@ -2010,8 +2010,8 @@ packages:
     resolution: {integrity: sha512-PUjYKWtzOzPtdtQlTHQG3qfv4Y0XT8+Eas6UbxCmxTj7qgMf+39dDujf1BP1I+qqZtw9uzwTh8jYtkMuCq+B0Q==}
     hasBin: true
 
-  drizzle-orm@0.43.1:
-    resolution: {integrity: sha512-dUcDaZtE/zN4RV/xqGrVSMpnEczxd5cIaoDeor7Zst9wOe/HzC/7eAaulywWGYXdDEc9oBPMjayVEDg0ziTLJA==}
+  drizzle-orm@0.44.2:
+    resolution: {integrity: sha512-zGAqBzWWkVSFjZpwPOrmCrgO++1kZ5H/rZ4qTGeGOe18iXGVJWf3WPfHOVwFIbmi8kHjfJstC6rJomzGx8g/dQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -2027,6 +2027,7 @@ packages:
       '@types/better-sqlite3': '*'
       '@types/pg': '*'
       '@types/sql.js': '*'
+      '@upstash/redis': '>=1.34.7'
       '@vercel/postgres': '>=0.8.0'
       '@xata.io/client': '*'
       better-sqlite3: '>=7'
@@ -2069,6 +2070,8 @@ packages:
       '@types/pg':
         optional: true
       '@types/sql.js':
+        optional: true
+      '@upstash/redis':
         optional: true
       '@vercel/postgres':
         optional: true
@@ -2785,8 +2788,8 @@ packages:
     resolution: {integrity: sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==}
     engines: {node: '>=12'}
 
-  lucide-react@0.475.0:
-    resolution: {integrity: sha512-NJzvVu1HwFVeZ+Gwq2q00KygM1aBhy/ZrhY9FsAgJtpB+E4R7uxRk9M2iKvHa6/vNxZydIB59htha4c2vvwvVg==}
+  lucide-react@0.513.0:
+    resolution: {integrity: sha512-CJZKq2g8Y8yN4Aq002GahSXbG2JpFv9kXwyiOAMvUBv7pxeOFHUWKB0mO7MiY4ZVFCV4aNjv2BJFq/z3DgKPQg==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
@@ -3961,7 +3964,7 @@ snapshots:
 
   '@hexagon/base64@1.1.28': {}
 
-  '@hookform/resolvers@5.1.0(react-hook-form@7.57.0(react@19.1.0))':
+  '@hookform/resolvers@5.1.1(react-hook-form@7.57.0(react@19.1.0))':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.57.0(react@19.1.0)
@@ -4584,7 +4587,7 @@ snapshots:
 
   '@tsconfig/node16@1.0.4': {}
 
-  '@turbo/gen@2.5.4(@types/node@20.19.0)(typescript@5.8.3)':
+  '@turbo/gen@2.5.4(@types/node@22.15.30)(typescript@5.8.3)':
     dependencies:
       '@turbo/workspaces': 2.5.4
       commander: 10.0.1
@@ -4594,7 +4597,7 @@ snapshots:
       node-plop: 0.26.3
       picocolors: 1.0.1
       proxy-agent: 6.5.0
-      ts-node: 10.9.2(@types/node@20.19.0)(typescript@5.8.3)
+      ts-node: 10.9.2(@types/node@22.15.30)(typescript@5.8.3)
       update-check: 1.5.4
       validate-npm-package-name: 5.0.1
     transitivePeerDependencies:
@@ -4623,7 +4626,7 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.19.0
+      '@types/node': 22.15.30
 
   '@types/inquirer@6.5.0':
     dependencies:
@@ -4634,7 +4637,7 @@ snapshots:
 
   '@types/minimatch@5.1.2': {}
 
-  '@types/node@20.19.0':
+  '@types/node@22.15.30':
     dependencies:
       undici-types: 6.21.0
 
@@ -4648,7 +4651,7 @@ snapshots:
 
   '@types/through@0.0.33':
     dependencies:
-      '@types/node': 20.19.0
+      '@types/node': 22.15.30
 
   '@types/tinycolor2@1.4.6': {}
 
@@ -5195,8 +5198,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.43.1(kysely@0.28.2)(postgres@3.4.7):
+  drizzle-orm@0.44.2(@upstash/redis@1.35.0)(kysely@0.28.2)(postgres@3.4.7):
     optionalDependencies:
+      '@upstash/redis': 1.35.0
       kysely: 0.28.2
       postgres: 3.4.7
 
@@ -6068,7 +6072,7 @@ snapshots:
 
   lru-cache@7.18.3: {}
 
-  lucide-react@0.475.0(react@19.1.0):
+  lucide-react@0.513.0(react@19.1.0):
     dependencies:
       react: 19.1.0
 
@@ -6818,14 +6822,14 @@ snapshots:
     dependencies:
       typescript: 5.8.3
 
-  ts-node@10.9.2(@types/node@20.19.0)(typescript@5.8.3):
+  ts-node@10.9.2(@types/node@22.15.30)(typescript@5.8.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 20.19.0
+      '@types/node': 22.15.30
       acorn: 8.15.0
       acorn-walk: 8.3.4
       arg: 4.1.3
