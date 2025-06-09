@@ -27,10 +27,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} overscroll-none bg-[#101010] px-2 font-sans antialiased`}
+        className={`${fontSans.variable} ${fontMono.variable} overscroll-none bg-[#101010] font-sans antialiased`}
       >
         <Providers>
-          {children}
+          <main className="px-2">{children}</main>
           <Analytics />
         </Providers>
       </body>
