@@ -30,7 +30,7 @@ export default function RootLayout({
         className={`${fontSans.variable} ${fontMono.variable} overscroll-none bg-[#101010] font-sans antialiased`}
       >
         <Providers>
-          <div className="px-2">{children}</div>
+          <main className="px-2">{children}</main>
           <Analytics />
         </Providers>
       </body>

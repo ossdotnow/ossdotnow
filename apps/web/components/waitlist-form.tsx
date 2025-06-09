@@ -1,13 +1,14 @@
 'use client';
 
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Form, FormField } from '@workspace/ui/components/form';
 import { ComponentProps, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
 import { track } from '@vercel/analytics/react';
 import { cn } from '@workspace/ui/lib/utils';
+import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { waitlistForm } from '@/forms';
@@ -18,6 +19,8 @@ function useWaitlistCount() {
   const trpc = useTRPC();
   const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
+  const queryClient = useQueryClient();
+  const query = useQuery(trpc.earlyAccess.getWaitlistCount.queryOptions());
 
   useEffect(() => {
     setIsMounted(true);
@@ -28,6 +31,10 @@ function useWaitlistCount() {
     trpc.earlyAccess.joinWaitlist.mutationOptions({
       onSuccess: () => {
         setSuccess(true);
+        queryClient.setQueryData([trpc.earlyAccess.getWaitlistCount.queryKey()], {
+          count: (query.data?.count ?? 0) + 1,
+        });
+
         if (isMounted) {
           localStorage.setItem('waitlist-joined', 'true');
         }
@@ -41,6 +48,7 @@ function useWaitlistCount() {
   );
 
   return {
+    count: query.data?.count ?? 0,
     mutate,
     success,
   };
@@ -97,6 +105,14 @@ export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
           </Button>
         </form>
       </Form>
+
+      <div className="relative flex flex-row items-center justify-center gap-2">
+        <span className="size-2 animate-pulse rounded-full bg-green-600 dark:bg-green-400" />
+        <span className="blur-xs absolute left-0 size-2 animate-pulse rounded-full bg-green-600 dark:bg-green-400" />
+        <span className="text-sm">
+          <NumberFlow value={waitlist.count} /> people already joined
+        </span>
+      </div>
     </div>
   );
 }
