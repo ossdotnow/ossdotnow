@@ -30,7 +30,7 @@ export async function SiteHeader() {
           {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />
-          ) : env.NODE_ENV === 'production' ? (
+          ) : env.NODE_ENV !== 'production' ? (
             <Button className="rounded-none" asChild>
               <Link href="/login" event="login_nav_click">
                 Login
