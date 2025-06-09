@@ -9,6 +9,7 @@ export function Profile() {
     await authClient.signOut();
     redirect('/login');
   };
+
   return (
     <div>
       <span>Profile</span>

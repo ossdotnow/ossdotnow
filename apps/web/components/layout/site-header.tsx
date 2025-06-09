@@ -1,26 +1,42 @@
 import { Button } from '@workspace/ui/components/button';
+import { auth } from '@workspace/auth/server';
+import { cn } from '@workspace/ui/lib/utils';
+import { env } from '@workspace/env/server';
 import Icons from '@/components/icons';
-import Link from 'next/link';
+import { headers } from 'next/headers';
+import PublicNav from './public-nav';
+import UserNav from './user-nav';
+import TempNav from './temp-nav';
+import Link from '../link';
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
   return (
     <header className="sticky top-0 z-50 w-full bg-[#101010]">
-      <div className="border-border mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-l border-r px-4 sm:px-8">
-        <span className="flex items-center gap-4">
+      <div
+        className={cn(
+          'border-border mx-auto flex h-16 items-center justify-between border-b border-l border-r px-4 sm:px-8',
+          session?.user.id ? 'w-full' : 'max-w-7xl',
+        )}
+      >
+        <Link href="/" className="flex items-center gap-4" event="home_nav_click">
           <Icons.logo className="size-8" />
           <span className="text-2xl font-medium">oss.now</span>
-        </span>
+        </Link>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="rounded-none" asChild>
-            <Link href="https://l.oss.now/gh/" target="_blank" rel="noopener noreferrer">
-              <Icons.github className="size-5 fill-white" />
-            </Link>
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-none" asChild>
-            <Link href="https://l.oss.now/x/" target="_blank" rel="noopener noreferrer">
-              <Icons.twitter className="size-5 fill-white" />
-            </Link>
-          </Button>
+          {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
+          {session?.user.id ? (
+            <UserNav />
+          ) : (
+            <Button className="rounded-none" asChild>
+              <Link href="/login" event="login_nav_click">
+                Login
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </header>
