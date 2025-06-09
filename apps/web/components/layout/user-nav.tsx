@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@workspace/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
+import { Skeleton } from '@workspace/ui/components/skeleton';
 import { authClient } from '@workspace/auth/client';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
@@ -24,7 +25,9 @@ export default function NavUser() {
 
   const { data: user, isLoading } = useQuery(trpc.user.me.queryOptions());
 
-  return isLoading ? null : (
+  return isLoading ? (
+    <Skeleton className="h-8 w-8 rounded-none" />
+  ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="h-8 w-8 rounded-none">
@@ -33,7 +36,7 @@ export default function NavUser() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-none"
+        className="min-w-56 rounded-none"
         side="bottom"
         align="end"
         sideOffset={4}

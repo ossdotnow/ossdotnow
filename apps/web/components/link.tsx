@@ -13,7 +13,15 @@ type Props = ComponentPropsWithoutRef<'a'> &
     eventObject?: Record<string, any>;
   };
 
-const Link = ({ className, href, children, event, eventObject, onClick, ...props }: Props) => {
+export default function Link({
+  className,
+  href,
+  children,
+  event,
+  eventObject,
+  onClick,
+  ...props
+}: Props) {
   return (
     <NextLink
       href={href}
@@ -31,6 +39,4 @@ const Link = ({ className, href, children, event, eventObject, onClick, ...props
       {children}
     </NextLink>
   );
-};
-
-export default Link;
+}
