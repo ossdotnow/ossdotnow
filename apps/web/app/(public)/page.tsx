@@ -8,7 +8,8 @@ export default function Page() {
       <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0 text-center">
         <Image
           src="/home-background.png"
-          alt="background"
+          alt=""
+          aria-hidden="true"
           width={960}
           height={860}
           className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-right-bottom mix-blend-screen"

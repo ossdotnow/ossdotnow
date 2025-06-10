@@ -24,7 +24,8 @@ export default function RoadmapPage() {
       <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0">
         <Image
           src="/roadmap-background.png"
-          alt="background"
+          alt=""
+          aria-hidden="true"
           width={960}
           height={860}
           className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center mix-blend-screen"
