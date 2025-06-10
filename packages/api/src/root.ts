@@ -5,6 +5,7 @@ import { createTRPCContext, createTRPCRouter } from './trpc';
 import { earlyAccessRouter } from './routers/early-access';
 import { repositoryRouter } from './routers/repository';
 import { projectsRouter } from './routers/projects';
+import { profileRouter } from './routers/profile';
 import { usersRouter } from './routers/users';
 import { adminRouter } from './routers/admin';
 import { userRouter } from './routers/user';
@@ -17,6 +18,7 @@ export const appRouter = createTRPCRouter({
   earlySubmission: earlySubmissionRouter,
   repository: repositoryRouter,
   admin: adminRouter,
+  profile: profileRouter,
 });
 
 export type AppRouter = typeof appRouter;

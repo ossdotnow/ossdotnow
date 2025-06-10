@@ -23,6 +23,15 @@ export const auth = betterAuth({
       scope: ['api', 'read_api', 'read_user', 'read_repository', 'openid', 'profile', 'email'],
     },
   },
+  user: {
+    additionalFields: {
+      username: {
+        type: 'string',
+        required: true,
+      },
+    },
+  },
+  customPaths: {},
 });
 
 export type Session = typeof auth.$Infer.Session;

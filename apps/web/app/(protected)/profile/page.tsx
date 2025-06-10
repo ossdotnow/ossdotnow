@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
-import { Profile } from '@/components/user/profile';
 import { authClient } from '@workspace/auth/client';
+import Profile from '@/components/user/profile';
 import { env } from '@workspace/env/server';
 
 export default async function ProfilePage() {
