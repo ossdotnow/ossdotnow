@@ -13,7 +13,8 @@ export default function Page() {
       <div className="absolute bottom-0 right-0 top-0 z-0 aspect-square w-full bg-transparent mix-blend-screen md:w-[1000px]">
         <img
           src="/login-background.png"
-          alt="background"
+          alt=""
+          aria-hidden="true"
           className="pointer-events-none absolute left-0 right-0 top-0 h-full object-cover object-right mix-blend-screen"
         />
       </div>

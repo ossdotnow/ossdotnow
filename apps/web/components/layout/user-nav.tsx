@@ -30,7 +30,7 @@ export default function NavUser() {
   ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="h-8 w-8 rounded-none">
+        <Avatar className="ml-2 h-8 w-8 rounded-none">
           <AvatarImage src={user?.image || ''} alt={user?.name} />
           <AvatarFallback className="rounded-none">CN</AvatarFallback>
         </Avatar>

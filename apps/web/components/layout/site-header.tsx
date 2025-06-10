@@ -26,18 +26,18 @@ export async function SiteHeader() {
           <Icons.logo className="size-8" />
           <span className="text-2xl font-medium">oss.now</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <nav className="flex items-center gap-2">
           {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />
           ) : env.NODE_ENV !== 'production' ? (
-            <Button className="rounded-none" asChild>
+            <Button className="ml-2 rounded-none" asChild>
               <Link href="/login" event="login_nav_click">
                 Login
               </Link>
             </Button>
           ) : null}
-        </div>
+        </nav>
       </div>
     </header>
   );
