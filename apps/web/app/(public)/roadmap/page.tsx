@@ -28,7 +28,7 @@ export default function RoadmapPage() {
           aria-hidden="true"
           width={960}
           height={860}
-          className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center mix-blend-screen"
+          className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center opacity-70 mix-blend-screen"
         />
         <div className="z-10 mt-0 flex flex-col items-start gap-12 sm:-mt-16">
           <div className="font-mono">

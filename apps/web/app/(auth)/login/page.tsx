@@ -15,7 +15,7 @@ export default function Page() {
           src="/login-background.png"
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 right-0 top-0 h-full object-cover object-right mix-blend-screen"
+          className="pointer-events-none absolute left-0 right-0 top-0 h-full object-cover object-right opacity-20 mix-blend-screen"
         />
       </div>
       <div className="bottom-0mx-auto absolute left-0 top-0 flex aspect-square h-full w-full max-w-7xl flex-row items-center justify-center gap-8 text-center">
