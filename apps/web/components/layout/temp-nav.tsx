@@ -4,7 +4,7 @@ import Link from '@/components/link';
 
 export function TempNav() {
   return (
-    <div className="flex items-center gap-2">
+    <>
       <Link href="/roadmap" event="roadmap_nav_click" className="mr-2">
         roadmap
       </Link>
@@ -28,7 +28,7 @@ export function TempNav() {
           <Icons.twitter className="size-5 fill-white" />
         </Link>
       </Button>
-    </div>
+    </>
   );
 }
 
