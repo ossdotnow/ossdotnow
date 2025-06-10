@@ -3,17 +3,17 @@ import Image from 'next/image';
 const roadmap = [
   {
     title: 'Waitlist',
-    description: 'a waitlist for the project',
+    description: 'a waitlist for early birds',
     status: 'done',
   },
   {
     title: 'Core Features',
-    description: 'submitting, finding, claiming projects ',
+    description: 'submitting, finding, claiming projects',
     status: 'in progress',
   },
   {
     title: 'Social Features',
-    description: 'social features for users to connect with each other',
+    description: 'for users to connect with each other',
     status: 'not started',
   },
 ];
