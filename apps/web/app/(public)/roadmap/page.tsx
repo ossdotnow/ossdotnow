@@ -47,14 +47,14 @@ export default function RoadmapPage() {
                   ></div>
                   <div>
                     <h2 className="text-lg font-normal text-white">{item.title}</h2>
-                    <p className="text-gray-400">{item.description}</p>
+                    <p className="text-muted-foreground">{item.description}</p>
                     <p
-                      className={` ${
+                      className={`${
                         item.status === 'done'
                           ? 'text-green-500'
                           : item.status === 'in progress'
                             ? 'text-blue-500'
-                            : 'text-gray-400'
+                            : 'text-muted-foreground/80'
                       }`}
                     >
                       {item.status}
@@ -64,7 +64,7 @@ export default function RoadmapPage() {
               ))}
               <li className="flex items-start gap-3">
                 <div
-                  className={`mt-[10px] h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-blue-500`}
+                  className={`mt-[11px] h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-blue-500`}
                 ></div>
                 <div>
                   <h2 className="text-muted-foreground text-lg font-normal">
