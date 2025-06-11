@@ -14,7 +14,7 @@ import Icons from '@/components/icons';
 import { ComponentProps } from 'react';
 import { toast } from 'sonner';
 import Link from '../link';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export function LoginForm({
   className,

@@ -1,6 +1,11 @@
+import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
+import { ourFileRouter } from '@/app/api/uploadthing/core';
+import { extractRouterConfig } from 'uploadthing/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
 import { Metadata } from 'next';
 import './globals.css';
 
@@ -19,6 +24,11 @@ export const metadata: Metadata = {
   description: 'A place to share your open source projects and find new ones. Coming soon.',
 };
 
+async function UTSSR() {
+  await connection();
+  return <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,8 +39,11 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} overscroll-none bg-[#101010] font-sans antialiased`}
       >
+        <Suspense>
+          <UTSSR />
+        </Suspense>
         <Providers>
-          <main>{children}</main>
+          <main className="px-6">{children}</main>
           <Analytics />
         </Providers>
       </body>

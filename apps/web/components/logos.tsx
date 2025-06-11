@@ -5,11 +5,11 @@ import Link from '@/components/link';
 
 export function Logos() {
   return (
-    <div className="z-10 mt-10 flex w-full max-w-lg flex-col items-center gap-6 sm:mt-20">
+    <div className="z-10 mt-6 flex w-full max-w-lg flex-col items-center gap-6 sm:mt-10">
       <p className="z-10 text-sm font-medium uppercase tracking-wider text-[#494949]">
         Created by the people behind
       </p>
-      <div className="z-10 flex items-center gap-8">
+      <div className="z-10 flex items-center gap-5">
         <Link
           className="group z-10"
           href="https://0.email"

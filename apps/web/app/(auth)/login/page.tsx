@@ -1,11 +1,11 @@
 import { LoginForm } from '@/components/auth/login-form';
 import { env } from '@workspace/env/server';
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Icons from '@/components/icons';
 
 export default function Page() {
   if (env.NODE_ENV === 'production') {
-    redirect('/');
+    notFound();
   }
 
   return (
