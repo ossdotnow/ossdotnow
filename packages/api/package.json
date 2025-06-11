@@ -24,7 +24,8 @@
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.44.2"
+    "drizzle-orm": "^0.44.2",
+    "drizzle-zod": "^0.8.2"
   },
   "devDependencies": {
     "@types/node": "^22",
