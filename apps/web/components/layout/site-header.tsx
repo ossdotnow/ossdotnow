@@ -23,10 +23,10 @@ export async function SiteHeader() {
         )}
       >
         <Link href="/" className="flex items-center gap-4" event="home_nav_click">
-          <Icons.logo className="size-8" />
-          <span className="text-2xl font-medium">oss.now</span>
+          <Icons.logo className="size-6 sm:size-8" />
+          <span className="text-lg font-medium sm:text-2xl">oss.now</span>
         </Link>
-        <nav className="flex items-center gap-2">
+        <nav className="gap-1sm:gap-2 flex items-center">
           {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />

@@ -20,7 +20,7 @@ const roadmap = [
 
 export default function RoadmapPage() {
   return (
-    <div className="mt-16 flex h-[calc(100vh-(65px+64px))]">
+    <div className="mt-10 flex h-[calc(100vh-(65px+40px))] sm:mt-16 sm:h-[calc(100vh-(65px+64px))]">
       <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0">
         <Image
           src="/roadmap-background.png"
