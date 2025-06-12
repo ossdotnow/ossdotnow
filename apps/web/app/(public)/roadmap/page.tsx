@@ -20,16 +20,17 @@ const roadmap = [
 
 export default function RoadmapPage() {
   return (
-    <div className="mt-10 flex h-[calc(100vh-(65px+40px))] sm:h-[calc(100vh-(65px+64px))] lg:mt-16">
-      <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0 px-2">
-        <Image
-          src="/roadmap-background.png"
-          alt=""
-          aria-hidden="true"
-          width={960}
-          height={860}
-          className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center opacity-70 mix-blend-screen"
-        />
+    <div className="mt-10 flex h-[calc(100vh-(65px+80px))] overflow-hidden sm:mt-16 md:h-[calc(100vh-(65px+80px))]">
+      <Image
+        src="/roadmap-background.png"
+        alt=""
+        aria-hidden="true"
+        width={960}
+        height={860}
+        className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center opacity-70 mix-blend-screen"
+      />
+
+      <div className="border-border relative z-10 mx-auto flex h-full w-full flex-col items-center justify-center gap-8 border border-b-0 border-t-0 px-2">
         <div className="z-10 mt-0 flex flex-col items-start gap-12 sm:-mt-16">
           <div className="font-mono">
             <h1 className="mb-10 pl-5 font-sans text-xl font-normal text-white sm:mb-12 sm:text-3xl">

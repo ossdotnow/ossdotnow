@@ -87,7 +87,7 @@ export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(joinWaitlist)}
-          className="z-10 flex w-full items-center gap-2 px-2"
+          className="z-10 flex w-full max-w-[28.75rem] items-center gap-3 px-2"
         >
           <FormField
             control={form.control}
@@ -100,6 +100,7 @@ export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
               />
             )}
           />
+
           <Button type="submit" variant="default" className="z-10 rounded-none">
             Join Waitlist
           </Button>
