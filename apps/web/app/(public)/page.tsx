@@ -14,7 +14,7 @@ export default function Page() {
           height={860}
           className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
         />
-        <div className="z-10 mt-0 flex w-full max-w-lg flex-col items-center gap-12 sm:-mt-16">
+        <div className="z-10 flex w-full max-w-lg flex-col items-center gap-12">
           <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
           </h1>
