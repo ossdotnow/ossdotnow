@@ -20,8 +20,8 @@ const roadmap = [
 
 export default function RoadmapPage() {
   return (
-    <div className="mt-10 flex h-[calc(100vh-(65px+40px))] sm:mt-16 sm:h-[calc(100vh-(65px+64px))]">
-      <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0">
+    <div className="mt-10 flex h-[calc(100vh-(65px+40px))] sm:h-[calc(100vh-(65px+64px))] lg:mt-16">
+      <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0 px-2">
         <Image
           src="/roadmap-background.png"
           alt=""
@@ -32,13 +32,15 @@ export default function RoadmapPage() {
         />
         <div className="z-10 mt-0 flex flex-col items-start gap-12 sm:-mt-16">
           <div className="font-mono">
-            <h1 className="mb-12 pl-5 font-sans text-3xl font-normal text-white">roadmap</h1>
+            <h1 className="mb-10 pl-5 font-sans text-xl font-normal text-white sm:mb-12 sm:text-3xl">
+              roadmap
+            </h1>
 
-            <ul className="flex flex-col gap-10 text-left">
+            <ul className="flex flex-col gap-6 text-left sm:gap-10">
               {roadmap.map((item) => (
                 <li key={item.title} className="flex items-start gap-3">
                   <div
-                    className={`mt-[11px] h-2 w-2 flex-shrink-0 rounded-full ${
+                    className={`mt-[8px] h-2 w-2 flex-shrink-0 rounded-full sm:mt-[11px] ${
                       item.status === 'done'
                         ? 'bg-green-500'
                         : item.status === 'in progress'
@@ -47,7 +49,7 @@ export default function RoadmapPage() {
                     }`}
                   ></div>
                   <div>
-                    <h2 className="text-lg font-normal text-white">{item.title}</h2>
+                    <h2 className="text-base font-normal text-white sm:text-lg">{item.title}</h2>
                     <p className="text-muted-foreground">{item.description}</p>
                     <p
                       className={`${
@@ -65,10 +67,10 @@ export default function RoadmapPage() {
               ))}
               <li className="flex items-start gap-3">
                 <div
-                  className={`mt-[11px] h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-blue-500`}
+                  className={`mt-[8px] h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-blue-500 sm:mt-[11px]`}
                 ></div>
                 <div>
-                  <h2 className="text-muted-foreground text-lg font-normal">
+                  <h2 className="text-muted-foreground text-base font-normal sm:text-lg">
                     more to be announced soon
                   </h2>
                 </div>
