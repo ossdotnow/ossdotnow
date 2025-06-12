@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function Page() {
   return (
-    <div className="mt-16 flex h-[calc(100vh-(65px+64px))]">
+    <div className="mt-10 flex h-[calc(100vh-(65px+40px))] sm:mt-16 md:h-[calc(100vh-(65px+64px))]">
       <div className="border-border relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center gap-8 border border-b-0 text-center">
         <Image
           src="/home-background.png"
@@ -18,7 +18,7 @@ export default function Page() {
           <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
           </h1>
-          <p className="z-10 mx-auto max-w-md text-balance text-center text-[#9f9f9f]">
+          <p className="z-10 mx-auto max-w-md text-balance text-center text-[#9f9f9f] sm:text-lg">
             A platform for open source project discovery, collaboration, and growth - connecting
             project owners with contributors.{' '}
             <span className="font-medium text-white">Coming soon.</span>
