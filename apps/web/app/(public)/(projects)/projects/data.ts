@@ -1,4 +1,4 @@
-import { project } from '@workspace/db/schema';
+import { project as projectSchema } from '@workspace/db/schema';
 import { faker } from '@faker-js/faker';
 
 const getRandomEnumValue = <T extends Record<string, unknown>>(enumObj: T): T[keyof T] => {
@@ -31,7 +31,7 @@ const PROJECT_TYPE = {
   OTHER: 'other',
 } as const;
 
-const generateFakeProject = (): Partial<typeof project.$inferSelect> => {
+const generateFakeProject = (): Partial<typeof projectSchema.$inferSelect> => {
   const hasBeenAcquired = faker.datatype.boolean();
 
   return {
@@ -79,3 +79,19 @@ const generateFakeProject = (): Partial<typeof project.$inferSelect> => {
 };
 
 export const projects = Array.from({ length: 40 }, generateFakeProject);
+export const project = {
+  ...projects[0],
+  description: faker.lorem.paragraphs(3),
+  hasBeenAcquired: true,
+  acquiredBy: faker.string.uuid(),
+  isHiring: true,
+  isLookingForContributors: true,
+  isLookingForInvestors: true,
+  isPublic: true,
+  socialLinks: {
+    twitter: 'https://twitter.com/example',
+    github: 'https://github.com/example',
+    linkedin: 'https://linkedin.com/company/example',
+    website: 'https://example.com',
+  },
+};
