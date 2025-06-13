@@ -5,7 +5,7 @@ import Link from '@/components/link';
 export function TempNav() {
   return (
     <>
-      <Link href="/roadmap" event="roadmap_nav_click" className="mr-2">
+      <Link href="/roadmap" event="roadmap_nav_click" className="mr-2 hover:bg-neutral-900">
         roadmap
       </Link>
       <Button variant="ghost" size="icon" className="rounded-none" asChild>

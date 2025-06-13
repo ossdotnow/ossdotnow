@@ -15,10 +15,10 @@ export async function SiteHeader() {
   });
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-[#101010]">
+    <header className="sticky top-0 z-50 w-full">
       <div
         className={cn(
-          'border-border mx-auto flex h-16 items-center justify-between border-b border-l border-r px-4 sm:px-8',
+          'border-border mx-auto flex h-20 items-center justify-between px-4 sm:px-8',
           session?.user.id ? 'w-full' : 'max-w-7xl',
         )}
       >
@@ -26,7 +26,7 @@ export async function SiteHeader() {
           <Icons.logo className="size-6 sm:size-8" />
           <span className="text-lg font-medium sm:text-2xl">oss.now</span>
         </Link>
-        <nav className="gap-1sm:gap-2 flex items-center">
+        <nav className="flex items-center gap-1 sm:gap-2">
           {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />
