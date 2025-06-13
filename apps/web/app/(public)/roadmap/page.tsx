@@ -20,7 +20,7 @@ const roadmap = [
 
 export default function RoadmapPage() {
   return (
-    <div className="mt-10 flex h-[calc(100vh-(65px+80px))] overflow-hidden sm:mt-16 md:h-[calc(100vh-(65px+80px))]">
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden md:h-[calc(100vh-80px)]">
       <Image
         src="/roadmap-background.png"
         alt=""
@@ -30,7 +30,7 @@ export default function RoadmapPage() {
         className="pointer-events-none absolute top-0 z-0 h-full w-full object-cover object-center opacity-70 mix-blend-screen"
       />
 
-      <div className="border-border relative z-10 mx-auto flex h-full w-full flex-col items-center justify-center gap-8 border border-b-0 border-t-0 px-2">
+      <div className="relative z-10 mx-auto flex h-full w-full flex-col items-center justify-center gap-8 px-2">
         <div className="z-10 mt-0 flex flex-col items-start gap-12 sm:-mt-16">
           <div className="font-mono">
             <h1 className="mb-10 pl-5 font-sans text-xl font-normal text-white sm:mb-12 sm:text-3xl">

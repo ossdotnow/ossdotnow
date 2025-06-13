@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function Page() {
   return (
-    <div className="mt-10 flex h-[calc(100vh-(65px+80px))] overflow-hidden sm:mt-16 md:h-[calc(100vh-(65px+80px))]">
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden md:h-[calc(100vh-80px)]">
       <Image
         src="/home-background.png"
         alt=""
@@ -14,7 +14,7 @@ export default function Page() {
         className="pointer-events-none absolute left-0 top-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
       />
 
-      <div className="border-border relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-8 overflow-hidden border border-b-0 border-t-0 text-center">
+      <div className="relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-8 overflow-hidden text-center">
         <div className="z-10 flex w-full max-w-lg flex-col items-center gap-12">
           <h1 className="z-10 text-4xl font-medium tracking-[-0.04em] sm:text-7xl">
             Open source it, <br /> right now.
