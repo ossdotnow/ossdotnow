@@ -6,6 +6,11 @@ import { relations } from 'drizzle-orm';
 import { user } from './auth';
 
 export const acquisitionTypeEnum = pgEnum('acquisition_type', ['ipo', 'acquisition', 'other']);
+export const projectApprovalStatusEnum = pgEnum('project_approval_status', [
+  'pending',
+  'approved',
+  'rejected',
+]);
 export const projectStatusEnum = pgEnum('project_status', [
   'active',
   'inactive',
@@ -49,6 +54,8 @@ export const project = pgTable('project', {
 
   tags: tagsEnum('tags').array(),
 
+  approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
+
   status: projectStatusEnum('status').notNull(),
   type: projectTypeEnum('type').notNull(),
 
@@ -60,11 +67,10 @@ export const project = pgTable('project', {
   acquiredBy: text('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
 
   deletedAt: timestamp('deleted_at', { mode: 'date' }),
-  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true })
-    .$defaultFn(() => new Date())
-    .notNull(),
+  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
-    .$defaultFn(() => new Date())
+    .defaultNow()
+    .$onUpdate(() => new Date())
     .notNull(),
 });
 
