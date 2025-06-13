@@ -1,10 +1,10 @@
-import { jsonb, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { projectCompetitors } from './project-competitors';
 import { gitHostEnum, tagsEnum } from './shared-enums';
 import { relations } from 'drizzle-orm';
 
 export const competitor = pgTable('competitor', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
 
   logoUrl: text('logo_url'),
   gitRepoUrl: text('git_repo_url'),

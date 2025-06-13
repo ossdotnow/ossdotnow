@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { projectCompetitors } from './project-competitors';
 import { gitHostEnum, tagsEnum } from './shared-enums';
 import { competitor } from './competitors';
@@ -36,7 +36,7 @@ export const projectTypeEnum = pgEnum('project_type', [
 ]);
 
 export const project = pgTable('project', {
-  id: text('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
 
   logoUrl: text('logo_url'),
@@ -64,7 +64,7 @@ export const project = pgTable('project', {
   isHiring: boolean('is_hiring').notNull(),
   isPublic: boolean('is_public').notNull(),
   hasBeenAcquired: boolean('has_been_acquired').notNull(),
-  acquiredBy: text('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
+  acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
 
   deletedAt: timestamp('deleted_at', { mode: 'date' }),
   createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
