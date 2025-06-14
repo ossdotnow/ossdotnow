@@ -2,7 +2,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { Redis } from '@upstash/redis';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { waitlist } from '@workspace/db/schema';
 import { env } from '@workspace/env/server';

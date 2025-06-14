@@ -30,14 +30,14 @@ import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
-// import { earlySubmissionForm } from '@workspace/web/forms';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UploadDropzone } from '@/lib/uploadthing';
+import { earlySubmissionForm } from '@/forms';
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 export default function EarlySubmissionDialog() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
@@ -45,58 +45,10 @@ export default function EarlySubmissionDialog() {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
-  const projectSubmissionFormSchema = z.object({
-    name: z.string().min(1, 'Project name is required'),
-    description: z.string().min(1, 'Description is required'),
-    logoUrl: z.string().url().optional().or(z.literal('')),
+  type FormData = z.infer<typeof earlySubmissionForm>;
 
-    gitRepoUrl: z.string().url().optional().or(z.literal('')),
-    gitHost: z.enum(['github', 'gitlab']).optional(),
-
-    status: z.enum([
-      'active',
-      'inactive',
-      'early-stage',
-      'beta',
-      'production-ready',
-      'experimental',
-      'cancelled',
-      'paused',
-    ]),
-    type: z.enum([
-      'fintech',
-      'healthtech',
-      'edtech',
-      'ecommerce',
-      'productivity',
-      'social',
-      'entertainment',
-      'developer-tools',
-      'content-management',
-      'analytics',
-      'other',
-    ]),
-
-    socialLinks: z
-      .object({
-        twitter: z.string().url().optional().or(z.literal('')),
-        github: z.string().url().optional().or(z.literal('')),
-        linkedin: z.string().url().optional().or(z.literal('')),
-        website: z.string().url().optional().or(z.literal('')),
-      })
-      .optional(),
-
-    tags: z.string().optional(),
-
-    isLookingForContributors: z.boolean(),
-    isLookingForInvestors: z.boolean(),
-    isHiring: z.boolean(),
-    isPublic: z.boolean(),
-    hasBeenAcquired: z.boolean(),
-  });
-
-  const form = useForm<z.infer<typeof projectSubmissionFormSchema>>({
-    resolver: zodResolver(projectSubmissionFormSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(earlySubmissionForm),
     defaultValues: {
       name: '',
       description: '',
@@ -111,7 +63,7 @@ export default function EarlySubmissionDialog() {
         linkedin: '',
         website: '',
       },
-      tags: '',
+      tags: [],
       isLookingForContributors: false,
       isLookingForInvestors: false,
       isHiring: false,
@@ -121,8 +73,6 @@ export default function EarlySubmissionDialog() {
   });
 
   const { trigger } = form;
-
-  type FormData = z.infer<typeof projectSubmissionFormSchema>;
 
   const steps = [
     {
@@ -170,7 +120,7 @@ export default function EarlySubmissionDialog() {
     });
   };
 
-  function handleProjectSubmission(formData: z.infer<typeof projectSubmissionFormSchema>) {
+  function handleProjectSubmission(formData: FormData) {
     console.log(formData);
   }
 

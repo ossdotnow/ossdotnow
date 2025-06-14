@@ -2,7 +2,7 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { createInsertSchema } from 'drizzle-zod';
 import { project } from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project);
 

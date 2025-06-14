@@ -13,7 +13,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { waitlistForm } from '@/forms';
 import { toast } from 'sonner';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 function useWaitlistCount() {
   const trpc = useTRPC();
