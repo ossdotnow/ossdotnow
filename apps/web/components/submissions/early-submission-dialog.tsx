@@ -27,6 +27,7 @@ import {
 } from '@workspace/ui/components/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
 import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
@@ -34,16 +35,63 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UploadDropzone } from '@/lib/uploadthing';
+import { track } from '@vercel/analytics/react';
 import { earlySubmissionForm } from '@/forms';
+import { useEffect, useState } from 'react';
+import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { toast } from 'sonner';
 import { z } from 'zod/v4';
+
+function useEarlySubmission() {
+  const trpc = useTRPC();
+  const [isMounted, setIsMounted] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const queryClient = useQueryClient();
+  const query = useQuery(trpc.earlySubmission.getEarlySubmissionsCount.queryOptions());
+
+  useEffect(() => {
+    setIsMounted(true);
+    setSuccess(localStorage.getItem('early-submission-success') === 'true');
+  }, []);
+
+  const { mutate } = useMutation(
+    trpc.earlySubmission.addProject.mutationOptions({
+      onSuccess: () => {
+        setSuccess(true);
+        queryClient.setQueryData([trpc.earlySubmission.getEarlySubmissionsCount.queryKey()], {
+          count: (query.data?.count ?? 0) + 1,
+        });
+
+        if (isMounted) {
+          localStorage.setItem('early-submission-success', 'true');
+        }
+        track('early_submission_success');
+      },
+      onError: () => {
+        toast.error('Something went wrong. Please try again.');
+        track('early_submission_error');
+      },
+    }),
+  );
+
+  return {
+    count: query.data?.count ?? 0,
+    mutate,
+    success,
+    error,
+    isLoading,
+  };
+}
 
 export default function EarlySubmissionDialog() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const { count, mutate, success, error, isLoading } = useEarlySubmission();
 
   type FormData = z.infer<typeof earlySubmissionForm>;
 
@@ -121,7 +169,8 @@ export default function EarlySubmissionDialog() {
   };
 
   function handleProjectSubmission(formData: FormData) {
-    console.log(formData);
+    mutate(formData);
+    console.log('success', success);
   }
 
   const nextStep = async () => {
@@ -156,356 +205,372 @@ export default function EarlySubmissionDialog() {
           <DialogTitle>Early Submission</DialogTitle>
           <DialogDescription>Submit your open source project for early access.</DialogDescription>
         </DialogHeader>
-        <Progress value={progress} className="w-full" />
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleProjectSubmission)} className="space-y-6">
-            {currentStep === 0 && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Basic Information</h3>
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Name</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                          placeholder="My Awesome Project"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                          placeholder="Describe your project..."
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex flex-col gap-2">
-                  <FormLabel>Logo</FormLabel>
-                  <UploadDropzone
-                    endpoint="imageUploader"
-                    onClientUploadComplete={(res) => {
-                      console.log('Files: ', res);
-                      console.log('Upload Completed');
-                    }}
-                    onUploadError={(error: Error) => {
-                      console.error(`ERROR! ${error.message}`);
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {currentStep === 1 && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Repository Information</h3>
-
-                <FormField
-                  control={form.control}
-                  name="gitRepoUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Repository URL (optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                          placeholder="https://github.com/username/repo"
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="gitHost"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Git Host</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value ?? 'github'}>
-                        <FormControl>
-                          <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
-                            <SelectValue placeholder="Select git host" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-none">
-                          <SelectItem className="rounded-none" value="github">
-                            GitHub
-                          </SelectItem>
-                          <SelectItem className="rounded-none" value="gitlab">
-                            GitLab
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <h3 className="text-sm font-medium">Project Details</h3>
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
-                            <SelectValue placeholder="Select project status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-none">
-                          <SelectItem className="rounded-none" value="active">
-                            Active
-                          </SelectItem>
-                          <SelectItem className="rounded-none" value="inactive">
-                            Inactive
-                          </SelectItem>
-                          <SelectItem className="rounded-none" value="early-stage">
-                            Early Stage
-                          </SelectItem>
-                          <SelectItem value="beta">Beta</SelectItem>
-                          <SelectItem value="production-ready">Production Ready</SelectItem>
-                          <SelectItem value="experimental">Experimental</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                          <SelectItem value="paused">Paused</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
-                            <SelectValue placeholder="Select project type" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-none">
-                          <SelectItem className="rounded-none" value="fintech">
-                            Fintech
-                          </SelectItem>
-                          <SelectItem className="rounded-none" value="healthtech">
-                            Healthtech
-                          </SelectItem>
-                          <SelectItem className="rounded-none" value="edtech">
-                            Edtech
-                          </SelectItem>
-                          <SelectItem value="ecommerce">E-commerce</SelectItem>
-                          <SelectItem value="productivity">Productivity</SelectItem>
-                          <SelectItem value="social">Social</SelectItem>
-                          <SelectItem value="entertainment">Entertainment</SelectItem>
-                          <SelectItem value="developer-tools">Developer Tools</SelectItem>
-                          <SelectItem value="content-management">Content Management</SelectItem>
-                          <SelectItem value="analytics">Analytics</SelectItem>
-                          <SelectItem value="other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="tags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tags</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                          placeholder="web, mobile, ai (comma-separated)"
-                          value={field.value?.join(', ') ?? ''}
-                          onChange={(e) => {
-                            const tags = e.target.value
-                              .split(',')
-                              .map((tag) => tag.trim())
-                              .filter((tag) => tag.length > 0) as FormData['tags'];
-                            field.onChange(tags);
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Available tags: web, mobile, desktop, backend, frontend, fullstack, ai,
-                        game, crypto, nft, social, other
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            )}
-
-            {currentStep === 3 && (
-              <>
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Social Links</h3>
-
-                  <Popover open={isOpen} onOpenChange={setIsOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={isOpen}
-                        className="border-border w-full justify-between rounded-none !bg-[#1D1D1D]/100"
-                      >
-                        {selectedPlatforms.size === 0
-                          ? 'Select social platforms...'
-                          : `${selectedPlatforms.size} platform${selectedPlatforms.size === 1 ? '' : 's'} selected`}
-                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full rounded-none p-0">
-                      <div className="p-2">
-                        {socialPlatforms.map((platform) => (
-                          <div
-                            key={platform.value}
-                            className="hover:bg-accent flex cursor-pointer items-center space-x-2 p-2"
-                            onClick={() => togglePlatform(platform.value)}
-                          >
-                            <Checkbox
-                              checked={selectedPlatforms.has(platform.value)}
-                              onCheckedChange={() => togglePlatform(platform.value)}
-                            />
-                            <label className="flex-1 cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                              {platform.label}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
+        {success ? (
+          <p>Success</p>
+        ) : (
+          <>
+            {' '}
+            <Progress value={progress} className="w-full" />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleProjectSubmission)} className="space-y-6">
+                {currentStep === 0 && (
                   <div className="space-y-4">
-                    {socialPlatforms.map(
-                      (platform) =>
-                        selectedPlatforms.has(platform.value) && (
-                          <FormField
-                            key={platform.value}
-                            control={form.control}
-                            name={`socialLinks.${platform.value}` as keyof FormData['socialLinks']}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>{platform.label} URL</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                                    placeholder={platform.placeholder}
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ),
+                    <h3 className="text-sm font-medium">Basic Information</h3>
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project Name</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                              placeholder="My Awesome Project"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                              placeholder="Describe your project..."
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex flex-col gap-2">
+                      <FormLabel>Logo</FormLabel>
+                      <UploadDropzone
+                        endpoint="imageUploader"
+                        onClientUploadComplete={(res) => {
+                          console.log('Files: ', res);
+                          console.log('Upload Completed');
+                        }}
+                        onUploadError={(error: Error) => {
+                          console.error(`ERROR! ${error.message}`);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {currentStep === 1 && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Repository Information</h3>
+
+                    <FormField
+                      control={form.control}
+                      name="gitRepoUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Repository URL (optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                              placeholder="https://github.com/username/repo"
+                              {...field}
+                              value={field.value ?? ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="gitHost"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Git Host</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value ?? 'github'}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
+                                <SelectValue placeholder="Select git host" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-none">
+                              <SelectItem className="rounded-none" value="github">
+                                GitHub
+                              </SelectItem>
+                              <SelectItem className="rounded-none" value="gitlab">
+                                GitLab
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {currentStep === 2 && (
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium">Project Details</h3>
+
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project Status</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
+                                <SelectValue placeholder="Select project status" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-none">
+                              <SelectItem className="rounded-none" value="active">
+                                Active
+                              </SelectItem>
+                              <SelectItem className="rounded-none" value="inactive">
+                                Inactive
+                              </SelectItem>
+                              <SelectItem className="rounded-none" value="early-stage">
+                                Early Stage
+                              </SelectItem>
+                              <SelectItem value="beta">Beta</SelectItem>
+                              <SelectItem value="production-ready">Production Ready</SelectItem>
+                              <SelectItem value="experimental">Experimental</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                              <SelectItem value="paused">Paused</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Project Type</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
+                                <SelectValue placeholder="Select project type" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent className="rounded-none">
+                              <SelectItem className="rounded-none" value="fintech">
+                                Fintech
+                              </SelectItem>
+                              <SelectItem className="rounded-none" value="healthtech">
+                                Healthtech
+                              </SelectItem>
+                              <SelectItem className="rounded-none" value="edtech">
+                                Edtech
+                              </SelectItem>
+                              <SelectItem value="ecommerce">E-commerce</SelectItem>
+                              <SelectItem value="productivity">Productivity</SelectItem>
+                              <SelectItem value="social">Social</SelectItem>
+                              <SelectItem value="entertainment">Entertainment</SelectItem>
+                              <SelectItem value="developer-tools">Developer Tools</SelectItem>
+                              <SelectItem value="content-management">Content Management</SelectItem>
+                              <SelectItem value="analytics">Analytics</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="tags"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tags</FormLabel>
+                          <FormControl>
+                            <Input
+                              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                              placeholder="web, mobile, ai (comma-separated)"
+                              value={field.value?.join(', ') ?? ''}
+                              onChange={(e) => {
+                                const tags = e.target.value
+                                  .split(',')
+                                  .map((tag) => tag.trim())
+                                  .filter((tag) => tag.length > 0) as FormData['tags'];
+                                field.onChange(tags);
+                              }}
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Available tags: web, mobile, desktop, backend, frontend, fullstack, ai,
+                            game, crypto, nft, social, other
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                {currentStep === 3 && (
+                  <>
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">Social Links</h3>
+
+                      <Popover open={isOpen} onOpenChange={setIsOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={isOpen}
+                            className="border-border w-full justify-between rounded-none !bg-[#1D1D1D]/100"
+                          >
+                            {selectedPlatforms.size === 0
+                              ? 'Select social platforms...'
+                              : `${selectedPlatforms.size} platform${selectedPlatforms.size === 1 ? '' : 's'} selected`}
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full rounded-none p-0">
+                          <div className="p-2">
+                            {socialPlatforms.map((platform) => (
+                              <div
+                                key={platform.value}
+                                className="hover:bg-accent flex cursor-pointer items-center space-x-2 p-2"
+                                onClick={() => togglePlatform(platform.value)}
+                              >
+                                <Checkbox
+                                  checked={selectedPlatforms.has(platform.value)}
+                                  onCheckedChange={() => togglePlatform(platform.value)}
+                                />
+                                <label className="flex-1 cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                  {platform.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+
+                      <div className="space-y-4">
+                        {socialPlatforms.map(
+                          (platform) =>
+                            selectedPlatforms.has(platform.value) && (
+                              <FormField
+                                key={platform.value}
+                                control={form.control}
+                                name={
+                                  `socialLinks.${platform.value}` as keyof FormData['socialLinks']
+                                }
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormLabel>{platform.label} URL</FormLabel>
+                                    <FormControl>
+                                      <Input
+                                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                                        placeholder={platform.placeholder}
+                                        {...field}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ),
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium">Project Options</h3>
+
+                      <FormField
+                        control={form.control}
+                        name="isLookingForContributors"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Looking for Contributors</FormLabel>
+                              <FormDescription>
+                                Let others know you&apos;re open to contributions
+                              </FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="isHiring"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel>Currently Hiring</FormLabel>
+                              <FormDescription>Show that you have open positions</FormDescription>
+                            </div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <DialogFooter>
+                  <div className="flex justify-between gap-4 pt-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-none"
+                      onClick={prevStep}
+                      disabled={currentStep === 0}
+                    >
+                      <ChevronLeft className="mr-2 h-4 w-4" />
+                      Previous
+                    </Button>
+
+                    {currentStep === steps.length - 1 ? (
+                      <Button
+                        type="submit"
+                        className="rounded-none"
+                        disabled={isLoading || success || !form.formState.isReady}
+                      >
+                        Submit Project
+                      </Button>
+                    ) : (
+                      <Button type="button" onClick={nextStep} className="rounded-none">
+                        Next
+                        <ChevronRight className="ml-2 h-4 w-4" />
+                      </Button>
                     )}
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-sm font-medium">Project Options</h3>
-
-                  <FormField
-                    control={form.control}
-                    name="isLookingForContributors"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Looking for Contributors</FormLabel>
-                          <FormDescription>
-                            Let others know you&apos;re open to contributions
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isHiring"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Currently Hiring</FormLabel>
-                          <FormDescription>Show that you have open positions</FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
-
-            <DialogFooter>
-              <div className="flex justify-between gap-4 pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-none"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  Previous
-                </Button>
-
-                {currentStep === steps.length - 1 ? (
-                  <Button type="submit" className="rounded-none">
-                    Submit Project
-                  </Button>
-                ) : (
-                  <Button type="button" onClick={nextStep} className="rounded-none">
-                    Next
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </DialogFooter>
-          </form>
-        </Form>
+                </DialogFooter>
+              </form>
+            </Form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

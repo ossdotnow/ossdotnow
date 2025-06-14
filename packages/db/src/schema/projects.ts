@@ -52,7 +52,7 @@ export const project = pgTable('project', {
     [key: string]: string | undefined;
   }>(),
 
-  tags: tagsEnum('tags').array(),
+  tags: tagsEnum('tags').array().default([]),
 
   approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
 
