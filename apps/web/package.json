@@ -22,6 +22,7 @@
     "@workspace/api": "workspace:*",
     "@workspace/auth": "workspace:*",
     "@workspace/env": "workspace:*",
+    "@workspace/db": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.2.8",
     "lucide-react": "^0.513.0",
@@ -35,6 +36,7 @@
     "zod": "^3.25.56"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
