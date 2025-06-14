@@ -191,6 +191,7 @@ export default function EarlySubmissionDialog() {
                           className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
                           placeholder="Describe your project..."
                           {...field}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -229,6 +230,7 @@ export default function EarlySubmissionDialog() {
                           className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
                           placeholder="https://github.com/username/repo"
                           {...field}
+                          value={field.value ?? ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -242,7 +244,7 @@ export default function EarlySubmissionDialog() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Git Host</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} defaultValue={field.value ?? 'github'}>
                         <FormControl>
                           <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
                             <SelectValue placeholder="Select git host" />
@@ -349,7 +351,14 @@ export default function EarlySubmissionDialog() {
                         <Input
                           className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
                           placeholder="web, mobile, ai (comma-separated)"
-                          {...field}
+                          value={field.value?.join(', ') ?? ''}
+                          onChange={(e) => {
+                            const tags = e.target.value
+                              .split(',')
+                              .map((tag) => tag.trim())
+                              .filter((tag) => tag.length > 0) as FormData['tags'];
+                            field.onChange(tags);
+                          }}
                         />
                       </FormControl>
                       <FormDescription>
