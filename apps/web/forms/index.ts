@@ -1,3 +1,5 @@
+// import { createInsertSchema } from 'drizzle-zod';
+// import { project } from '@workspace/db/schema';
 import z from 'zod';
 
 export const waitlistForm = z.object({
@@ -8,3 +10,5 @@ export const loginForm = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
+
+// export const earlySubmissionForm = createInsertSchema(project);

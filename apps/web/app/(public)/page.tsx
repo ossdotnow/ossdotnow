@@ -1,9 +1,7 @@
+import EarlySubmissionDialog from '@/components/submissions/early-submission-dialog';
 import { WaitlistForm } from '@/components/waitlist-form';
-import { Button } from '@workspace/ui/components/button';
 import { Logos } from '@/components/logos';
-import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 export default function Page() {
   return (
@@ -28,15 +26,7 @@ export default function Page() {
             <span className="font-medium text-white">Coming soon.</span>
           </p>
           <WaitlistForm />
-          <div className="space-y-4">
-            <p>We&apos;ve opened early submissions for your project.</p>
-            <Button asChild>
-              <Link href="/projects" className="flex items-center gap-2 rounded-none">
-                <span>Add your project</span>
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          <EarlySubmissionDialog />
         </div>
         <Logos />
       </div>

@@ -12,7 +12,8 @@
         "UPSTASH_REDIS_REST_TOKEN",
         "BETTER_AUTH_SECRET",
         "GITHUB_CLIENT_ID",
-        "GITHUB_CLIENT_SECRET"
+        "GITHUB_CLIENT_SECRET",
+        "UPLOADTHING_TOKEN"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
@@ -31,7 +32,8 @@
         "UPSTASH_REDIS_REST_TOKEN",
         "BETTER_AUTH_SECRET",
         "GITHUB_CLIENT_ID",
-        "GITHUB_CLIENT_SECRET"
+        "GITHUB_CLIENT_SECRET",
+        "UPLOADTHING_TOKEN"
       ],
       "persistent": true
     },
