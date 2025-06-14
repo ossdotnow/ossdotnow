@@ -16,12 +16,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full">
-      <div
-        className={cn(
-          'border-border mx-auto flex h-20 items-center justify-between px-4 sm:px-8',
-          session?.user.id ? 'w-full' : 'max-w-7xl',
-        )}
-      >
+      <div className={cn('mx-auto flex h-20 items-center justify-between px-4 sm:px-8')}>
         <Link href="/" className="flex items-center gap-4" event="home_nav_click">
           <Icons.logo className="size-6 sm:size-8" />
           <span className="text-lg font-medium sm:text-2xl">oss.now</span>
