@@ -25,6 +25,7 @@ export const projectsRouter = createTRPCRouter({
       .returning();
   }),
   updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
+    if (!input.id) throw new Error('Project ID is required for update');
     return ctx.db.update(project).set(input).where(eq(project.id, input.id)).returning();
   }),
   deleteProject: protectedProcedure

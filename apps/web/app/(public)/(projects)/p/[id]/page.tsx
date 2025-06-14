@@ -140,7 +140,7 @@ export default async function Page({ params }: { params: { id: string } }) {
 
             <div className="border border-neutral-800 bg-neutral-900/50 p-6">
               <h2 className="mb-4 text-lg font-semibold text-white">Description</h2>
-              <p className="mt-2 text-lg text-neutral-400">{project?.description}</p>
+              <p className="mt-2 text-base text-neutral-400">{project?.description}</p>
             </div>
 
             {(project?.isLookingForContributors ||
