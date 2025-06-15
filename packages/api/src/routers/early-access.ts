@@ -1,34 +1,11 @@
-import { Ratelimit } from '@upstash/ratelimit';
+import { createTRPCRouter, publicProcedure } from '../trpc';
+import { getRateLimiter } from '../utils/rate-limit';
+import { waitlist } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
-import { Redis } from '@upstash/redis';
-import { z } from 'zod';
-
-import { waitlist } from '@workspace/db/schema';
-import { env } from '@workspace/env/server';
-import { db } from '@workspace/db';
-
-import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getIp } from '../utils/ip';
-
-let ratelimit: Ratelimit | null = null;
-
-function getRateLimiter() {
-  if (!ratelimit) {
-    const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    });
-
-    ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(2, '1m'),
-      analytics: true,
-      prefix: 'ratelimit:early-access-waitlist',
-    });
-  }
-  return ratelimit;
-}
+import { db } from '@workspace/db';
+import { z } from 'zod/v4';
 
 export const earlyAccessRouter = createTRPCRouter({
   getWaitlistCount: publicProcedure.query(async () => {
@@ -52,7 +29,7 @@ export const earlyAccessRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const limiter = getRateLimiter();
+      const limiter = getRateLimiter('early-access-waitlist');
       if (limiter) {
         const ip = getIp(ctx.headers);
         const { success } = await limiter.limit(ip);
