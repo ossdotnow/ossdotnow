@@ -12,7 +12,6 @@ import { useForm } from 'react-hook-form';
 import { loginForm } from '@/forms/index';
 import Icons from '@/components/icons';
 import { ComponentProps } from 'react';
-import { useState } from 'react';
 import { toast } from 'sonner';
 import Link from '../link';
 import { z } from 'zod';
@@ -22,8 +21,6 @@ export function LoginForm({
   redirectUrl = '/profile',
   ...props
 }: ComponentProps<'div'> & { redirectUrl?: string }) {
-  const [loading, setLoading] = useState(false);
-
   const form = useForm<z.infer<typeof loginForm>>({
     resolver: zodResolver(loginForm),
     defaultValues: {

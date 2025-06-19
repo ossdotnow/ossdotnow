@@ -42,22 +42,6 @@ export function Logos() {
         >
           <Icons.analog className="z-10 h-6 w-6 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-8 sm:w-8" />
         </Link>
-        <Link
-          className="group z-10"
-          href="https://sword.so"
-          target="_blank"
-          event="clicked_sword_so_logo"
-        >
-          <Icons.sword className="z-10 h-6 w-6 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-8 sm:w-8" />
-        </Link>
-        <Link
-          className="group z-10"
-          href="https://x.com/usetesseract"
-          target="_blank"
-          event="clicked_tesseract_logo"
-        >
-          <Icons.tesseract className="z-10 h-6 w-6 fill-[#494949] transition-colors group-hover:fill-[#ffffff] sm:h-8 sm:w-8" />
-        </Link>
       </div>
     </div>
   );
