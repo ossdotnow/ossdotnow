@@ -59,11 +59,11 @@ export const project = pgTable('project', {
   status: projectStatusEnum('status').notNull(),
   type: projectTypeEnum('type').notNull(),
 
-  isLookingForContributors: boolean('is_looking_for_contributors').notNull(),
-  isLookingForInvestors: boolean('is_looking_for_investors').notNull(),
-  isHiring: boolean('is_hiring').notNull(),
-  isPublic: boolean('is_public').notNull(),
-  hasBeenAcquired: boolean('has_been_acquired').notNull(),
+  isLookingForContributors: boolean('is_looking_for_contributors').notNull().default(false),
+  isLookingForInvestors: boolean('is_looking_for_investors').notNull().default(false),
+  isHiring: boolean('is_hiring').notNull().default(false),
+  isPublic: boolean('is_public').notNull().default(false),
+  hasBeenAcquired: boolean('has_been_acquired').notNull().default(false),
   acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
 
   deletedAt: timestamp('deleted_at', { mode: 'date' }),

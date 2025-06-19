@@ -1,22 +1,52 @@
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { Api } from '@octokit/plugin-rest-endpoint-methods';
-import { project, account } from '@workspace/db/schema';
+import { account, project } from '@workspace/db/schema';
 import { createInsertSchema } from 'drizzle-zod';
 import { createOctokitInstance } from './github';
+import type { createTRPCContext } from '../trpc';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project);
 
 type Project = typeof project.$inferSelect;
+type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
+
+interface VerifyGitHubOwnershipContext {
+  db: TRPCContext['db'];
+  session: {
+    userId: string;
+  };
+}
+
+interface DebugPermissionsResult {
+  currentUser: string;
+  repoOwner: string;
+  repoOwnerType: string;
+  isDirectOwner: boolean;
+  repoPermission?: string;
+  repoPermissionDetails?: {
+    permission: string;
+    user?: Record<string, unknown> | null;
+    [key: string]: unknown;
+  };
+  repoPermissionError?: string;
+  orgMembership?:
+    | {
+        role: string;
+        state: string;
+      }
+    | string;
+  orgMembershipError?: string;
+}
 
 async function verifyGitHubOwnership(
   github: Octokit & Api,
   owner: string,
   repo: string,
-  ctx: any,
+  ctx: VerifyGitHubOwnershipContext,
   input: { projectId: string },
 ): Promise<{ success: boolean; project: Project; ownershipType: string; verifiedAs: string }> {
   const { data: currentUser } = await github.rest.users.getAuthenticated();
@@ -67,8 +97,11 @@ async function verifyGitHubOwnership(
           ownershipType = 'repository admin';
         }
       }
-    } catch (error: any) {
-      console.log('User does not have collaborator access to the repository:', error.message);
+    } catch (error: unknown) {
+      console.log(
+        'User does not have collaborator access to the repository:',
+        (error as Error).message,
+      );
 
       try {
         const { data: membership } = await github.rest.orgs.getMembershipForUser({
@@ -104,6 +137,13 @@ async function verifyGitHubOwnership(
     })
     .where(eq(project.id, input.projectId))
     .returning();
+
+  if (!updatedProject[0]) {
+    throw new TRPCError({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to update project ownership',
+    });
+  }
 
   // Create a notification or send an email to inform about the claim
   // This would require implementing a notification system
@@ -227,8 +267,27 @@ export const projectsRouter = createTRPCRouter({
 
       const [, owner, repo] = match;
 
+      if (!owner || !repo || !ctx) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Could not extract owner and repository name from URL',
+        });
+      }
+
       try {
-        const result = await verifyGitHubOwnership(github, owner!, repo!, ctx, input);
+        if (!ctx.session?.userId) {
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'Session not found or invalid',
+          });
+        }
+
+        const verifyContext: VerifyGitHubOwnershipContext = {
+          db: ctx.db,
+          session: { userId: ctx.session.userId },
+        };
+
+        const result = await verifyGitHubOwnership(github, owner, repo, verifyContext, input);
         return result;
       } catch (error) {
         if (error instanceof TRPCError) {
@@ -305,12 +364,18 @@ export const projectsRouter = createTRPCRouter({
         return { error: 'GitHub account not connected' };
       }
 
-      const [owner, repo] = input.repoUrl.split('/');
+      const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/;
+      const match = input.repoUrl.match(githubUrlRegex);
+      if (!match) {
+        return { error: 'Invalid GitHub repository URL format' };
+      }
+      const [, owner, repo] = match;
+
+      const github = await createOctokitInstance(ctx);
+
       if (!owner || !repo) {
         return { error: 'Invalid repository format' };
       }
-
-      const github = await createOctokitInstance(ctx);
 
       try {
         const { data: currentUser } = await github.rest.users.getAuthenticated();
@@ -319,7 +384,7 @@ export const projectsRouter = createTRPCRouter({
           repo,
         });
 
-        const result: any = {
+        const result: DebugPermissionsResult = {
           currentUser: currentUser.login,
           repoOwner: repoData.owner.login,
           repoOwnerType: repoData.owner.type,
@@ -334,9 +399,9 @@ export const projectsRouter = createTRPCRouter({
           });
           result.repoPermission = repoPermissions.permission;
           result.repoPermissionDetails = repoPermissions;
-        } catch (e: any) {
+        } catch (e: unknown) {
           result.repoPermission = 'none';
-          result.repoPermissionError = e.message;
+          result.repoPermissionError = (e as Error).message;
         }
 
         if (repoData.owner.type === 'Organization') {
@@ -349,15 +414,15 @@ export const projectsRouter = createTRPCRouter({
               role: membership.role,
               state: membership.state,
             };
-          } catch (e: any) {
+          } catch (e: unknown) {
             result.orgMembership = 'not a member';
-            result.orgMembershipError = e.message;
+            result.orgMembershipError = (e as Error).message;
           }
         }
 
         return result;
-      } catch (error: any) {
-        return { error: error.message };
+      } catch (error: unknown) {
+        return { error: (error as Error).message };
       }
     }),
 });

@@ -19,7 +19,8 @@ export const earlySubmissionRouter = createTRPCRouter({
     const limiter = getRateLimiter('early-access-waitlist');
     if (limiter) {
       const ip = getIp(ctx.headers);
-      const { success } = await limiter.limit(ip);
+      const safeIp = ip || `anonymous-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+      const { success } = await limiter.limit(safeIp);
 
       if (!success) {
         throw new TRPCError({
