@@ -108,7 +108,7 @@ export default function EarlySubmissionDialog() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [tagsRawInput, setTagsRawInput] = useState('');
   const { count, mutate, success, error, isLoading, clearError } = useEarlySubmission();
-  const [isAllowed] = useQueryState('early-submission', parseAsBoolean.withDefault(false));
+  const [isAllowed] = useQueryState('am-i-allowed', parseAsBoolean.withDefault(false));
 
   type FormData = z.infer<typeof earlySubmissionForm>;
   type SocialPlatform = keyof FormData['socialLinks'];

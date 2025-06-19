@@ -1,13 +1,9 @@
 import { project as projectSchema } from '@workspace/db/schema';
 import ProjectTicks from '@/components/project/project-ticks';
-import {
-  Star,
-  GitFork,
-  // Clock
-} from 'lucide-react';
+import { Star, GitFork, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
-// import { formatDate } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import Link from '@/components/link';
 import Image from 'next/image';
 
@@ -67,10 +63,10 @@ export default function ProjectCard({ project }: { project: Project }) {
             <GitFork className="h-4 w-4 text-neutral-500" />
             <span className="text-neutral-300">{repo?.forks_count?.toLocaleString()}</span>
           </div>
-          {/* <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <Clock className="h-4 w-4 text-neutral-500" />
             <span className="text-neutral-300">{formatDate(new Date(repo?.created_at!))}</span>
-          </div> */}
+          </div>
         </div>
       </Link>
     </div>

@@ -83,7 +83,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
             <Github className="h-4 w-4" />
             <AlertTitle>Repository</AlertTitle>
             <AlertDescription>
-              <code className="bg-muted rounded px-1 py-0.5 font-mono text-sm">
+              <code className="bg-muted rounded-none px-1 py-0.5 font-mono text-sm">
                 {claimStatus.gitRepoUrl}
               </code>
             </AlertDescription>

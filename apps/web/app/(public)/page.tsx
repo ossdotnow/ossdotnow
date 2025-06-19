@@ -1,4 +1,3 @@
-import EarlySubmissionDialog from '@/components/submissions/early-submission-dialog';
 import { WaitlistForm } from '@/components/waitlist-form';
 import { Logos } from '@/components/logos';
 import Image from 'next/image';
@@ -26,7 +25,6 @@ export default function Page() {
             <span className="font-medium text-white">Coming soon.</span>
           </p>
           <WaitlistForm />
-          <EarlySubmissionDialog />
         </div>
         <Logos />
       </div>
