@@ -1,6 +1,6 @@
 import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
-import { ZodError } from 'zod';
+import { ZodError } from 'zod/v4';
 import 'server-only';
 
 import { auth } from '@workspace/auth/server';

@@ -1,38 +1,14 @@
-import { Ratelimit } from '@upstash/ratelimit';
+import { createTRPCRouter, publicProcedure } from '../trpc';
+import { getRateLimiter } from '../utils/rate-limit';
+import { waitlist } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
-import { Redis } from '@upstash/redis';
-import { z } from 'zod';
-
-import { waitlist } from '@workspace/db/schema';
-import { env } from '@workspace/env/server';
-import { db } from '@workspace/db';
-
-import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getIp } from '../utils/ip';
-
-let ratelimit: Ratelimit | null = null;
-
-function getRateLimiter() {
-  if (!ratelimit) {
-    const redis = new Redis({
-      url: env.UPSTASH_REDIS_REST_URL,
-      token: env.UPSTASH_REDIS_REST_TOKEN,
-    });
-
-    ratelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(2, '1m'),
-      analytics: true,
-      prefix: 'ratelimit:early-access-waitlist',
-    });
-  }
-  return ratelimit;
-}
+import { z } from 'zod/v4';
 
 export const earlyAccessRouter = createTRPCRouter({
-  getWaitlistCount: publicProcedure.query(async () => {
-    const waitlistCount = await db.select({ count: count() }).from(waitlist);
+  getWaitlistCount: publicProcedure.query(async ({ ctx }) => {
+    const waitlistCount = await ctx.db.select({ count: count() }).from(waitlist);
 
     if (!waitlistCount[0]) {
       throw new TRPCError({
@@ -52,7 +28,7 @@ export const earlyAccessRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      const limiter = getRateLimiter();
+      const limiter = getRateLimiter('early-access-waitlist');
       if (limiter) {
         const ip = getIp(ctx.headers);
         const { success } = await limiter.limit(ip);
@@ -65,7 +41,7 @@ export const earlyAccessRouter = createTRPCRouter({
         }
       }
 
-      const userAlreadyInWaitlist = await db
+      const userAlreadyInWaitlist = await ctx.db
         .select()
         .from(waitlist)
         .where(eq(waitlist.email, input.email));
@@ -74,7 +50,7 @@ export const earlyAccessRouter = createTRPCRouter({
         return { message: "You're already on the waitlist!" };
       }
 
-      await db.insert(waitlist).values({
+      await ctx.db.insert(waitlist).values({
         email: input.email,
       });
 
