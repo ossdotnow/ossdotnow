@@ -1,7 +1,7 @@
 import 'server-only';
 
-import { createCallerFactory, createTRPCContext, createTRPCRouter } from './trpc';
 import { earlySubmissionRouter } from './routers/early-submissions';
+import { createTRPCContext, createTRPCRouter } from './trpc';
 import { earlyAccessRouter } from './routers/early-access';
 import { projectsRouter } from './routers/projects';
 import { githubRouter } from './routers/github';
@@ -17,5 +17,6 @@ export const appRouter = createTRPCRouter({
 
 export type AppRouter = typeof appRouter;
 
-export const createCaller = createCallerFactory(appRouter);
 export const createContext = createTRPCContext;
+
+export type { DebugPermissionsResult } from './routers/projects';

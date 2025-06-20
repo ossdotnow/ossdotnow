@@ -1,4 +1,5 @@
 import EarlySubmissionDialog from '@/components/submissions/early-submission-dialog';
+import { Suspense } from 'react';
 
 export default function Page() {
   return (
@@ -8,7 +9,9 @@ export default function Page() {
           <h1 className="z-10 text-2xl font-medium tracking-[-0.04em]">
             Super Secret Early Submission Page
           </h1>
-          <EarlySubmissionDialog />
+          <Suspense>
+            <EarlySubmissionDialog />
+          </Suspense>
         </div>
       </div>
     </div>

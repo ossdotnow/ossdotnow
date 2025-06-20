@@ -21,7 +21,7 @@ interface VerifyGitHubOwnershipContext {
   };
 }
 
-interface DebugPermissionsResult {
+export interface DebugPermissionsResult {
   currentUser: string;
   repoOwner: string;
   repoOwnerType: string;
