@@ -16,14 +16,14 @@
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "dotenv-cli": "^8.0.0",
-    "eslint": "^9.28.0",
-    "prettier": "^3.5.1",
+    "eslint": "^9.29.0",
+    "prettier": "^3.5.3",
     "prettier-plugin-sort-imports": "^1.8.8",
-    "prettier-plugin-tailwindcss": "^0.6.12",
-    "turbo": "^2.4.2",
-    "typescript": "5.7.3"
+    "prettier-plugin-tailwindcss": "^0.6.13",
+    "turbo": "^2.5.4",
+    "typescript": "5.8.3"
   },
-  "packageManager": "pnpm@10.4.1",
+  "packageManager": "pnpm@10.12.1",
   "engines": {
     "node": ">=20"
   },
@@ -32,6 +32,7 @@
       "@tailwindcss/oxide",
       "core-js-pure",
       "esbuild",
+      "msgpackr-extract",
       "sharp"
     ]
   }

@@ -24,7 +24,7 @@
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^22",
+    "@types/node": "^24",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9",
     "typescript": "^5"

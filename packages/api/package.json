@@ -30,7 +30,7 @@
     "drizzle-zod": "^0.8.2"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9",

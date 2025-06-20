@@ -10,7 +10,7 @@
     "lint": "eslint ."
   },
   "peerDependencies": {
-    "better-auth": "1.2.9-beta.8",
+    "better-auth": "1.2.9",
     "server-only": "^0.0.1"
   },
   "dependencies": {
@@ -19,7 +19,7 @@
     "drizzle-orm": "^0.44.2"
   },
   "devDependencies": {
-    "@types/node": "^22",
+    "@types/node": "^24",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "eslint": "^9",
