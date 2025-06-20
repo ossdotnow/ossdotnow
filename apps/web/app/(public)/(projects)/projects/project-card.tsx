@@ -1,10 +1,10 @@
 import { project as projectSchema } from '@workspace/db/schema';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Star, GitFork, Clock } from 'lucide-react';
+import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-import Link from '@/components/link';
 import Image from 'next/image';
 
 type Project = typeof projectSchema.$inferSelect;

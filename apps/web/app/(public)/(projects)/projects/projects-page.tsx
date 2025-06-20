@@ -16,7 +16,11 @@ import ProjectCard from './project-card';
 
 export default function ProjectsPage() {
   const trpc = useTRPC();
-  const { data: projects, isLoading, isError } = useQuery(trpc.projects.getProjects.queryOptions());
+  const {
+    data: projects,
+    isLoading,
+    isError,
+  } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus: 'approved' }));
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;

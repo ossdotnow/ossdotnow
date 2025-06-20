@@ -4,6 +4,7 @@ import { ZodError } from 'zod/v4';
 import 'server-only';
 
 import { auth } from '@workspace/auth/server';
+import { env } from '@workspace/env/server';
 import { db } from '@workspace/db';
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
@@ -41,6 +42,27 @@ export const publicProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      session: { ...ctx.session },
+      user: { ...ctx.user },
+    },
+  });
+});
+
+export const adminProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+
+  if (ctx.user.role !== 'admin') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You do not have permission to access this resource',
+    });
   }
 
   return next({

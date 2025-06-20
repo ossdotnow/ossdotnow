@@ -1,13 +1,13 @@
+import Link from '../../../../packages/ui/src/components/link';
 import { Button } from '@workspace/ui/components/button';
+import Icons from '@workspace/ui/components/icons';
 import { auth } from '@workspace/auth/server';
 import { cn } from '@workspace/ui/lib/utils';
 import { env } from '@workspace/env/server';
-import Icons from '@/components/icons';
 import { headers } from 'next/headers';
 import PublicNav from './public-nav';
 import UserNav from './user-nav';
 import TempNav from './temp-nav';
-import Link from '../link';
 
 export async function SiteHeader() {
   const session = await auth.api.getSession({

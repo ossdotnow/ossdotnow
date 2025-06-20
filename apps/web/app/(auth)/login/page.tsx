@@ -1,7 +1,7 @@
 import { LoginForm } from '@/components/auth/login-form';
+import Icons from '@workspace/ui/components/icons';
 import { env } from '@workspace/env/server';
 import { notFound } from 'next/navigation';
-import Icons from '@/components/icons';
 
 export default function Page() {
   if (env.NODE_ENV === 'production') {

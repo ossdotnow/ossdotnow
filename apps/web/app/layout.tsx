@@ -44,9 +44,8 @@ export default function RootLayout({
           <UTSSR />
         </Suspense>
         <Providers>
-          <main className="px-6">{children}</main>
+          {children}
           <Analytics />
-          <PoweredByNeon />
         </Providers>
       </body>
     </html>

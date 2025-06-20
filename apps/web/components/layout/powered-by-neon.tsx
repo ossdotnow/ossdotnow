@@ -1,4 +1,4 @@
-import Link from '@/components/link';
+import Link from '@workspace/ui/components/link';
 
 export function PoweredByNeon() {
   return (

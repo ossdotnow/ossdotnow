@@ -29,10 +29,10 @@ import { Separator } from '@workspace/ui/components/separator';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
+import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-import Link from '@/components/link';
 import Image from 'next/image';
 
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];

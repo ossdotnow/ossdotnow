@@ -12,12 +12,12 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
 import { Loader2, Shield, AlertCircle, CheckCircle, Github } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from '../../../../packages/ui/src/components/link';
 import { DebugGitHubPermissions } from './debug-permissions';
 import { Button } from '@workspace/ui/components/button';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import Link from '../link';
 
 export function ClaimProjectDialog({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);

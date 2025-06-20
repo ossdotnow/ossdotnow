@@ -1,4 +1,4 @@
-import { createTRPCRouter, publicProcedure } from '../trpc';
+import { adminProcedure, createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { waitlist } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
@@ -20,6 +20,9 @@ export const earlyAccessRouter = createTRPCRouter({
     return {
       count: waitlistCount[0].count,
     };
+  }),
+  getWaitlist: adminProcedure.query(async ({ ctx }) => {
+    return await ctx.db.select().from(waitlist);
   }),
   joinWaitlist: publicProcedure
     .input(
