@@ -181,7 +181,7 @@ export default function ProjectPage({ id }: { id: string }) {
               </Link>
 
               {isUnclaimed && user && (
-                <div className="bg-muted/50 mt-4 rounded-lg border p-4">
+                <div className="bg-background/50 mt-4 flex flex-col items-end gap-2 border p-4">
                   <h3 className="mb-2 text-sm font-medium">Project Ownership</h3>
                   <p className="text-muted-foreground mb-3 text-sm">
                     This project hasn&apos;t been claimed yet.
@@ -192,7 +192,7 @@ export default function ProjectPage({ id }: { id: string }) {
 
               {isOwner && (
                 <div className="mt-4">
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" size="sm" asChild className="rounded-none">
                     <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link>
                   </Button>
                 </div>

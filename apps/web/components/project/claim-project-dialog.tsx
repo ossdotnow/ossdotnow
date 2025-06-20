@@ -11,10 +11,9 @@ import {
 } from '@workspace/ui/components/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
 import { Loader2, Shield, AlertCircle, CheckCircle, Github } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DebugGitHubPermissions } from './debug-permissions';
 import { Button } from '@workspace/ui/components/button';
-import { useRouter } from 'next/navigation';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -22,8 +21,8 @@ import Link from '../link';
 
 export function ClaimProjectDialog({ projectId }: { projectId: string }) {
   const [open, setOpen] = useState(false);
-  const router = useRouter();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const { data: claimStatus } = useQuery(trpc.projects.canClaimProject.queryOptions({ projectId }));
 
@@ -33,10 +32,18 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
     error,
   } = useMutation(
     trpc.projects.claimProject.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         toast.success(`Project claimed successfully as ${data.ownershipType}!`);
         setOpen(false);
-        router.refresh();
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: [...trpc.projects.getProject.queryKey({ id: projectId })],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...trpc.projects.canClaimProject.queryKey({ projectId })],
+          }),
+        ]);
+        // refetchRepoData();
       },
       onError: (err) => {
         console.error('Claim error:', err);
@@ -65,12 +72,12 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default" size="sm" className="gap-2">
+        <Button variant="outline" size="sm" className="gap-2 rounded-none">
           <Shield className="h-4 w-4" />
           Claim Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md rounded-none">
         <DialogHeader>
           <DialogTitle>Claim Project Ownership</DialogTitle>
           <DialogDescription>
@@ -79,7 +86,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <Alert>
+          <Alert className="rounded-none">
             <Github className="h-4 w-4" />
             <AlertTitle>Repository</AlertTitle>
             <AlertDescription>
@@ -89,7 +96,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
             </AlertDescription>
           </Alert>
 
-          <Alert>
+          <Alert className="rounded-none">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Ownership Requirements</AlertTitle>
             <AlertDescription className="mt-2 space-y-2">
@@ -116,10 +123,15 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            className="rounded-none"
+            onClick={() => setOpen(false)}
+            disabled={isPending}
+          >
             Cancel
           </Button>
-          <Button onClick={handleClaim} disabled={isPending}>
+          <Button className="rounded-none" onClick={handleClaim} disabled={isPending}>
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

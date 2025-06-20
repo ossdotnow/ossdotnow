@@ -19,21 +19,20 @@ import {
   FormMessage,
 } from '@workspace/ui/components/form';
 import {
-  ArrowRight,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-} from 'lucide-react';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@workspace/ui/components/select';
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
@@ -43,8 +42,8 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { parseAsBoolean, useQueryState } from 'nuqs';
-// import { UploadDropzone } from '@/lib/uploadthing';
 import { track } from '@vercel/analytics/react';
+// import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
