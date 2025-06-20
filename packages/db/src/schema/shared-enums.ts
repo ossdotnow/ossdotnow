@@ -14,4 +14,9 @@ export const tagsEnum = pgEnum('tags', [
   'nft',
   'social',
   'other',
+  'dapp',
+  'saas',
+  'algorithm',
+  'data-analysis',
+  'game-engine',
 ]);

@@ -19,20 +19,21 @@ import {
   FormMessage,
 } from '@workspace/ui/components/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@workspace/ui/components/select';
-import {
   ArrowRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
@@ -549,7 +550,8 @@ export default function EarlySubmissionDialog() {
                             <FormDescription>
                               Add tags to help categorize your project. Separate multiple tags with
                               commas. Available tags: web, mobile, desktop, backend, frontend,
-                              fullstack, ai, game, crypto, nft, social, other
+                              fullstack, ai, game, crypto, nft, social, other, dapp, saas,
+                              algorithm, data-analysis, game-engine
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -587,16 +589,24 @@ export default function EarlySubmissionDialog() {
                             {socialPlatforms.map((platform) => (
                               <div
                                 key={platform.value}
-                                className="hover:bg-accent flex cursor-pointer items-center space-x-2 p-2"
-                                onClick={() => togglePlatform(platform.value)}
+                                className="hover:bg-accent flex w-full cursor-pointer items-center space-x-2 p-2"
                               >
-                                <Checkbox
-                                  checked={selectedPlatforms.has(platform.value)}
-                                  onCheckedChange={() => togglePlatform(platform.value)}
-                                />
-                                <label className="flex-1 cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                  {platform.label}
-                                </label>
+                                <div
+                                  className="flex w-full items-center space-x-2"
+                                  onClick={() => togglePlatform(platform.value)}
+                                >
+                                  <Checkbox
+                                    id={`platform-${platform.value}`}
+                                    checked={selectedPlatforms.has(platform.value)}
+                                    onCheckedChange={() => togglePlatform(platform.value)}
+                                  />
+                                  <label
+                                    htmlFor={`platform-${platform.value}`}
+                                    className="flex-1 cursor-pointer text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                  >
+                                    {platform.label}
+                                  </label>
+                                </div>
                               </div>
                             ))}
                           </div>
