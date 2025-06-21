@@ -29,10 +29,11 @@ import { Separator } from '@workspace/ui/components/separator';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
+import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-import Link from '@/components/link';
 import Image from 'next/image';
 
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
@@ -118,17 +119,17 @@ export default function ProjectPage({ id }: { id: string }) {
                         <ExternalLink className="ml-auto h-3 w-3" />
                       </Link>
                     )}
-                    {project.socialLinks.github && (
+                    {project.socialLinks.discord && (
                       <Link
-                        href={project.socialLinks.github}
+                        href={project.socialLinks.discord}
                         target="_blank"
                         rel="noopener noreferrer"
-                        event="project_page_github_link_clicked"
+                        event="project_page_discord_link_clicked"
                         eventObject={{ projectId: project.id }}
                         className="flex items-center gap-1 text-neutral-300 transition-colors hover:text-white"
                       >
-                        <Github className="h-3 w-3" />
-                        <span className="text-sm">GitHub</span>
+                        <Icons.discord className="h-3 w-3" />
+                        <span className="text-sm">Discord</span>
                         <ExternalLink className="ml-auto h-3 w-3" />
                       </Link>
                     )}
@@ -529,7 +530,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <Separator className="bg-neutral-800" />
                     <div className="flex items-center justify-between">
                       <span className="text-neutral-400">Host</span>
-                      <span className="capitalize text-neutral-300">{project?.gitHost}</span>
+                      <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
                     </div>
                   </>
                 )}

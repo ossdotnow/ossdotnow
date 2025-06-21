@@ -1,5 +1,5 @@
+import { PoweredByNeon } from '@/components/layout/powered-by-neon';
 import { SiteHeader } from '@/components/layout/site-header';
-import '@workspace/ui/globals.css';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -13,9 +13,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
+    <main className="px-6">
       <SiteHeader />
       {children}
-    </>
+      <PoweredByNeon />
+    </main>
   );
 }

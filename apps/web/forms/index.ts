@@ -12,11 +12,20 @@ export const loginForm = z.object({
 });
 
 export const earlySubmissionForm = createInsertSchema(project).extend({
+  name: z.string().min(1, 'Project name is required'),
+  description: z.string().min(1, 'Project description is required'),
   gitRepoUrl: z
     .string()
-    .regex(/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/, {
+    .refine((val) => !val || val === '' || /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/.test(val), {
       message: 'Invalid GitHub repository format. Use: username/repository',
     })
-    .optional()
-    .or(z.literal('')),
+    .min(1, 'Repository URL is required'),
+  socialLinks: z
+    .object({
+      twitter: z.string().url('Invalid URL format').optional().or(z.literal('')),
+      discord: z.string().url('Invalid URL format').optional().or(z.literal('')),
+      linkedin: z.string().url('Invalid URL format').optional().or(z.literal('')),
+      website: z.string().url('Invalid URL format').optional().or(z.literal('')),
+    })
+    .optional(),
 });

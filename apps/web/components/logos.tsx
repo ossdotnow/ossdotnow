@@ -1,7 +1,7 @@
 'use client';
 
-import Icons from '@/components/icons';
-import Link from '@/components/link';
+import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 
 export function Logos() {
   return (

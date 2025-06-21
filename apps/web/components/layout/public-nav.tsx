@@ -1,8 +1,8 @@
 'use client';
 
+import Link from '@workspace/ui/components/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@workspace/ui/lib/utils';
-import Link from '@/components/link';
 
 export default function PublicNav() {
   const pathname = usePathname();

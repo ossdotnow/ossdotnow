@@ -1,4 +1,4 @@
-import Icons from '@/components/icons';
+import Icons from '@workspace/ui/components/icons';
 
 export const providers = [
   {

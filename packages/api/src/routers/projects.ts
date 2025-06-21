@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { Api } from '@octokit/plugin-rest-endpoint-methods';
 import { account, project } from '@workspace/db/schema';
 import { createInsertSchema } from 'drizzle-zod';
@@ -162,9 +162,20 @@ async function verifyGitHubOwnership(
 }
 
 export const projectsRouter = createTRPCRouter({
-  getProjects: publicProcedure.query(({ ctx }) => {
-    return ctx.db.query.project.findMany();
-  }),
+  getProjects: publicProcedure
+    .input(
+      z.object({
+        approvalStatus: z.enum(['approved', 'rejected', 'pending', 'all']).optional(),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      return ctx.db.query.project.findMany({
+        where:
+          input.approvalStatus === 'all' || !input.approvalStatus
+            ? undefined
+            : eq(project.approvalStatus, input.approvalStatus),
+      });
+    }),
   getProject: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
     return ctx.db.query.project.findFirst({
       where: eq(project.id, input.id),
@@ -189,6 +200,38 @@ export const projectsRouter = createTRPCRouter({
       .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
       .returning();
   }),
+  acceptProject: adminProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // TODO: Add audit trail logging
+      // Example: await logAdminAction({
+      //   action: 'project_approved',
+      //   projectId: input.projectId,
+      //   adminId: ctx.user.id,
+      //   timestamp: new Date()
+      // });
+      return ctx.db
+        .update(project)
+        .set({ approvalStatus: 'approved' })
+        .where(eq(project.id, input.projectId))
+        .returning();
+    }),
+  rejectProject: adminProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // TODO: Add audit trail logging
+      // Example: await logAdminAction({
+      //   action: 'project_rejected',
+      //   projectId: input.projectId,
+      //   adminId: ctx.user.id,a
+      //   timestamp: new Date()
+      // });
+      return ctx.db
+        .update(project)
+        .set({ approvalStatus: 'rejected' })
+        .where(eq(project.id, input.projectId))
+        .returning();
+    }),
   deleteProject: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {

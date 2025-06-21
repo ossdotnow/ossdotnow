@@ -1,4 +1,3 @@
-import { PoweredByNeon } from '@/components/layout/powered-by-neon';
 import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
 import { ourFileRouter } from '@/app/api/uploadthing/core';
 import { extractRouterConfig } from 'uploadthing/server';
@@ -44,9 +43,8 @@ export default function RootLayout({
           <UTSSR />
         </Suspense>
         <Providers>
-          <main className="px-6">{children}</main>
+          {children}
           <Analytics />
-          <PoweredByNeon />
         </Providers>
       </body>
     </html>

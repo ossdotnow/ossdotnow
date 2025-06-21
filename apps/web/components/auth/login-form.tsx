@@ -6,14 +6,14 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authClient } from '@workspace/auth/client';
+import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
 import { useForm } from 'react-hook-form';
 import { loginForm } from '@/forms/index';
-import Icons from '@/components/icons';
 import { ComponentProps } from 'react';
 import { toast } from 'sonner';
-import Link from '../link';
 import { z } from 'zod/v4';
 
 export function LoginForm({
@@ -53,7 +53,7 @@ export function LoginForm({
     >
       <Form {...form}>
         <form
-          className="min-w-sm flex flex-col gap-4"
+          className="flex min-w-sm flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             return null;
