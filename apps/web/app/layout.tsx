@@ -5,6 +5,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
 import { connection } from 'next/server';
+import { Toaster } from 'sonner';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import './globals.css';
@@ -45,6 +46,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Analytics />
+          <Toaster />
         </Providers>
       </body>
     </html>
