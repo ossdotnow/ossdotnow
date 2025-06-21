@@ -8,7 +8,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     headers: await headers(),
   });
 
-  if (!session?.user.id) {
+  if (session?.user.id) {
     redirect('/');
   }
 

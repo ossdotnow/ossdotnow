@@ -10,6 +10,7 @@ import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
+import { env } from '@workspace/env/server';
 import { useForm } from 'react-hook-form';
 import { loginForm } from '@/forms/index';
 import { ComponentProps } from 'react';
@@ -18,7 +19,7 @@ import { z } from 'zod/v4';
 
 export function LoginForm({
   className,
-  redirectUrl = '/profile',
+  redirectUrl = '/',
   ...props
 }: ComponentProps<'div'> & { redirectUrl?: string }) {
   const form = useForm<z.infer<typeof loginForm>>({
@@ -30,6 +31,11 @@ export function LoginForm({
   });
 
   const signInWithProvider = async (providerId: ProviderId) => {
+    if (env.NODE_ENV === 'production') {
+      toast.error('This feature is not available in production');
+      return;
+    }
+
     await authClient.signIn.social(
       {
         provider: providerId,
@@ -91,7 +97,7 @@ export function LoginForm({
 
           <p className="text-sm text-[#9f9f9f]">
             Don&apos;t have an account?{' '}
-            <Link href="" className="py-2 font-medium text-white">
+            <Link href="/register" className="pointer-events-none py-2 font-medium text-white">
               Register
             </Link>
           </p>

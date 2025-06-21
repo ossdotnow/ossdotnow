@@ -10,11 +10,12 @@ import {
 } from '@workspace/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Skeleton } from '@workspace/ui/components/skeleton';
+import { LayoutDashboard, LogOut } from 'lucide-react';
 import { authClient } from '@workspace/auth/client';
+import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { redirect } from 'next/navigation';
-import { LogOut } from 'lucide-react';
 
 export default function NavUser() {
   const trpc = useTRPC();
@@ -54,6 +55,17 @@ export default function NavUser() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {user?.role === 'admin' && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link href="/admin">
+                <LayoutDashboard />
+                Admin Dashboard
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={signOut}>
           <LogOut />
           Log out
