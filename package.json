@@ -26,17 +26,16 @@
     "turbo": "^2.5.4",
     "typescript": "5.8.3"
   },
-  "packageManager": "pnpm@10.12.1",
   "engines": {
     "node": ">=20"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@tailwindcss/oxide",
-      "core-js-pure",
-      "esbuild",
-      "msgpackr-extract",
-      "sharp"
-    ]
-  }
+  "packageManager": "bun@1.2.13",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "trustedDependencies": [
+    "@tailwindcss/oxide",
+    "core-js-pure"
+  ]
 }
