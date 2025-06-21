@@ -35,6 +35,7 @@ export const earlySubmissionRouter = createTRPCRouter({
       .values({
         ...input,
         ownerId: null,
+        approvalStatus: 'pending',
       })
       .returning();
   }),
