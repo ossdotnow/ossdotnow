@@ -1,4 +1,3 @@
-import { PoweredByNeon } from '@/components/layout/powered-by-neon';
 import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
 import { ourFileRouter } from '@/app/api/uploadthing/core';
 import { extractRouterConfig } from 'uploadthing/server';
