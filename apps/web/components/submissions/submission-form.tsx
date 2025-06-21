@@ -225,6 +225,16 @@ export default function SubmissionForm() {
             isValid: true,
             message: 'Repository found!',
           });
+
+          if (result.name && !form.getValues('name')) {
+            form.setValue('name', result.name, { shouldValidate: true });
+            toast.success('Project name auto-filled from repository');
+          }
+
+          if (result.description && !form.getValues('description')) {
+            form.setValue('description', result.description, { shouldValidate: true });
+            toast.success('Project description auto-filled from repository');
+          }
         }
       } catch (error) {
         setRepoValidation({
@@ -234,10 +244,9 @@ export default function SubmissionForm() {
         });
       }
     },
-    [queryClient, trpc],
+    [queryClient, trpc, form],
   );
 
-  // Debounced version of the validation function
   const debouncedValidateRepo = useDebouncedCallback((repoUrl: string, gitHost: string) => {
     validateRepository(repoUrl, gitHost);
   }, 500);
@@ -253,16 +262,16 @@ export default function SubmissionForm() {
 
   const steps = [
     {
-      id: 'basic-information',
-      title: 'Basic Information',
-      description: 'Tell us about yourself',
-      fields: ['name', 'description', 'logoUrl'] as (keyof FormData)[],
-    },
-    {
       id: 'repository-information',
       title: 'Repository Information',
-      description: 'Where are you located?',
+      description: 'Where is your code hosted?',
       fields: ['gitRepoUrl', 'gitHost'] as (keyof FormData)[],
+    },
+    {
+      id: 'basic-information',
+      title: 'Basic Information',
+      description: 'Tell us about your project',
+      fields: ['name', 'description', 'logoUrl'] as (keyof FormData)[],
     },
     {
       id: 'project-details',
@@ -312,8 +321,7 @@ export default function SubmissionForm() {
 
     const isStepValid = await trigger(fieldsToValidate as any);
 
-    // Check repository validation for step 1
-    if (currentStep === 1) {
+    if (currentStep === 0) {
       const gitRepoUrl = form.getValues('gitRepoUrl');
       if (gitRepoUrl && gitRepoUrl.trim() !== '') {
         if (repoValidation.isValidating) {
@@ -372,7 +380,7 @@ export default function SubmissionForm() {
         Thank you for submitting your project. We&apos;ll review it and get back to you soon.
       </p>
       <p className="text-muted-foreground text-sm">
-        Your submission #{submissionCount} in our early submission program.
+        You&apos;re submission #{submissionCount} in our early submission program.
       </p>
     </div>
   ) : (
@@ -405,71 +413,6 @@ export default function SubmissionForm() {
             <div className="space-y-4">
               <FormField
                 control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                        placeholder="My Awesome Project"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      The name of your project, preferably match your repository name.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Project Description</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                        placeholder="Describe your project..."
-                        {...field}
-                        value={field.value ?? ''}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide a clear, concise description of what your project does and its main
-                      features. This helps potential contributors and users understand your project
-                      at a glance.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* <div className="flex flex-col gap-2">
-                      <FormLabel>Logo</FormLabel>
-                      <UploadDropzone
-                        endpoint="project-logos"
-                        onClientUploadComplete={(res) => {
-                          const [file] = res ?? [];
-                          if (file?.url) {
-                            form.setValue('logoUrl', file.url, { shouldValidate: true });
-                          }
-                        }}
-                        onUploadError={(error: Error) => {
-                          console.error(`ERROR! ${error.message}`);
-                        }}
-                      />
-                    </div> */}
-            </div>
-          )}
-
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
                 name="gitHost"
                 render={({ field }) => (
                   <FormItem>
@@ -477,7 +420,6 @@ export default function SubmissionForm() {
                     <Select
                       onValueChange={(value) => {
                         field.onChange(value);
-                        // Re-validate repository if one is already entered
                         const gitRepoUrl = form.getValues('gitRepoUrl');
                         if (gitRepoUrl && gitRepoUrl.trim() !== '') {
                           debouncedValidateRepo(gitRepoUrl, value);
@@ -526,38 +468,31 @@ export default function SubmissionForm() {
                             const parsed = parseRepositoryUrl(inputValue);
 
                             if (parsed) {
-                              // URL was pasted - update both fields
                               field.onChange(parsed.repo);
                               form.setValue('gitHost', parsed.host);
                               toast.success(
                                 `Detected ${parsed.host === 'github' ? 'GitHub' : 'GitLab'} repository: ${parsed.repo}`,
                               );
-                              // Validate immediately with parsed values
                               validateRepository(parsed.repo, parsed.host);
                             } else {
-                              // Regular input - just update the field
                               field.onChange(inputValue);
                               const gitHost = form.getValues('gitHost') || 'github';
                               debouncedValidateRepo(inputValue, gitHost);
                             }
                           }}
                           onPaste={(e) => {
-                            // Handle paste event for immediate parsing
                             e.preventDefault();
                             const pastedText = e.clipboardData.getData('text');
                             const parsed = parseRepositoryUrl(pastedText);
 
                             if (parsed) {
-                              // URL was pasted - update both fields
                               field.onChange(parsed.repo);
                               form.setValue('gitHost', parsed.host);
                               toast.success(
                                 `Detected ${parsed.host === 'github' ? 'GitHub' : 'GitLab'} repository: ${parsed.repo}`,
                               );
-                              // Validate immediately
                               validateRepository(parsed.repo, parsed.host);
                             } else {
-                              // Not a URL, just set the value normally
                               field.onChange(pastedText);
                               const gitHost = form.getValues('gitHost') || 'github';
                               debouncedValidateRepo(pastedText, gitHost);
@@ -585,6 +520,74 @@ export default function SubmissionForm() {
                   </FormItem>
                 )}
               />
+            </div>
+          )}
+
+          {currentStep === 1 && (
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                        placeholder="My Awesome Project"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      The name of your project.{' '}
+                      {form.getValues('gitRepoUrl') &&
+                        'This was auto-filled from your repository, but you can change it if needed.'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
+                        placeholder="Describe your project..."
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Provide a clear, concise description of what your project does and its main
+                      features.{' '}
+                      {form.getValues('gitRepoUrl') &&
+                        'This was auto-filled from your repository, but you can enhance it if needed.'}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* <div className="flex flex-col gap-2">
+                      <FormLabel>Logo</FormLabel>
+                      <UploadDropzone
+                        endpoint="project-logos"
+                        onClientUploadComplete={(res) => {
+                          const [file] = res ?? [];
+                          if (file?.url) {
+                            form.setValue('logoUrl', file.url, { shouldValidate: true });
+                          }
+                        }}
+                        onUploadError={(error: Error) => {
+                          console.error(`ERROR! ${error.message}`);
+                        }}
+                      />
+                    </div> */}
             </div>
           )}
 
@@ -704,7 +707,7 @@ export default function SubmissionForm() {
                     <FormControl>
                       <MultiSelect
                         className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                        placeholder="web, mobile, ai (comma-separated)"
+                        placeholder="Select tags..."
                         options={tagsEnum.enumValues.map((tag) => ({
                           label: tag,
                           value: tag,
@@ -715,11 +718,7 @@ export default function SubmissionForm() {
                         }}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Add tags to help categorize your project. Separate multiple tags with commas.
-                      Available tags: web, mobile, desktop, backend, frontend, fullstack, ai, game,
-                      crypto, nft, social, other, dapp, saas, algorithm, data-analysis, game-engine
-                    </FormDescription>
+                    <FormDescription>Add tags to help categorize your project.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
