@@ -9,23 +9,26 @@ import {
   TableRow,
 } from '@workspace/ui/components/table';
 import { useQuery } from '@tanstack/react-query';
-import { waitlist } from '@workspace/db/schema';
 import { useTRPC } from '@/hooks/use-trpc';
 
-type User = typeof waitlist.$inferSelect;
+type User = {
+  id: string;
+  email: string;
+  joinedAt: Date;
+};
 
 export default function AdminWaitlistDashboard() {
   const trpc = useTRPC();
 
   const {
-    data: waitlist,
+    data: waitlistData,
     isLoading,
     isError,
   } = useQuery(trpc.earlyAccess.getWaitlist.queryOptions());
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;
-  if (!waitlist) return <div>No waitlist found</div>;
+  if (!waitlistData) return <div>No waitlist found</div>;
 
   return (
     <div className="space-y-6">
@@ -38,12 +41,12 @@ export default function AdminWaitlistDashboard() {
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-sm">Total</span>
-            <span className="text-sm font-medium">{waitlist.length}</span>
+            <span className="text-sm font-medium">{waitlistData.length}</span>
           </div>
         </div>
       </div>
 
-      <UsersTable users={waitlist} />
+      <UsersTable users={waitlistData} />
     </div>
   );
 }

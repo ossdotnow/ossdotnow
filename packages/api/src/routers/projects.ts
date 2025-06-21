@@ -203,6 +203,13 @@ export const projectsRouter = createTRPCRouter({
   acceptProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      // TODO: Add audit trail logging
+      // Example: await logAdminAction({
+      //   action: 'project_approved',
+      //   projectId: input.projectId,
+      //   adminId: ctx.user.id,
+      //   timestamp: new Date()
+      // });
       return ctx.db
         .update(project)
         .set({ approvalStatus: 'approved' })
@@ -212,6 +219,13 @@ export const projectsRouter = createTRPCRouter({
   rejectProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      // TODO: Add audit trail logging
+      // Example: await logAdminAction({
+      //   action: 'project_rejected',
+      //   projectId: input.projectId,
+      //   adminId: ctx.user.id,a
+      //   timestamp: new Date()
+      // });
       return ctx.db
         .update(project)
         .set({ approvalStatus: 'rejected' })

@@ -21,4 +21,4 @@ export const tagsEnum = pgEnum('tags', [
   'game-engine',
 ]);
 
-export const userRoleEnum = pgEnum('user_role', ['admin', 'user']);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'moderator']);

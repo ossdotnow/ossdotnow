@@ -58,8 +58,12 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTab, setSelectedTab] = useState('overview');
+  // const [isLoading, setIsLoading] = useState(true);
+  // const [error, setError] = useState<string | null>(null);
 
   // Example data - replace with tRPC queries
+  // TODO: Replace with actual tRPC queries like:
+  // const { data: statsData, isLoading, error } = api.admin.getStats.useQuery();
   const statsData = {
     totalUsers: 1234,
     totalProjects: 456,
@@ -77,12 +81,22 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+        <TabsList className="bg-muted/30">
+          <TabsTrigger value="overview" className="w-28">
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="users" className="w-28">
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="w-28">
+            Projects
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="w-28">
+            Categories
+          </TabsTrigger>
+          <TabsTrigger value="waitlist" className="w-28">
+            Waitlist
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -140,7 +154,7 @@ export default function AdminDashboard() {
                   {[1, 2, 3, 4, 5].map((item) => (
                     <div key={item} className="flex items-center">
                       <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">
+                        <p className="text-sm leading-none font-medium">
                           New project submitted: Project {item}
                         </p>
                         <p className="text-muted-foreground text-sm">
@@ -294,7 +308,12 @@ export default function AdminDashboard() {
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <span className="text-sm">Page {currentPage} of 247</span>
-                  <Button variant="outline" size="sm">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((prev) => prev + 1)}
+                    disabled={currentPage === 247}
+                  >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

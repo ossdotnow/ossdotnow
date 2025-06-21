@@ -4,13 +4,18 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
   SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
   SidebarRail,
 } from '@workspace/ui/components/sidebar';
-import { FolderOpen, ListChecks, Tags, Users } from 'lucide-react';
+import { FolderOpen, LayoutDashboard, ListChecks, Users } from 'lucide-react';
 import { NavUser } from '@workspace/ui/components/nav-user';
 import { NavMain } from '@workspace/ui/components/nav-main';
 import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 
 export function AppSidebar({
   user,
@@ -126,6 +131,18 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
       <SidebarContent>
+        <SidebarGroup>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Dashboard" asChild>
+                <Link href="/admin" className="flex w-full items-center gap-2">
+                  <LayoutDashboard className="size-4" />
+                  <span>Dashboard</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
         <NavMain items={data.navMain} />
       </SidebarContent>
       <SidebarFooter>
@@ -137,7 +154,6 @@ export function AppSidebar({
           }}
         />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }

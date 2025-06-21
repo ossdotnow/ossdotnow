@@ -1,13 +1,13 @@
 'use client';
 
 import { Form, FormField } from '@workspace/ui/components/form';
-import Link from '../../../../packages/ui/src/components/link';
 import { Separator } from '@workspace/ui/components/separator';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
 import { useForm } from 'react-hook-form';
@@ -53,7 +53,7 @@ export function LoginForm({
     >
       <Form {...form}>
         <form
-          className="min-w-sm flex flex-col gap-4"
+          className="flex min-w-sm flex-col gap-4"
           onSubmit={(e) => {
             e.preventDefault();
             return null;

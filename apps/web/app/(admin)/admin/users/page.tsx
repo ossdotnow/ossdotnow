@@ -9,14 +9,20 @@ import {
   TableRow,
 } from '@workspace/ui/components/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import { user, userRoleEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
+import { userRoleEnum } from '@workspace/db/schema';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
 
-type User = typeof user.$inferSelect;
+type User = {
+  id: string;
+  role: 'user' | 'admin' | 'moderator';
+  email: string;
+  createdAt: Date;
+  name: string;
+};
 
 export default function AdminUsersDashboard() {
   const trpc = useTRPC();
@@ -26,7 +32,16 @@ export default function AdminUsersDashboard() {
 
   const tabs = [...userRoleEnum.enumValues, 'all'] as const;
 
-  const { data: users, isLoading, isError } = useQuery(trpc.users.getUsers.queryOptions());
+  const {
+    data: users,
+    isLoading,
+    isError,
+  } = useQuery(
+    trpc.users.getUsers.queryOptions({
+      limit: 100,
+      offset: 0,
+    }),
+  );
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;
@@ -99,7 +114,14 @@ function UsersTable({ users }: { users: User[] }) {
               </Badge>
             </TableCell>
             <TableCell className="space-x-2 text-right">
-              <Button variant="destructive">Ban User</Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  // TODO: Implement ban user logic
+                }}
+              >
+                Ban User
+              </Button>
             </TableCell>
           </TableRow>
         ))}

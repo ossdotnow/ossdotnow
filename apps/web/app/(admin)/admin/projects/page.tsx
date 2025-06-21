@@ -32,8 +32,27 @@ export default function AdminProjectsDashboard() {
     isLoading,
     isError,
   } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus: 'all' }));
-  const { mutate: acceptProject } = useMutation(trpc.projects.acceptProject.mutationOptions());
-  const { mutate: rejectProject } = useMutation(trpc.projects.rejectProject.mutationOptions());
+  const { mutate: acceptProject } = useMutation({
+    ...trpc.projects.acceptProject.mutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: trpc.projects.getProjects.queryKey({
+          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+        }),
+      });
+    },
+  });
+
+  const { mutate: rejectProject } = useMutation({
+    ...trpc.projects.rejectProject.mutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: trpc.projects.getProjects.queryKey({
+          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+        }),
+      });
+    },
+  });
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;

@@ -1,6 +1,6 @@
-import Link from '../../../../packages/ui/src/components/link';
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
+import Link from '@workspace/ui/components/link';
 import { auth } from '@workspace/auth/server';
 import { cn } from '@workspace/ui/lib/utils';
 import { env } from '@workspace/env/server';

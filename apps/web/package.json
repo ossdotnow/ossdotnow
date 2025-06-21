@@ -38,6 +38,7 @@
     "sonner": "^2.0.5",
     "superjson": "^2.2.2",
     "uploadthing": "^7.7.2",
+    "use-debounce": "^10.0.5",
     "zod": "^3.25.67"
   },
   "devDependencies": {

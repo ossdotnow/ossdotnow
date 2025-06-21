@@ -46,7 +46,7 @@ export const project = pgTable('project', {
   description: text('description'),
   socialLinks: jsonb('social_links').$type<{
     twitter?: string;
-    github?: string;
+    discord?: string;
     linkedin?: string;
     website?: string;
     [key: string]: string | undefined;
