@@ -30,14 +30,16 @@ export const earlySubmissionRouter = createTRPCRouter({
       }
     }
 
-    return ctx.db
+    const [returningCount] = await ctx.db
       .insert(project)
       .values({
         ...input,
         ownerId: null,
         approvalStatus: 'pending',
       })
-      .returning();
+      .returning({ newCount: count() });
+
+    return returningCount;
   }),
   getEarlySubmissionsCount: publicProcedure.query(async ({ ctx }) => {
     const earlySubmissionsCount = await ctx.db.select({ count: count() }).from(project);

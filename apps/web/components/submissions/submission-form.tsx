@@ -52,16 +52,20 @@ function useEarlySubmission() {
 
   const { mutate, isPending } = useMutation(
     trpc.earlySubmission.addProject.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (data) => {
         setSuccess(true);
         setError(null);
         queryClient.setQueryData([trpc.earlySubmission.getEarlySubmissionsCount.queryKey()], {
           count: (query.data?.count ?? 0) + 1,
         });
 
+        if (!data) {
+          throw new Error('Failed to get returning count');
+        }
+
         if (isMounted) {
           localStorage.setItem('early-submission-success', 'true');
-          localStorage.setItem('early-submission-count', ((query.data?.count ?? 0) + 1).toString());
+          localStorage.setItem('early-submission-count', (data.newCount + 1).toString());
         }
         track('early_submission_success');
       },
@@ -186,7 +190,7 @@ export default function SubmissionForm() {
         return;
       }
 
-      const formatRegex = /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/;
+      const formatRegex = /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/;
       if (!formatRegex.test(repoUrl)) {
         setRepoValidation({
           isValidating: false,
