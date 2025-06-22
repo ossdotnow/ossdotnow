@@ -63,7 +63,6 @@ function useEarlySubmission() {
           localStorage.setItem('early-submission-success', 'true');
           localStorage.setItem('early-submission-count', ((query.data?.count ?? 0) + 1).toString());
         }
-        toast.success('Project submitted successfully!');
         track('early_submission_success');
       },
       onError: (err) => {
@@ -225,12 +224,10 @@ export default function SubmissionForm() {
 
           if (result.name && !form.getValues('name')) {
             form.setValue('name', result.name, { shouldValidate: true });
-            toast.success('Project name auto-filled from repository');
           }
 
           if (result.description && !form.getValues('description')) {
             form.setValue('description', result.description, { shouldValidate: true });
-            toast.success('Project description auto-filled from repository');
           }
         }
       } catch (error) {
@@ -469,9 +466,6 @@ export default function SubmissionForm() {
                             if (parsed) {
                               field.onChange(parsed.repo);
                               form.setValue('gitHost', parsed.host);
-                              toast.success(
-                                `Detected ${parsed.host === 'github' ? 'GitHub' : 'GitLab'} repository: ${parsed.repo}`,
-                              );
                               validateRepository(parsed.repo, parsed.host);
                             } else {
                               field.onChange(inputValue);
@@ -487,9 +481,6 @@ export default function SubmissionForm() {
                             if (parsed) {
                               field.onChange(parsed.repo);
                               form.setValue('gitHost', parsed.host);
-                              toast.success(
-                                `Detected ${parsed.host === 'github' ? 'GitHub' : 'GitLab'} repository: ${parsed.repo}`,
-                              );
                               validateRepository(parsed.repo, parsed.host);
                             } else {
                               field.onChange(pastedText);
