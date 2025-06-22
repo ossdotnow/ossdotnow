@@ -17,8 +17,8 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
@@ -42,8 +42,6 @@ function useEarlySubmission() {
   const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-  const query = useQuery(trpc.earlySubmission.getEarlySubmissionsCount.queryOptions());
 
   useEffect(() => {
     setIsMounted(true);
@@ -55,17 +53,9 @@ function useEarlySubmission() {
       onSuccess: () => {
         setSuccess(true);
         setError(null);
-        queryClient.setQueryData([trpc.earlySubmission.getEarlySubmissionsCount.queryKey()], {
-          count: (query.data?.count ?? 0) + 1,
-        });
-
-        // if (!data) {
-        //   throw new Error('Failed to get returning count');
-        // }
 
         if (isMounted) {
           localStorage.setItem('early-submission-success', 'true');
-          localStorage.setItem('early-submission-count', ((query.data?.count ?? 0) + 1).toString());
         }
         track('early_submission_success');
       },
@@ -81,7 +71,6 @@ function useEarlySubmission() {
   const clearError = () => setError(null);
 
   return {
-    count: query.data?.count ?? 0,
     mutate,
     success,
     error,
@@ -376,9 +365,6 @@ export default function SubmissionForm() {
         Thank you for submitting your project. We&apos;ll review it and get back to you soon.
       </p>
       <p className="text-muted-foreground text-sm">
-        You&apos;re submission #{submissionCount} in our early submission program.
-      </p>
-      <p className="text-muted-foreground text-sm">
         When everything is live you can login with your GitHub account to claim the projects as
         yours.
       </p>
@@ -436,7 +422,7 @@ export default function SubmissionForm() {
                         <SelectItem className="rounded-none" value="github">
                           GitHub
                         </SelectItem>
-                        <SelectItem className="rounded-none" value="gitlab">
+                        <SelectItem className="rounded-none" value="gitlab" disabled>
                           GitLab
                         </SelectItem>
                       </SelectContent>
