@@ -8,15 +8,31 @@ import {
   TableHeader,
   TableRow,
 } from '@workspace/ui/components/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@workspace/ui/components/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { project, projectApprovalStatusEnum } from '@workspace/db/schema';
+import { Check, Eye, X, Edit, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
+import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
-import { Check, Eye, X } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
+import { useState } from 'react';
 
 type Project = typeof project.$inferSelect;
 
@@ -26,12 +42,16 @@ export default function AdminProjectsDashboard() {
   const [approvalStatus, setApprovalStatus] = useQueryState('approvalStatus', {
     defaultValue: 'all',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
 
   const {
     data: projects,
     isLoading,
     isError,
   } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus: 'all' }));
+
   const { mutate: acceptProject } = useMutation({
     ...trpc.projects.acceptProject.mutationOptions(),
     onSuccess: () => {
@@ -74,36 +94,23 @@ export default function AdminProjectsDashboard() {
 
   const tabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
 
+  const filteredProjects = projects
+    .filter((project) => approvalStatus === 'all' || project.approvalStatus === approvalStatus)
+    .filter((project) => {
+      const searchLower = searchQuery.toLowerCase();
+      return (
+        project.name.toLowerCase().includes(searchLower) ||
+        (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
+      );
+    })
+    .filter((project) => statusFilter === 'all' || statusFilter === 'active')
+    .filter((project) => typeFilter === 'all');
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">Manage projects</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Accepted</span>
-              <span className="text-sm font-medium">
-                {projects.filter((project) => project.approvalStatus === 'approved').length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Rejected</span>
-              <span className="text-sm font-medium">
-                {projects.filter((project) => project.approvalStatus === 'rejected').length}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-sm">Pending</span>
-              <span className="text-sm font-medium">
-                {projects.filter((project) => project.approvalStatus === 'pending').length}
-              </span>
-            </div>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+        <p className="text-muted-foreground">Review, approve, and manage project submissions</p>
       </div>
 
       <Tabs className="space-y-4" defaultValue={approvalStatus}>
@@ -122,14 +129,62 @@ export default function AdminProjectsDashboard() {
 
         {tabs.map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-4">
-            <ProjectsTable
-              projects={projects.filter(
-                (project) =>
-                  project.approvalStatus === (tab as Project['approvalStatus']) || tab === 'all',
-              )}
-              handleAccept={handleAccept}
-              handleReject={handleReject}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Management</CardTitle>
+                <CardDescription>
+                  {tab === 'all'
+                    ? `Showing all ${filteredProjects.length} projects`
+                    : `Showing ${filteredProjects.length} ${tab} projects`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Input
+                      placeholder="Search projects..."
+                      className="w-64"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="paused">Paused</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="fintech">Fintech</SelectItem>
+                        <SelectItem value="healthtech">Healthtech</SelectItem>
+                        <SelectItem value="edtech">Edtech</SelectItem>
+                        <SelectItem value="developer-tools">Developer Tools</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <ProjectsTable
+                  projects={filteredProjects.filter(
+                    (project) =>
+                      project.approvalStatus === (tab as Project['approvalStatus']) ||
+                      tab === 'all',
+                  )}
+                  handleAccept={handleAccept}
+                  handleReject={handleReject}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
         ))}
       </Tabs>
@@ -150,9 +205,12 @@ function ProjectsTable({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px]">Name</TableHead>
-          <TableHead>Repository</TableHead>
+          <TableHead>Project Name</TableHead>
+          <TableHead>Owner</TableHead>
+          <TableHead>Type</TableHead>
           <TableHead>Status</TableHead>
+          <TableHead>Approval</TableHead>
+          <TableHead>Tags</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -160,7 +218,23 @@ function ProjectsTable({
         {projects.map((project) => (
           <TableRow key={project.id}>
             <TableCell className="font-medium">{project.name}</TableCell>
-            <TableCell>{project.gitRepoUrl}</TableCell>
+            <TableCell>{project.gitRepoUrl || 'N/A'}</TableCell>
+            <TableCell>
+              <Badge variant="secondary">Developer Tools</Badge>
+            </TableCell>
+            <TableCell>
+              <Select defaultValue="active">
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </TableCell>
             <TableCell>
               <Badge
                 variant={
@@ -170,52 +244,57 @@ function ProjectsTable({
                       ? 'destructive'
                       : 'outline'
                 }
+                className={
+                  project.approvalStatus === 'approved'
+                    ? 'bg-green-500'
+                    : project.approvalStatus === 'pending'
+                      ? 'bg-yellow-500'
+                      : ''
+                }
               >
                 {project.approvalStatus}
               </Badge>
             </TableCell>
-            <TableCell className="space-x-2 text-right">
-              {project.approvalStatus === 'approved' && (
-                <Button variant="secondary" asChild>
-                  <Link target="_blank" href={`/projects/${project.id}`}>
-                    <Eye size={16} />
-                    View Project
-                  </Link>
+            <TableCell>
+              <div className="flex gap-1">
+                <Badge variant="outline">web</Badge>
+                <Badge variant="outline">saas</Badge>
+              </div>
+            </TableCell>
+            <TableCell className="text-right">
+              <div className="flex justify-end gap-2">
+                {project.approvalStatus === 'pending' && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-green-600"
+                      onClick={() => handleAccept(project.id)}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600"
+                      onClick={() => handleReject(project.id)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+                {project.approvalStatus === 'approved' && (
+                  <Button variant="secondary" size="sm" asChild>
+                    <Link target="_blank" href={`/projects/${project.id}`}>
+                      <Eye className="mr-1 h-4 w-4" />
+                      View
+                    </Link>
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm">
+                  <Edit className="h-4 w-4" />
                 </Button>
-              )}
-              <Button variant="secondary" asChild>
-                <Link
-                  target="_blank"
-                  href={
-                    project.gitHost === 'github'
-                      ? `https://github.com/${project.gitRepoUrl}`
-                      : `https://gitlab.com/${project.gitRepoUrl}`
-                  }
-                >
-                  <Eye size={16} />
-                  View Repo
-                </Link>
-              </Button>
-              {project.approvalStatus === 'pending' || project.approvalStatus !== 'approved' ? (
-                <Button
-                  variant="default"
-                  className="bg-green-500 text-green-800 hover:bg-green-600"
-                  onClick={() => handleAccept(project.id)}
-                >
-                  <Check size={16} />
-                  Accept
-                </Button>
-              ) : null}
-              {project.approvalStatus === 'pending' || project.approvalStatus !== 'rejected' ? (
-                <Button
-                  variant="destructive"
-                  className="text-red-200"
-                  onClick={() => handleReject(project.id)}
-                >
-                  <X size={16} />
-                  Reject
-                </Button>
-              ) : null}
+              </div>
             </TableCell>
           </TableRow>
         ))}

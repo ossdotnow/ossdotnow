@@ -24,17 +24,15 @@ import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
 import { Button } from '@workspace/ui/components/button';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useDebouncedCallback } from 'use-debounce';
 import { track } from '@vercel/analytics/react';
 import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
 import { useTRPC } from '@/hooks/use-trpc';
-import { notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -93,7 +91,6 @@ export default function SubmissionForm() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [isAllowed] = useQueryState('am-i-allowed', parseAsBoolean.withDefault(false));
   const [repoValidation, setRepoValidation] = useState<{
     isValidating: boolean;
     isValid: boolean | null;
@@ -370,8 +367,6 @@ export default function SubmissionForm() {
       ? parseInt(localStorage.getItem('early-submission-count') ?? '0')
       : 0;
 
-  if (!isAllowed) notFound();
-
   return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
@@ -381,6 +376,10 @@ export default function SubmissionForm() {
       </p>
       <p className="text-muted-foreground text-sm">
         You&apos;re submission #{submissionCount} in our early submission program.
+      </p>
+      <p className="text-muted-foreground text-sm">
+        When everything is live you can login with your GitHub account to claim the projects as
+        yours.
       </p>
     </div>
   ) : (

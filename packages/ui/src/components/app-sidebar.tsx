@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@workspace/ui/components/sidebar';
-import { FolderOpen, LayoutDashboard, ListChecks, Users } from 'lucide-react';
+import { FolderOpen, LayoutDashboard, ListChecks, Tags, Users } from 'lucide-react';
 import { NavUser } from '@workspace/ui/components/nav-user';
 import { NavMain } from '@workspace/ui/components/nav-main';
 import Icons from '@workspace/ui/components/icons';
@@ -74,21 +74,21 @@ export function AppSidebar({
           },
         ],
       },
-      // {
-      //   title: 'Categories & Tags',
-      //   url: '#',
-      //   icon: Tags,
-      //   items: [
-      //     {
-      //       title: 'Project Types',
-      //       url: '/admin/categories/types',
-      //     },
-      //     {
-      //       title: 'Tags',
-      //       url: '/admin/categories/tags',
-      //     },
-      //   ],
-      // },
+      {
+        title: 'Categories & Tags',
+        url: '#',
+        icon: Tags,
+        items: [
+          {
+            title: 'Categories',
+            url: '/admin/categories',
+          },
+          // {
+          //   title: 'Tags',
+          //   url: '/admin/categories/tags',
+          // },
+        ],
+      },
       {
         title: 'Waitlist',
         url: '#',

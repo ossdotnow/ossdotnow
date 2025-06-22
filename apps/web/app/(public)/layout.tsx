@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <main className="px-6">
+    <main>
       <SiteHeader />
       {children}
       <PoweredByNeon />

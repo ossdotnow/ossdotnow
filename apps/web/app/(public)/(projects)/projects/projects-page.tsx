@@ -27,15 +27,15 @@ export default function ProjectsPage() {
   if (!projects) return <div>No projects found</div>;
 
   return (
-    <div className="min-h-screen">
+    <div className="">
       <div className="py-8">
         <div className="mb-8 flex items-center justify-between gap-2">
           <div className="relative max-w-xl flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-500" />
             <Input
               type="text"
               placeholder="Search tools..."
-              className="w-full rounded-none border border-neutral-800 bg-neutral-900 py-2.5 pl-10 pr-4 text-sm text-white placeholder-neutral-500 focus:border-neutral-700 focus:outline-none"
+              className="w-full rounded-none border border-neutral-800 bg-neutral-900 py-2.5 pr-4 pl-10 text-sm text-white placeholder-neutral-500 focus:border-neutral-700 focus:outline-none"
             />
           </div>
           <div className="flex items-center gap-2 md:gap-4">

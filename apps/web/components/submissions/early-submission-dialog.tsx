@@ -16,7 +16,7 @@ export default function EarlySubmissionDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2 rounded-none">
+        <Button variant="outline" className="flex items-center gap-2 rounded-none">
           <span>Early Submission</span>
           <ArrowRight className="h-4 w-4" />
         </Button>

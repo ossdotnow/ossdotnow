@@ -1,5 +1,9 @@
 import ProjectsPage from './projects-page';
 
 export default function Page() {
-  return <ProjectsPage />;
+  return (
+    <main className="px-6">
+      <ProjectsPage />
+    </main>
+  );
 }
