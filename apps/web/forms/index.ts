@@ -16,7 +16,7 @@ export const earlySubmissionForm = createInsertSchema(project).extend({
   description: z.string().min(1, 'Project description is required'),
   gitRepoUrl: z
     .string()
-    .refine((val) => !val || val === '' || /^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_-]+$/.test(val), {
+    .refine((val) => !val || val === '' || /^[a-zA-Z0-9._-]+\/[a-zA-Z0-9._-]+$/.test(val), {
       message: 'Invalid GitHub repository format. Use: username/repository',
     })
     .min(1, 'Repository URL is required'),
