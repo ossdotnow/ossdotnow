@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description:
     'A platform for open source project discovery, collaboration, and growth - connecting project owners with contributors.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.svg',
   },
 };
 
