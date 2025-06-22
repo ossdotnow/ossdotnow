@@ -21,9 +21,15 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ossnow | early project submissions are live',
+  title: {
+    template: '%s | oss now | early project submissions are live',
+    default: 'oss now | early project submissions are live',
+  },
   description:
     'A platform for open source project discovery, collaboration, and growth - connecting project owners with contributors.',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 async function UTSSR() {
