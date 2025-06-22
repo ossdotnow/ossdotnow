@@ -463,19 +463,44 @@ export default function SubmissionForm() {
                               debouncedValidateRepo(inputValue, gitHost);
                             }
                           }}
-                          onPaste={(e) => {
-                            e.preventDefault();
-                            const pastedText = e.clipboardData.getData('text');
-                            const parsed = parseRepositoryUrl(pastedText);
+                          onPaste={async (e) => {
+                            let pastedText = '';
 
-                            if (parsed) {
-                              field.onChange(parsed.repo);
-                              form.setValue('gitHost', parsed.host);
-                              validateRepository(parsed.repo, parsed.host);
-                            } else {
-                              field.onChange(pastedText);
-                              const gitHost = form.getValues('gitHost') || 'github';
-                              debouncedValidateRepo(pastedText, gitHost);
+                            try {
+                              if (navigator.clipboard && navigator.clipboard.readText) {
+                                e.preventDefault();
+                                pastedText = await navigator.clipboard.readText();
+                              } else {
+                                e.preventDefault();
+                                pastedText = e.clipboardData.getData('text');
+                              }
+                            } catch (error) {
+                              setTimeout(() => {
+                                const inputValue = e.target.value;
+                                const parsed = parseRepositoryUrl(inputValue);
+                                if (parsed) {
+                                  field.onChange(parsed.repo);
+                                  form.setValue('gitHost', parsed.host);
+                                  validateRepository(parsed.repo, parsed.host);
+                                } else {
+                                  const gitHost = form.getValues('gitHost') || 'github';
+                                  debouncedValidateRepo(inputValue, gitHost);
+                                }
+                              }, 0);
+                              return;
+                            }
+
+                            if (pastedText) {
+                              const parsed = parseRepositoryUrl(pastedText);
+                              if (parsed) {
+                                field.onChange(parsed.repo);
+                                form.setValue('gitHost', parsed.host);
+                                validateRepository(parsed.repo, parsed.host);
+                              } else {
+                                field.onChange(pastedText);
+                                const gitHost = form.getValues('gitHost') || 'github';
+                                debouncedValidateRepo(pastedText, gitHost);
+                              }
                             }
                           }}
                         />
