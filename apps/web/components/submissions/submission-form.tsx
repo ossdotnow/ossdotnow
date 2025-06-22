@@ -476,7 +476,7 @@ export default function SubmissionForm() {
                               }
                             } catch (error) {
                               setTimeout(() => {
-                                const inputValue = e.target.value;
+                                const inputValue = (e.target as HTMLInputElement).value;
                                 const parsed = parseRepositoryUrl(inputValue);
                                 if (parsed) {
                                   field.onChange(parsed.repo);
