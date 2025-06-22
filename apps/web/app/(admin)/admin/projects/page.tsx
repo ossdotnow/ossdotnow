@@ -25,7 +25,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { project, projectApprovalStatusEnum } from '@workspace/db/schema';
-import { Check, Eye, X, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Edit, Eye, XCircle } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
@@ -103,8 +103,8 @@ export default function AdminProjectsDashboard() {
         (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
       );
     })
-    .filter((project) => statusFilter === 'all' || statusFilter === 'active')
-    .filter((project) => typeFilter === 'all');
+    .filter(() => statusFilter === 'all' || statusFilter === 'active')
+    .filter(() => typeFilter === 'all');
 
   return (
     <div className="space-y-6">

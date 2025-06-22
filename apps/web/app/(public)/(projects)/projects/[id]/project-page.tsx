@@ -1,26 +1,24 @@
 'use client';
 
 import {
+  AlertCircle,
   Briefcase,
   Building,
+  CheckCircle,
+  Clock,
   DollarSign,
   ExternalLink,
   GitFork,
   Github,
+  GitMerge,
+  GitPullRequest,
   Globe,
   Linkedin,
   Star,
   Tag,
   Twitter,
   Users,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  GitPullRequest,
-  GitMerge,
   XCircle,
-  // Shield,
-  // User,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';

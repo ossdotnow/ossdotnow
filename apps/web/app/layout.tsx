@@ -21,8 +21,9 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'oss.now | Coming soon',
-  description: 'A place to share your open source projects and find new ones. Coming soon.',
+  title: 'ossnow | early project submissions are live',
+  description:
+    'A platform for open source project discovery, collaboration, and growth - connecting project owners with contributors.',
 };
 
 async function UTSSR() {

@@ -1,66 +1,11 @@
 'use client';
 
-import {
-  AlertCircle,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Edit,
-  Folder,
-  FolderPlus,
-  RefreshCcw,
-  Search,
-  Trash2,
-  UserPlus,
-  Users,
-  XCircle,
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@workspace/ui/components/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@workspace/ui/components/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@workspace/ui/components/select';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@workspace/ui/components/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import { Switch } from '@workspace/ui/components/switch';
+import { AlertCircle, Clock, Folder, FolderPlus, RefreshCcw, UserPlus, Users } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
-import { Label } from '@workspace/ui/components/label';
-import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
-import { useState } from 'react';
 
 export default function AdminDashboard() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTab, setSelectedTab] = useState('overview');
-  // const [isLoading, setIsLoading] = useState(true);
-  // const [error, setError] = useState<string | null>(null);
-
   // Example data - replace with tRPC queries
   // TODO: Replace with actual tRPC queries like:
   // const { data: statsData, isLoading, error } = api.admin.getStats.useQuery();

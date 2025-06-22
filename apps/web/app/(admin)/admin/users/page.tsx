@@ -1,14 +1,6 @@
 'use client';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@workspace/ui/components/dialog';
-import {
   Table,
   TableBody,
   TableCell,
@@ -31,9 +23,8 @@ import {
   CardTitle,
 } from '@workspace/ui/components/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import { Search, UserPlus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit, Search, Trash2 } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
-import { Label } from '@workspace/ui/components/label';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import { userRoleEnum } from '@workspace/db/schema';
