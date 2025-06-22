@@ -52,20 +52,20 @@ function useEarlySubmission() {
 
   const { mutate, isPending } = useMutation(
     trpc.earlySubmission.addProject.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: () => {
         setSuccess(true);
         setError(null);
         queryClient.setQueryData([trpc.earlySubmission.getEarlySubmissionsCount.queryKey()], {
           count: (query.data?.count ?? 0) + 1,
         });
 
-        if (!data) {
-          throw new Error('Failed to get returning count');
-        }
+        // if (!data) {
+        //   throw new Error('Failed to get returning count');
+        // }
 
         if (isMounted) {
           localStorage.setItem('early-submission-success', 'true');
-          localStorage.setItem('early-submission-count', (data.newCount + 1).toString());
+          localStorage.setItem('early-submission-count', ((query.data?.count ?? 0) + 1).toString());
         }
         track('early_submission_success');
       },
