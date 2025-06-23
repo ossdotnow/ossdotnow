@@ -43,7 +43,7 @@ export default function GitAvatars() {
         ))}
       </div>
       <motion.span
-        className="text-muted-foreground px-3 text-sm"
+        className="text-muted-foreground pointer-events-none px-3 text-xs md:text-sm"
         initial={{ opacity: 1 }}
         variants={{
           hover: { opacity: 0.7 },

@@ -831,7 +831,7 @@ export default function SubmissionForm() {
           )}
 
           <DialogFooter>
-            <div className="flex justify-between gap-4 pt-6">
+            <div className="flex justify-between gap-4 pt-6 pb-20">
               <Button
                 type="button"
                 variant="outline"
