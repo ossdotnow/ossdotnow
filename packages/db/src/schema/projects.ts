@@ -40,7 +40,7 @@ export const project = pgTable('project', {
   ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
 
   logoUrl: text('logo_url'),
-  gitRepoUrl: text('git_repo_url'),
+  gitRepoUrl: text('git_repo_url').unique().notNull(),
   gitHost: gitHostEnum('git_host'),
   name: text('name').notNull(),
   description: text('description'),
