@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { projectProviderEnum, tagsEnum } from '@workspace/db/schema';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
@@ -25,13 +24,13 @@ import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { track } from '@vercel/analytics/react';
 import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
@@ -191,6 +190,46 @@ export default function SubmissionForm() {
           isValid: false,
           message: 'Invalid format. Use: username/repository',
         });
+        return;
+      }
+
+      if (gitHost === 'gitlab') {
+        setRepoValidation({
+          isValidating: true,
+          isValid: null,
+          message: null,
+        });
+
+        try {
+          const result = await queryClient.fetchQuery(
+            trpc.repository.getRepo.queryOptions({
+              url: repoUrl,
+              provider: gitHost as (typeof projectProviderEnum.enumValues)[number],
+            }),
+          );
+
+          if (result) {
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          }
+        } catch (error) {
+          setRepoValidation({
+            isValidating: false,
+            isValid: false,
+            message: 'Repository not found or is private',
+          });
+        }
         return;
       }
 
