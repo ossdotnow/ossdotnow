@@ -6,6 +6,8 @@ import { Octokit } from '@octokit/core';
 import { eq, and } from 'drizzle-orm';
 import { z } from 'zod/v4';
 
+console.log('github token: ', env.GITHUB_TOKEN);
+
 export async function createOctokitInstance(ctx: any) {
   const MyOctokit = Octokit.plugin(restEndpointMethods);
 
