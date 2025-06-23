@@ -3,7 +3,7 @@ import Icons from '@workspace/ui/components/icons';
 
 export default function Page() {
   return (
-    <div className="relative h-svh w-full">
+    <div className="relative h-[calc(100vh-80px)] w-full">
       <div className="absolute top-0 right-0 bottom-0 z-0 flex aspect-square w-full items-center justify-end bg-transparent mix-blend-screen md:w-[1000px]">
         <img
           src="/login-background.png"

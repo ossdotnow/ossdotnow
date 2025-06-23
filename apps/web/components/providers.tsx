@@ -1,8 +1,8 @@
 'use client';
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import { TRPCReactProvider } from '@/hooks/use-trpc';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
+import { TRPCReactProvider } from '@/hooks/use-trpc';
 import * as React from 'react';
 
 export function Providers({ children }: { children: React.ReactNode }) {

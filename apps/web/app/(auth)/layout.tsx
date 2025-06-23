@@ -13,7 +13,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
   }
 
   return (
-    <main className="px-6">
+    <main>
       <SiteHeader />
       {children}
     </main>

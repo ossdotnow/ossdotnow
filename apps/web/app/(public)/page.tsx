@@ -1,5 +1,6 @@
 import { WaitlistForm } from '@/components/waitlist-form';
 import { Button } from '@workspace/ui/components/button';
+import GitAvatars from '@/components/git-avatars';
 import Link from '@workspace/ui/components/link';
 import { Logos } from '@/components/logos';
 import { ArrowRight } from 'lucide-react';
@@ -29,12 +30,22 @@ export default function Page() {
           </p>
           <WaitlistForm />
 
-          <Button variant="outline" className="flex items-center gap-2 rounded-none" asChild>
-            <Link href="/early-submission">
-              <span>Early Submission</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+          <div>
+            <Button
+              variant="outline"
+              className="mx-auto flex w-min items-center gap-2 rounded-none"
+              asChild
+            >
+              <Link href="/early-submission">
+                <span>Early Submission</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+
+            <div>
+              <GitAvatars />
+            </div>
+          </div>
         </div>
         <Logos />
       </div>
