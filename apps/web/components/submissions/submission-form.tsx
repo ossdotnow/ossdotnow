@@ -215,11 +215,11 @@ export default function SubmissionForm() {
             message: 'Repository found!',
           });
 
-          if (result.name && !form.getValues('name')) {
+          if (result.name) {
             form.setValue('name', result.name, { shouldValidate: true });
           }
 
-          if (result.description && !form.getValues('description')) {
+          if (result.description) {
             form.setValue('description', result.description, { shouldValidate: true });
           }
         }

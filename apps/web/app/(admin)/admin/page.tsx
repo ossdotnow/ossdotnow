@@ -4,17 +4,24 @@ import { AlertCircle, Clock, Folder, FolderPlus, RefreshCcw, UserPlus, Users } f
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
+import { useQuery } from '@tanstack/react-query';
+import { formatDistanceToNow } from 'date-fns';
+import NumberFlow from '@number-flow/react';
+import { useTRPC } from '@/hooks/use-trpc';
+
+function useDashboard() {
+  const trpc = useTRPC();
+  const { data } = useQuery(trpc.admin.dashboard.queryOptions());
+
+  return {
+    data,
+  };
+}
 
 export default function AdminDashboard() {
-  // Example data - replace with tRPC queries
-  // TODO: Replace with actual tRPC queries like:
-  // const { data: statsData, isLoading, error } = api.admin.getStats.useQuery();
-  const statsData = {
-    totalUsers: 1234,
-    totalProjects: 456,
-    pendingProjects: 23,
-    waitlistCount: 789,
-  };
+  const { data } = useDashboard();
+
+  const latestProjects = data?.latestProjects;
 
   return (
     <div className="space-y-6">
@@ -32,8 +39,9 @@ export default function AdminDashboard() {
             <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsData.totalUsers}</div>
-            <p className="text-muted-foreground text-xs">+20.1% from last month</p>
+            <div className="text-2xl font-bold">
+              <NumberFlow value={data?.counts.users || 0} />
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -42,8 +50,9 @@ export default function AdminDashboard() {
             <Folder className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsData.totalProjects}</div>
-            <p className="text-muted-foreground text-xs">+15% from last month</p>
+            <div className="text-2xl font-bold">
+              <NumberFlow value={data?.counts.projects || 0} />
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -52,8 +61,9 @@ export default function AdminDashboard() {
             <Clock className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsData.pendingProjects}</div>
-            <p className="text-muted-foreground text-xs">Requires attention</p>
+            <div className="text-2xl font-bold">
+              <NumberFlow value={data?.counts.pendingProjects || 0} />
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -62,8 +72,9 @@ export default function AdminDashboard() {
             <AlertCircle className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statsData.waitlistCount}</div>
-            <p className="text-muted-foreground text-xs">New signups this week</p>
+            <div className="text-2xl font-bold">
+              <NumberFlow value={data?.counts.earlyAccess || 0} />
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -75,14 +86,17 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div key={item} className="flex items-center">
+              {latestProjects?.map((item) => (
+                <div key={item.id} className="flex items-center">
                   <div className="ml-4 space-y-1">
-                    <p className="text-sm leading-none font-medium">
-                      New project submitted: Project {item}
+                    <p className="text-sm leading-none font-normal">
+                      New project submitted:{' '}
+                      <span className="font-medium">
+                        {item.name} {`(${item.gitRepoUrl})`}
+                      </span>
                     </p>
                     <p className="text-muted-foreground text-sm">
-                      Submitted 2 hours ago by user@example.com
+                      Submitted {formatDistanceToNow(item.createdAt)} ago
                     </p>
                   </div>
                   <div className="ml-auto font-medium">

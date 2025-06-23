@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  project,
+  projectApprovalStatusEnum,
+  projectStatusEnum,
+  projectTypeEnum,
+  tagsEnum,
+} from '@workspace/db/schema';
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,12 +31,12 @@ import {
 } from '@workspace/ui/components/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { project, projectApprovalStatusEnum } from '@workspace/db/schema';
 import { CheckCircle, Edit, Eye, XCircle } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
+import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
@@ -45,6 +52,7 @@ export default function AdminProjectsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
 
   const {
     data: projects,
@@ -103,8 +111,9 @@ export default function AdminProjectsDashboard() {
         (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
       );
     })
-    .filter(() => statusFilter === 'all' || statusFilter === 'active')
-    .filter(() => typeFilter === 'all');
+    .filter((project) => statusFilter === 'all' || project.status === statusFilter)
+    .filter((project) => typeFilter === 'all' || project.type === typeFilter)
+    .filter((project) => tagFilter === 'all' || project.tags?.includes(tagFilter as any));
 
   return (
     <div className="space-y-6">
@@ -133,9 +142,15 @@ export default function AdminProjectsDashboard() {
               <CardHeader>
                 <CardTitle>Project Management</CardTitle>
                 <CardDescription>
-                  {tab === 'all'
-                    ? `Showing all ${filteredProjects.length} projects`
-                    : `Showing ${filteredProjects.length} ${tab} projects`}
+                  {tab === 'all' ? (
+                    <span>
+                      Showing all <NumberFlow value={filteredProjects.length} /> projects.
+                    </span>
+                  ) : (
+                    <span>
+                      Showing <NumberFlow value={filteredProjects.length} /> {tab} projects.
+                    </span>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -152,11 +167,12 @@ export default function AdminProjectsDashboard() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="paused">Paused</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {projectStatusEnum.enumValues.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -165,12 +181,44 @@ export default function AdminProjectsDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="fintech">Fintech</SelectItem>
-                        <SelectItem value="healthtech">Healthtech</SelectItem>
-                        <SelectItem value="edtech">Edtech</SelectItem>
-                        <SelectItem value="developer-tools">Developer Tools</SelectItem>
+                        {projectTypeEnum.enumValues.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Tags</SelectItem>
+                        {tagsEnum.enumValues.map((tag) => (
+                          <SelectItem key={tag} value={tag}>
+                            {tag}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Button
+                      variant="outline"
+                      disabled={
+                        searchQuery === '' &&
+                        statusFilter === 'all' &&
+                        typeFilter === 'all' &&
+                        tagFilter === 'all'
+                      }
+                      onClick={() => {
+                        setSearchQuery('');
+                        setStatusFilter('all');
+                        setTypeFilter('all');
+                        setTagFilter('all');
+                      }}
+                    >
+                      Clear
+                    </Button>
                   </div>
                 </div>
 
@@ -206,10 +254,11 @@ function ProjectsTable({
       <TableHeader>
         <TableRow>
           <TableHead>Project Name</TableHead>
-          <TableHead>Owner</TableHead>
-          <TableHead>Type</TableHead>
+          <TableHead>Claimed</TableHead>
+          <TableHead>Repo</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Approval</TableHead>
+          <TableHead>Type</TableHead>
           <TableHead>Tags</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -218,22 +267,12 @@ function ProjectsTable({
         {projects.map((project) => (
           <TableRow key={project.id}>
             <TableCell className="font-medium">{project.name}</TableCell>
+            <TableCell>
+              <Badge variant="secondary">{(!!project.ownerId)?.toString()}</Badge>
+            </TableCell>
             <TableCell>{project.gitRepoUrl || 'N/A'}</TableCell>
             <TableCell>
-              <Badge variant="secondary">Developer Tools</Badge>
-            </TableCell>
-            <TableCell>
-              <Select defaultValue="active">
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+              <p>{project.status}</p>
             </TableCell>
             <TableCell>
               <Badge
@@ -248,17 +287,21 @@ function ProjectsTable({
                   project.approvalStatus === 'approved'
                     ? 'bg-green-500'
                     : project.approvalStatus === 'pending'
-                      ? 'bg-yellow-500'
+                      ? 'bg-orange-500'
                       : ''
                 }
               >
                 {project.approvalStatus}
               </Badge>
             </TableCell>
+            <TableCell>{project.type}</TableCell>
             <TableCell>
               <div className="flex gap-1">
-                <Badge variant="outline">web</Badge>
-                <Badge variant="outline">saas</Badge>
+                {project?.tags?.map((tag) => (
+                  <Badge variant="outline" key={tag}>
+                    {tag}
+                  </Badge>
+                ))}
               </div>
             </TableCell>
             <TableCell className="text-right">

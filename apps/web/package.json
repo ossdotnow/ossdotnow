@@ -27,6 +27,7 @@
     "@workspace/env": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.2.9",
+    "date-fns": "^4.1.0",
     "drizzle-zod": "^0.8.2",
     "lucide-react": "^0.518.0",
     "motion": "^12.18.1",
