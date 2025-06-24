@@ -3,9 +3,8 @@ import 'server-only';
 import { earlySubmissionRouter } from './routers/early-submissions';
 import { createTRPCContext, createTRPCRouter } from './trpc';
 import { earlyAccessRouter } from './routers/early-access';
+import { repositoryRouter } from './routers/repository';
 import { projectsRouter } from './routers/projects';
-import { gitlabRouter } from './routers/gitlab';
-import { githubRouter } from './routers/github';
 import { usersRouter } from './routers/users';
 import { adminRouter } from './routers/admin';
 import { userRouter } from './routers/user';
@@ -16,8 +15,7 @@ export const appRouter = createTRPCRouter({
   users: usersRouter,
   projects: projectsRouter,
   earlySubmission: earlySubmissionRouter,
-  github: githubRouter,
-  gitlab: gitlabRouter,
+  repository: repositoryRouter,
   admin: adminRouter,
 });
 

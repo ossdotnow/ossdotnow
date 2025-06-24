@@ -189,52 +189,17 @@ export default function SubmissionForm() {
         return;
       }
 
-      if (gitHost === 'gitlab') {
-        setRepoValidation({
-          isValidating: true,
-          isValid: null,
-          message: null,
-        });
-
-        try {
-          const result = await queryClient.fetchQuery(
-            trpc.gitlab.getProject.queryOptions({ projectPath: repoUrl }),
-          );
-
-          if (result) {
-            setRepoValidation({
-              isValidating: false,
-              isValid: true,
-              message: 'Repository found!',
-            });
-
-            if (result.name) {
-              form.setValue('name', result.name, { shouldValidate: true });
-            }
-
-            if (result.description) {
-              form.setValue('description', result.description, { shouldValidate: true });
-            }
-          }
-        } catch (error) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: false,
-            message: 'Repository not found or is private',
-          });
-        }
-        return;
-      }
-
       setRepoValidation({
         isValidating: true,
         isValid: null,
         message: null,
       });
 
+      const fullUrl = `https://${gitHost}.com/${repoUrl}`;
+
       try {
         const result = await queryClient.fetchQuery(
-          trpc.github.getRepo.queryOptions({ repo: repoUrl }),
+          trpc.repository.getRepo.queryOptions({ url: fullUrl }),
         );
         if (result) {
           setRepoValidation({
