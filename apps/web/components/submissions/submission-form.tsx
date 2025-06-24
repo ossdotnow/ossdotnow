@@ -239,6 +239,8 @@ export default function SubmissionForm() {
         message: null,
       });
 
+      const fullUrl = `https://${gitHost}.com/${repoUrl}`;
+
       try {
         const result = await queryClient.fetchQuery(
           trpc.repository.getRepo.queryOptions({
