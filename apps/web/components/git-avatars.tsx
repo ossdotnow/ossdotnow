@@ -8,10 +8,7 @@ const MotionComponent = motion.create(TooltipTrigger);
 
 export default function GitAvatars() {
   return (
-    <motion.div
-      className="bg-background group mt-8 flex items-center rounded-full border p-2 shadow-sm"
-      whileHover="hover"
-    >
+    <motion.div className="bg-background group mt-8 flex items-center rounded-full border p-2 shadow-sm">
       <div className="flex justify-center">
         {projects.map((project, index) => (
           <Tooltip key={project.name}>
