@@ -16,8 +16,8 @@ export default function GitAvatars() {
         {projects.map((project, index) => (
           <Tooltip key={project.name}>
             <MotionComponent
-              initial={{ x: 0 }}
-              style={{
+              initial={{
+                x: 0,
                 marginLeft: index === 0 ? '0rem' : '-0.6rem',
                 height: '32px',
                 width: '32px',
