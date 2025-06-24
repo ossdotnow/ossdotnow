@@ -13,108 +13,37 @@ export default function GitAvatars() {
       whileHover="hover"
     >
       <div className="flex justify-center">
-        <Tooltip>
-          <MotionComponent
-            style={{ marginLeft: '0rem', height: '32px', width: '32px' }}
-            variants={{
-              hover: { marginLeft: '0rem', height: '36px', width: '36px' },
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Link
-              href="https://github.com/AmanVarshney01/create-better-t-stack"
-              target="_blank"
-              rel="noreferrer noopener"
-              event="better-t-stack_clicked"
+        {projects.map((project, index) => (
+          <Tooltip key={project.name}>
+            <MotionComponent
+              initial={{ x: 0 }}
+              style={{
+                marginLeft: index === 0 ? '0rem' : '-0.6rem',
+                height: '32px',
+                width: '32px',
+              }}
+              variants={{
+                hover: { marginLeft: '0.2rem', height: '36px', width: '36px' },
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             >
-              <img
-                className="ring-background rounded-full ring-1"
-                src="https://avatars.githubusercontent.com/u/45312299"
-              />
-            </Link>
-          </MotionComponent>
-          <TooltipContent>
-            <p>better-t-stack</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <MotionComponent
-            initial={{ x: 0 }}
-            style={{ marginLeft: '-0.6rem', height: '32px', width: '32px' }}
-            variants={{
-              hover: { marginLeft: '0.2rem', height: '36px', width: '36px' },
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Link
-              href="https://github.com/fuma-nama/fumadocs"
-              target="_blank"
-              rel="noreferrer noopener"
-              event="fumadocs_clicked"
-            >
-              <img
-                className="ring-background rounded-full ring-1"
-                src="https://avatars.githubusercontent.com/u/76240755"
-              />
-            </Link>
-          </MotionComponent>
-          <TooltipContent>
-            <p>fumadocs</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <MotionComponent
-            initial={{ x: 0 }}
-            style={{ marginLeft: '-0.6rem', height: '32px', width: '32px' }}
-            variants={{
-              hover: { marginLeft: '0.2rem', height: '36px', width: '36px' },
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Link
-              href="https://github.com/useautumn/autumn"
-              target="_blank"
-              rel="noreferrer noopener"
-              event="autumn_clicked"
-            >
-              <img
-                className="ring-background rounded-full ring-1"
-                src="https://avatars.githubusercontent.com/u/194405912"
-              />
-            </Link>
-          </MotionComponent>
-          <TooltipContent>
-            <p>Autumn</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <MotionComponent
-            initial={{ x: 0 }}
-            style={{ marginLeft: '-0.6rem', height: '32px', width: '32px' }}
-            variants={{
-              hover: { marginLeft: '0.2rem', height: '36px', width: '36px' },
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
-            <Link
-              href="https://github.com/trycompai/comp"
-              target="_blank"
-              rel="noreferrer noopener"
-              event="compai_clicked"
-            >
-              <img
-                className="ring-background rounded-full ring-1"
-                src="https://avatars.githubusercontent.com/u/195194844"
-              />
-            </Link>
-          </MotionComponent>
-          <TooltipContent>
-            <p>CompAI</p>
-          </TooltipContent>
-        </Tooltip>
+              <Link
+                href={project.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                event={`${project.name}_clicked`}
+              >
+                <img className="ring-background rounded-full ring-1" src={project.avatar} />
+              </Link>
+            </MotionComponent>
+            <TooltipContent>
+              <p>{project.name}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
       </div>
       <motion.span
-        className="text-muted-foreground px-3 text-sm"
+        className="text-muted-foreground pointer-events-none px-3 text-xs md:text-sm"
         initial={{ opacity: 1 }}
         variants={{
           hover: { opacity: 0.7 },
@@ -125,3 +54,36 @@ export default function GitAvatars() {
     </motion.div>
   );
 }
+
+const projects = [
+  {
+    name: 'better-t-stack',
+    url: 'https://github.com/AmanVarshney01/create-better-t-stack',
+    avatar: 'https://avatars.githubusercontent.com/u/45312299',
+  },
+  {
+    name: 'fumadocs',
+    url: 'https://github.com/fuma-nama/fumadocs',
+    avatar: 'https://avatars.githubusercontent.com/u/76240755',
+  },
+  {
+    name: 'Autumn',
+    url: 'https://github.com/useautumn/autumn',
+    avatar: 'https://avatars.githubusercontent.com/u/194405912',
+  },
+  {
+    name: 'CompAI',
+    url: 'https://github.com/trycompai/comp',
+    avatar: 'https://avatars.githubusercontent.com/u/195194844',
+  },
+  {
+    name: 'Analog',
+    url: 'https://github.com/analogdotnow/Analog',
+    avatar: 'https://avatars.githubusercontent.com/u/212980245',
+  },
+  {
+    name: 'better-auth',
+    url: 'https://github.com/better-auth/better-auth',
+    avatar: 'https://avatars.githubusercontent.com/u/163827765',
+  },
+];

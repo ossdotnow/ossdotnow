@@ -43,6 +43,13 @@
       "when": 1750538610028,
       "tag": "0005_known_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1750701189110,
+      "tag": "0006_late_brother_voodoo",
+      "breakpoints": true
     }
   ]
 }
