@@ -8,7 +8,7 @@ import Image from 'next/image';
 
 export default function Page() {
   return (
-    <div className="flex h-[calc(100vh-80px)] overflow-hidden px-6 md:h-[calc(100vh-80px)]">
+    <div className="flex min-h-[calc(100vh-80px)] overflow-hidden p-6 md:min-h-[calc(100vh-80px)]">
       <Image
         src="/home-background.png"
         alt=""
