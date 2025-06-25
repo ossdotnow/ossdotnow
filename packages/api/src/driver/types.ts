@@ -1,3 +1,6 @@
+import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
+import { project } from '@workspace/db/schema';
+
 export interface RepoData {
   id: string | number;
   name: string;
@@ -44,4 +47,27 @@ export interface GitManager {
     issues: IssueData[];
     pullRequests: PullRequestData[];
   }>;
+  verifyOwnership(
+    identifier: string,
+    ctx: any,
+    projectId: string,
+  ): Promise<{
+    success: boolean;
+    project: typeof project.$inferSelect;
+    ownershipType: string;
+    verifiedAs: string;
+  }>;
+  getRepoPermissions(
+    identifier: string,
+  ): Promise<
+    RestEndpointMethodTypes['repos']['getCollaboratorPermissionLevel']['response']['data']
+  >;
+  getCurrentUser(): Promise<{
+    id: string;
+    username: string;
+  }>;
+  getOrgMembership(
+    org: string,
+    username: string,
+  ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
 }

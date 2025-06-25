@@ -6,6 +6,11 @@ export const providers = [
     icon: Icons.github,
     providerId: 'github' as const,
   },
+  {
+    name: 'Gitlab',
+    icon: Icons.gitlab,
+    providerId: 'gitlab' as const,
+  },
 ];
 
 export type ProviderId = (typeof providers)[number]['providerId'];

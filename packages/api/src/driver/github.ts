@@ -6,8 +6,14 @@ import {
   PullRequestData,
   GitManagerConfig,
 } from './types';
-import { restEndpointMethods } from '@octokit/plugin-rest-endpoint-methods';
+import {
+  restEndpointMethods,
+  RestEndpointMethodTypes,
+} from '@octokit/plugin-rest-endpoint-methods';
+import { project } from '@workspace/db/schema';
+import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
+import { eq } from 'drizzle-orm';
 
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 
@@ -26,6 +32,17 @@ export class GithubManager implements GitManager {
     return { owner, repo };
   }
 
+  async getCurrentUser(): Promise<{
+    id: string;
+    username: string;
+  }> {
+    const { data } = await this.octokit.rest.users.getAuthenticated();
+    return {
+      id: data.id.toString(),
+      username: data.login,
+    };
+  }
+
   async getRepo(identifier: string): Promise<RepoData> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
     const { data } = await this.octokit.rest.repos.get({ owner, repo });
@@ -36,6 +53,21 @@ export class GithubManager implements GitManager {
       description: data.description ?? undefined,
       url: data.html_url,
     };
+  }
+
+  async getRepoPermissions(
+    identifier: string,
+  ): Promise<
+    RestEndpointMethodTypes['repos']['getCollaboratorPermissionLevel']['response']['data']
+  > {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
+    const currentUser = await this.getCurrentUser();
+    const { data } = await this.octokit.rest.repos.getCollaboratorPermissionLevel({
+      owner,
+      repo,
+      username: currentUser.username,
+    });
+    return data;
   }
 
   async getContributors(identifier: string): Promise<ContributorData[]> {
@@ -84,8 +116,6 @@ export class GithubManager implements GitManager {
   }
 
   async getRepoData(identifier: string) {
-    const { owner, repo } = this.parseRepoIdentifier(identifier);
-
     const [repoData, contributors, issues, pullRequests] = await Promise.all([
       this.getRepo(identifier),
       this.getContributors(identifier),
@@ -99,5 +129,137 @@ export class GithubManager implements GitManager {
       issues,
       pullRequests,
     };
+  }
+
+  async verifyOwnership(
+    identifier: string,
+    ctx: any,
+    projectId: string,
+  ): Promise<{
+    success: boolean;
+    project: typeof project.$inferSelect;
+    ownershipType: string;
+    verifiedAs: string;
+  }> {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
+
+    const currentUser = await this.getCurrentUser();
+
+    const repoData = await this.getRepo(identifier);
+
+    let isOwner = false;
+    let ownershipType = '';
+
+    if (repoData.owner.login === currentUser.username) {
+      isOwner = true;
+      ownershipType = 'repository owner';
+    } else if (repoData.owner.type === 'Organization') {
+      console.log(
+        `Checking org ownership for ${currentUser.username} in org ${repoData.owner.login}`,
+      );
+
+      try {
+        const { data: repoPermissions } =
+          await this.octokit.rest.repos.getCollaboratorPermissionLevel({
+            owner,
+            repo,
+            username: currentUser.username,
+          });
+
+        console.log(
+          `User ${currentUser.username} has ${repoPermissions.permission} permission on the repository`,
+        );
+
+        if (repoPermissions.permission === 'admin') {
+          try {
+            const { data: membership } = await this.octokit.rest.orgs.getMembershipForUser({
+              org: repoData.owner.login,
+              username: currentUser.username,
+            });
+
+            console.log(
+              `User ${currentUser.username} has role '${membership.role}' in org with state '${membership.state}'`,
+            );
+
+            if (membership.role === 'admin' && membership.state === 'active') {
+              isOwner = true;
+              ownershipType = 'organization owner';
+            }
+          } catch (orgError) {
+            console.log('Error checking org membership:', orgError);
+            isOwner = true;
+            ownershipType = 'repository admin';
+          }
+        }
+      } catch (error: unknown) {
+        console.log(
+          'User does not have collaborator access to the repository:',
+          (error as Error).message,
+        );
+
+        try {
+          const { data: membership } = await this.octokit.rest.orgs.getMembershipForUser({
+            org: repoData.owner.login,
+            username: currentUser.username,
+          });
+
+          if (membership.role === 'admin' && membership.state === 'active') {
+            isOwner = true;
+            ownershipType = 'organization owner';
+          }
+        } catch (orgError) {
+          console.log('User is not a member of the organization');
+        }
+      }
+    }
+
+    if (!isOwner) {
+      console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
+      });
+    }
+
+    console.log(`Claim approved: ${currentUser.username} is ${ownershipType} for ${owner}/${repo}`);
+
+    const updatedProject = await ctx.db
+      .update(project)
+      .set({
+        ownerId: ctx.session.userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(project.id, projectId))
+      .returning();
+
+    if (!updatedProject[0]) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to update project ownership',
+      });
+    }
+
+    // Create a notification or send an email to inform about the claim
+    // This would require implementing a notification system
+    // Example: await createNotification({
+    //   type: 'project_claimed',
+    //   projectId: input.projectId,
+    //   newOwnerId: ctx.session.userId,
+    // });
+
+    return {
+      success: true,
+      project: updatedProject[0],
+      ownershipType,
+      verifiedAs: currentUser.username,
+    };
+  }
+
+  async getOrgMembership(
+    org: string,
+    username: string,
+  ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']> {
+    const { data } = await this.octokit.rest.orgs.getMembershipForUser({ org, username });
+    return data;
   }
 }

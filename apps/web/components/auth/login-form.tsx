@@ -125,6 +125,15 @@ export function LoginForm({
         >
           <Icons.github className="h-4 w-4 fill-white" /> Login with Github
         </Button>
+
+        <Button
+          type="button"
+          className="border-border rounded-none border py-2 text-base transition-all"
+          variant="outline"
+          onClick={() => signInWithProvider('gitlab')}
+        >
+          <Icons.gitlab className="h-4 w-4 fill-white" /> Login with Gitlab
+        </Button>
       </div>
     </div>
   );

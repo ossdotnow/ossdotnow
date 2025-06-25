@@ -4,11 +4,11 @@ import { env } from '@workspace/env/server';
 import { eq, and } from 'drizzle-orm';
 import { createDriver } from '.';
 
-type Context = Awaited<ReturnType<typeof createTRPCContext>>;
-type Provider = 'github' | 'gitlab';
+export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
+export type Provider = 'github' | 'gitlab';
 
-export const getActiveDriver = async (ctx: Context, provider: Provider) => {
-  if (ctx.user?.id) {
+export const getActiveDriver = async (provider: Provider, ctx?: Context) => {
+  if (ctx?.user?.id) {
     const userAccount = await ctx.db
       .select({
         accessToken: account.accessToken,

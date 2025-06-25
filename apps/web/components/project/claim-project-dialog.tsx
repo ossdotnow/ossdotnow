@@ -56,7 +56,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
   };
 
   if (!claimStatus?.canClaim) {
-    if (claimStatus?.needsGitHubAuth) {
+    if (claimStatus?.needsAuth) {
       return (
         <Button variant="default" size="sm" className="gap-2" asChild>
           <Link href="/login" event="claim_project_dialog_connect_github_button_clicked">
@@ -116,7 +116,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
                 <AlertDescription>{error.message}</AlertDescription>
               </Alert>
               {claimStatus.gitRepoUrl && (
-                <DebugGitHubPermissions repoUrl={claimStatus.gitRepoUrl} />
+                <DebugGitHubPermissions repoUrl={claimStatus.gitRepoUrl} projectId={projectId} />
               )}
             </>
           )}

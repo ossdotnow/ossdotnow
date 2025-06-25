@@ -11,7 +11,12 @@ type Project = typeof projectSchema.$inferSelect;
 
 export default function ProjectCard({ project }: { project: Project }) {
   const trpc = useTRPC();
-  const { data: repo } = useQuery(trpc.github.getRepo.queryOptions({ repo: project.gitRepoUrl! }));
+  const { data: repo } = useQuery(
+    trpc.repository.getRepo.queryOptions({
+      url: project.gitRepoUrl!,
+      provider: project.gitHost as 'github' | 'gitlab',
+    }),
+  );
   // TODO: batch this with the project query
 
   return (

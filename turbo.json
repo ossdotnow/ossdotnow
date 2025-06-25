@@ -1,23 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "envMode": "loose",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "env": [
-        "DATABASE_URL",
-        "NODE_ENV",
-        "UPSTASH_REDIS_REST_URL",
-        "UPSTASH_REDIS_REST_TOKEN",
-        "BETTER_AUTH_SECRET",
-        "GITHUB_CLIENT_ID",
-        "GITHUB_CLIENT_SECRET",
-        "UPLOADTHING_TOKEN",
-        "GITHUB_TOKEN",
-        "GITLAB_TOKEN",
-        "NEXT_PUBLIC_VERCEL_URL"
-      ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {
@@ -28,18 +16,6 @@
     },
     "dev": {
       "cache": false,
-      "env": [
-        "DATABASE_URL",
-        "NODE_ENV",
-        "UPSTASH_REDIS_REST_URL",
-        "UPSTASH_REDIS_REST_TOKEN",
-        "BETTER_AUTH_SECRET",
-        "GITHUB_CLIENT_ID",
-        "GITHUB_CLIENT_SECRET",
-        "UPLOADTHING_TOKEN",
-        "GITHUB_TOKEN",
-        "GITLAB_TOKEN"
-      ],
       "persistent": true
     },
     "db:generate": {
@@ -47,18 +23,15 @@
     },
     "db:migrate": {
       "cache": false,
-      "env": ["DATABASE_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "db:push": {
       "cache": false,
-      "env": ["DATABASE_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "db:studio": {
       "persistent": true,
       "cache": false,
-      "env": ["DATABASE_URL"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     }
   }

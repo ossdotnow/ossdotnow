@@ -54,8 +54,8 @@ export default function ProjectPage({ id }: { id: string }) {
   const trpc = useTRPC();
 
   const { data: repoData } = useQuery(
-    trpc.github.getRepoData.queryOptions(
-      { repo: project?.gitRepoUrl! },
+    trpc.repository.getRepoData.queryOptions(
+      { url: project?.gitRepoUrl!, provider: project?.gitHost as 'github' | 'gitlab' },
       { enabled: !!project?.gitRepoUrl },
     ),
   );

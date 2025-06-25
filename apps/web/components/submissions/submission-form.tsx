@@ -195,12 +195,16 @@ export default function SubmissionForm() {
         message: null,
       });
 
-      const fullUrl = `https://${gitHost}.com/${repoUrl}`;
-
       try {
         const result = await queryClient.fetchQuery(
-          trpc.repository.getRepo.queryOptions({ url: fullUrl }),
+          trpc.repository.getRepo.queryOptions({
+            url: repoUrl, // org/repo
+            provider: gitHost as 'github' | 'gitlab',
+          }),
         );
+
+        console.log('result', result);
+
         if (result) {
           setRepoValidation({
             isValidating: false,
