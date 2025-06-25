@@ -46,19 +46,26 @@ export class GitlabManager implements GitManager {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
     console.log('owner', owner);
     console.log('repo', repo);
-    const projectData = await this.gitlab.Projects.show(
-      encodeURIComponent(`https://gitlab.com/${owner}/${repo}`),
-    );
+    try {
+      const projectData = await this.gitlab.Projects.show(
+        encodeURIComponent(`https://gitlab.com/${owner}/${repo}`),
+      );
 
-    console.log('projectData', projectData);
+      console.log('projectData', projectData);
 
-    return {
-      ...projectData,
-      id: projectData.id,
-      name: projectData.name,
-      description: projectData.description ?? undefined,
-      url: projectData.web_url as string,
-    };
+      return {
+        ...projectData,
+        id: projectData.id,
+        name: projectData.name,
+        description: projectData.description ?? undefined,
+        url: projectData.web_url as string,
+      };
+    } catch (error) {
+      console.error('Error fetching repository:', error);
+      throw new Error(
+        `Failed to fetch repository ${identifier}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
   }
 
   async getRepoPermissions(identifier: string): Promise<any> {
@@ -135,15 +142,15 @@ export class GitlabManager implements GitManager {
     this.parseRepoIdentifier(identifier);
     const issues = await this.gitlab.Issues.all({
       projectId: identifier,
-      state: 'all',
+      state: 'opened',
       perPage: 100,
     });
     return issues.map((i: any) => ({
-      ...i,
       id: i.id,
       title: i.title,
       state: i.state,
       url: i.web_url,
+      ...i,
     }));
   }
 
@@ -155,11 +162,11 @@ export class GitlabManager implements GitManager {
       perPage: 100,
     });
     return mergeRequests.map((mr: any) => ({
-      ...mr,
       id: mr.id,
       title: mr.title,
       state: mr.state,
       url: mr.web_url,
+      ...mr,
     }));
   }
 

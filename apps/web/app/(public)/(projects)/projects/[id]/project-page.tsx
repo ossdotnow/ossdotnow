@@ -37,6 +37,10 @@ import Image from 'next/image';
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
 type GitHubPullRequest = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
 
+const isValidProvider = (provider: string | null | undefined): provider is 'github' | 'gitlab' => {
+  return provider === 'github' || provider === 'gitlab';
+};
+
 function useProject(id: string) {
   const trpc = useTRPC();
   const query = useQuery(trpc.projects.getProject.queryOptions({ id }));
@@ -56,7 +60,7 @@ export default function ProjectPage({ id }: { id: string }) {
   const { data: repoData } = useQuery(
     trpc.repository.getRepoData.queryOptions(
       { url: project?.gitRepoUrl!, provider: project?.gitHost as 'github' | 'gitlab' },
-      { enabled: !!project?.gitRepoUrl },
+      { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
     ),
   );
 

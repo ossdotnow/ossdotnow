@@ -9,14 +9,19 @@ import Image from 'next/image';
 
 type Project = typeof projectSchema.$inferSelect;
 
+const isValidProvider = (provider: string | null): provider is 'github' | 'gitlab' => {
+  return provider === 'github' || provider === 'gitlab';
+};
+
 export default function ProjectCard({ project }: { project: Project }) {
   const trpc = useTRPC();
-  const { data: repo } = useQuery(
-    trpc.repository.getRepo.queryOptions({
-      url: project.gitRepoUrl!,
+  const { data: repo } = useQuery({
+    ...trpc.repository.getRepo.queryOptions({
+      url: project.gitRepoUrl,
       provider: project.gitHost as 'github' | 'gitlab',
     }),
-  );
+    enabled: !!project.gitRepoUrl && isValidProvider(project.gitHost),
+  });
   // TODO: batch this with the project query
 
   return (

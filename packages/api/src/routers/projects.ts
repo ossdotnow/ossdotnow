@@ -284,10 +284,6 @@ export const projectsRouter = createTRPCRouter({
 
       const provider = projectToCheck.gitHost as 'github' | 'gitlab';
 
-      if (!projectToCheck) {
-        return { canClaim: false, reason: 'Project not found' };
-      }
-
       if (projectToCheck.ownerId) {
         return { canClaim: false, reason: 'Project already claimed' };
       }
