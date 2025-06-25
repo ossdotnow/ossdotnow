@@ -102,7 +102,7 @@ export default function AdminProjectsDashboard() {
 
   const tabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
 
-  const filteredProjects = projects
+  const filteredProjects = projects.data
     .filter((project) => approvalStatus === 'all' || project.approvalStatus === approvalStatus)
     .filter((project) => {
       const searchLower = searchQuery.toLowerCase();
@@ -259,7 +259,6 @@ function ProjectsTable({
           <TableHead>Status</TableHead>
           <TableHead>Approval</TableHead>
           <TableHead>Type</TableHead>
-          <TableHead>Tags</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -295,15 +294,6 @@ function ProjectsTable({
               </Badge>
             </TableCell>
             <TableCell>{project.type}</TableCell>
-            <TableCell>
-              <div className="flex gap-1">
-                {project?.tags?.map((tag) => (
-                  <Badge variant="outline" key={tag}>
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
                 {project.approvalStatus === 'pending' && (
