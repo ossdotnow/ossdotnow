@@ -3,14 +3,16 @@ import { getActiveDriver } from '../driver/utils';
 import { GitManager } from '../driver/types';
 import { z } from 'zod';
 
+type PromiseReturnType<T> = T extends (...args: any) => Promise<infer R> ? R : never;
+
 const createRepositoryProcedure = <T extends keyof GitManager>(methodName: T) =>
   publicProcedure
     .input(z.object({ url: z.string(), provider: z.enum(['github', 'gitlab']) }))
     .query(async ({ input, ctx }) => {
       const driver = await getActiveDriver(input.provider, ctx);
-      const output = (driver[methodName] as any)(input.url);
+      const output = await (driver[methodName] as any)(input.url);
 
-      return output as Awaited<ReturnType<GitManager[T]>>;
+      return output as PromiseReturnType<GitManager[T]>;
     });
 
 export const repositoryRouter = createTRPCRouter({
