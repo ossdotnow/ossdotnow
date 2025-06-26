@@ -47,9 +47,7 @@ export class GitlabManager implements GitManager {
     console.log('owner', owner);
     console.log('repo', repo);
     try {
-      const projectData = await this.gitlab.Projects.show(
-        encodeURIComponent(`https://gitlab.com/${owner}/${repo}`),
-      );
+      const projectData = await this.gitlab.Projects.show((identifier));
 
       console.log('projectData', projectData);
 
