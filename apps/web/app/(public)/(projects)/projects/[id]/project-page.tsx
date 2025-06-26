@@ -25,12 +25,13 @@ import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-meth
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
 import { Separator } from '@workspace/ui/components/separator';
 import ProjectTicks from '@/components/project/project-ticks';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import { useQuery } from '@tanstack/react-query';
+import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
@@ -62,26 +63,50 @@ export default function ProjectPage({ id }: { id: string }) {
 
   const trpc = useTRPC();
 
-  const { data: repoData } = useQuery(
-    trpc.repository.getRepoData.queryOptions(
-      {
-        url: project?.gitRepoUrl!,
-        provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
-      },
-      { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
-    ),
-  );
+  const repoData = useQueries({
+    queries: [
+      trpc.repository.getRepo.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getContributors.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getIssues.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getPullRequests.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+    ],
+  });
 
   if (!project || !project.gitRepoUrl) return <div>Project not found</div>;
 
-  if (!repoData?.repo) return null;
-
-  const { repo, contributors, issues, pullRequests } = repoData;
-
-  console.log(repo);
-
   const isUnclaimed = !project.ownerId;
   const isOwner = user?.id === project.ownerId;
+
+  const repo = repoData[0].data;
+  const contributors = repoData[1].data;
+  const issues = repoData[2].data;
+  const pullRequests = repoData[3].data;
+
+  console.dir(contributors, { depth: null });
 
   return (
     <div className="mt-8">
@@ -93,7 +118,8 @@ export default function ProjectPage({ id }: { id: string }) {
               (repo?.namespace && repo?.namespace?.avatar_url) ? (
                 <Image
                   src={
-                    repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`
+                    repo?.owner?.avatar_url ||
+                    `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
                   }
                   alt={project.name ?? 'Project Logo'}
                   width={48}
@@ -202,7 +228,10 @@ export default function ProjectPage({ id }: { id: string }) {
                   <p className="text-muted-foreground mb-3 text-sm">
                     This project hasn&apos;t been claimed yet.
                   </p>
-                  <ClaimProjectDialog projectId={project.id} />
+                  <ClaimProjectDialog
+                    projectId={project.id}
+                    provider={project.gitHost as (typeof projectProviderEnum.enumValues)[number]}
+                  />
                 </div>
               )}
 
@@ -234,7 +263,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Stars</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {repo?.stargazers_count?.toLocaleString()}
+                    <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -243,7 +272,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Forks</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {repo?.forks_count?.toLocaleString()}
+                    <NumberFlow value={repo?.forks_count || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -252,7 +281,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Contributors</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {contributors?.length?.toLocaleString()}
+                    <NumberFlow value={contributors?.length || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -261,9 +290,8 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Open Issues</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {issues?.filter(
-                      (issue: GitHubIssue) => !issue.pull_request && issue.state === 'open',
-                    ).length || 0}
+                    {issues?.filter((issue: any) => !issue.pull_request && issue.state === 'open')
+                      .length || 0}
                   </p>
                 </div>
               </div>
@@ -323,13 +351,12 @@ export default function ProjectPage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="issues">
-                  {issues &&
-                  issues.filter((issue: GitHubIssue) => !issue.pull_request).length > 0 ? (
+                  {issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
                     <div className="space-y-3">
                       {issues
-                        .filter((issue: GitHubIssue) => !issue.pull_request)
+                        .filter((issue: any) => !issue.pull_request)
                         .slice(0, 10)
-                        .map((issue: GitHubIssue) => (
+                        .map((issue: any) => (
                           <div
                             key={issue.id}
                             className="rounded-md border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
@@ -415,7 +442,7 @@ export default function ProjectPage({ id }: { id: string }) {
                 <TabsContent value="pull-requests">
                   {pullRequests && pullRequests.length > 0 ? (
                     <div className="space-y-3">
-                      {pullRequests.slice(0, 10).map((pr: GitHubPullRequest) => (
+                      {pullRequests.slice(0, 10).map((pr: any) => (
                         <div
                           key={pr.id}
                           className="rounded-md border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
