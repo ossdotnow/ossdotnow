@@ -43,13 +43,9 @@ export class GitlabManager implements GitManager {
   }
 
   async getRepo(identifier: string): Promise<RepoData> {
-    const { owner, repo } = this.parseRepoIdentifier(identifier);
-    console.log('owner', owner);
-    console.log('repo', repo);
+    this.parseRepoIdentifier(identifier);
     try {
-      const projectData = await this.gitlab.Projects.show((identifier));
-
-      console.log('projectData', projectData);
+      const projectData = await this.gitlab.Projects.show(identifier);
 
       return {
         ...projectData,

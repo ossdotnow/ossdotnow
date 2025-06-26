@@ -1,4 +1,6 @@
-type Provider = 'github' | 'gitlab';
+import { projectProviderEnum } from '@workspace/db/schema';
+
+type Provider = (typeof projectProviderEnum.enumValues)[number];
 
 interface UrlParts {
   provider: Provider;

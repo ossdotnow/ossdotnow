@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { projectProviderEnum, tagsEnum } from '@workspace/db/schema';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
@@ -29,7 +30,6 @@ import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
 import { track } from '@vercel/analytics/react';
-import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
 import { useTRPC } from '@/hooks/use-trpc';
@@ -130,19 +130,19 @@ export default function SubmissionForm() {
 
   const parseRepositoryUrl = (
     input: string,
-  ): { repo: string; host: 'github' | 'gitlab' } | null => {
+  ): { repo: string; host: (typeof projectProviderEnum.enumValues)[number] } | null => {
     const trimmedInput = input.trim();
 
     const githubPatterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@github\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     const gitlabPatterns = [
-      /^https?:\/\/gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@gitlab\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@gitlab\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     for (const pattern of githubPatterns) {
@@ -199,7 +199,7 @@ export default function SubmissionForm() {
         const result = await queryClient.fetchQuery(
           trpc.repository.getRepo.queryOptions({
             url: repoUrl, // org/repo
-            provider: gitHost as 'github' | 'gitlab',
+            provider: gitHost as (typeof projectProviderEnum.enumValues)[number],
           }),
         );
 

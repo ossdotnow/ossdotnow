@@ -9,17 +9,24 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
+import { Loader2, Shield, AlertCircle, CheckCircle, Github, Gitlab } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
-import { Loader2, Shield, AlertCircle, CheckCircle, Github } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DebugGitHubPermissions } from './debug-permissions';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export function ClaimProjectDialog({ projectId }: { projectId: string }) {
+export function ClaimProjectDialog({
+  projectId,
+  provider,
+}: {
+  projectId: string;
+  provider: (typeof projectProviderEnum.enumValues)[number];
+}) {
   const [open, setOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -60,8 +67,17 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
       return (
         <Button variant="default" size="sm" className="gap-2" asChild>
           <Link href="/login" event="claim_project_dialog_connect_github_button_clicked">
-            <Github className="h-4 w-4" />
-            Connect GitHub to Claim
+            {provider === 'github' ? (
+              <>
+                <Github className="h-4 w-4" />
+                Connect GitHub to Claim
+              </>
+            ) : (
+              <>
+                <Gitlab className="h-4 w-4" />
+                Connect GitLab to Claim
+              </>
+            )}
           </Link>
         </Button>
       );

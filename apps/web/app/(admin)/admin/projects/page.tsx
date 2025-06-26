@@ -3,6 +3,7 @@
 import {
   project,
   projectApprovalStatusEnum,
+  projectProviderEnum,
   projectStatusEnum,
   projectTypeEnum,
   tagsEnum,
@@ -53,6 +54,7 @@ export default function AdminProjectsDashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
+  const [providerFilter, setProviderFilter] = useState('all');
 
   const {
     data: projects,
@@ -113,6 +115,7 @@ export default function AdminProjectsDashboard() {
     })
     .filter((project) => statusFilter === 'all' || project.status === statusFilter)
     .filter((project) => typeFilter === 'all' || project.type === typeFilter)
+    .filter((project) => providerFilter === 'all' || project.gitHost === providerFilter)
     .filter((project) => tagFilter === 'all' || project.tags?.includes(tagFilter as any));
 
   return (
@@ -171,6 +174,19 @@ export default function AdminProjectsDashboard() {
                         {projectStatusEnum.enumValues.map((status) => (
                           <SelectItem key={status} value={status}>
                             {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={providerFilter} onValueChange={setProviderFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Providers</SelectItem>
+                        {projectProviderEnum.enumValues.map((provider) => (
+                          <SelectItem key={provider} value={provider}>
+                            {provider}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -256,6 +272,7 @@ function ProjectsTable({
           <TableHead>Project Name</TableHead>
           <TableHead>Claimed</TableHead>
           <TableHead>Repo</TableHead>
+          <TableHead>Provider</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Approval</TableHead>
           <TableHead>Type</TableHead>
@@ -270,6 +287,7 @@ function ProjectsTable({
               <Badge variant="secondary">{(!!project.ownerId)?.toString()}</Badge>
             </TableCell>
             <TableCell>{project.gitRepoUrl || 'N/A'}</TableCell>
+            <TableCell>{project.gitHost || 'N/A'}</TableCell>
             <TableCell>
               <p>{project.status}</p>
             </TableCell>

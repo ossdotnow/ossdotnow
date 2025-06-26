@@ -1,11 +1,11 @@
+import { account, projectProviderEnum } from '@workspace/db/schema';
 import type { createTRPCContext } from '../trpc';
-import { account } from '@workspace/db/schema';
 import { env } from '@workspace/env/server';
 import { eq, and } from 'drizzle-orm';
 import { createDriver } from '.';
 
 export type Context = Awaited<ReturnType<typeof createTRPCContext>>;
-export type Provider = 'github' | 'gitlab';
+export type Provider = (typeof projectProviderEnum.enumValues)[number];
 
 export const getActiveDriver = async (provider: Provider, ctx?: Context) => {
   if (ctx?.user?.id) {

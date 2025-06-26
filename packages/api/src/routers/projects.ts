@@ -1,5 +1,5 @@
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { account, project } from '@workspace/db/schema';
+import { account, project, projectProviderEnum } from '@workspace/db/schema';
 import { getActiveDriver } from '../driver/utils';
 import { and, asc, count, eq } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
@@ -193,7 +193,7 @@ export const projectsRouter = createTRPCRouter({
         });
       }
 
-      const provider = projectToClaim.gitHost as 'github' | 'gitlab';
+      const provider = projectToClaim.gitHost as (typeof projectProviderEnum.enumValues)[number];
 
       const driver = await getActiveDriver(provider, ctx as Context);
 
@@ -219,8 +219,8 @@ export const projectsRouter = createTRPCRouter({
       }
 
       const providerUrlRegex = {
-        github: /(?:https?:\/\/github\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/,
-        gitlab: /(?:https?:\/\/gitlab\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/,
+        github: /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
+        gitlab: /(?:https?:\/\/gitlab\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
       };
 
       const match = projectToClaim.gitRepoUrl.match(providerUrlRegex[provider]);
@@ -282,7 +282,7 @@ export const projectsRouter = createTRPCRouter({
         return { canClaim: false, reason: 'Project not found' };
       }
 
-      const provider = projectToCheck.gitHost as 'github' | 'gitlab';
+      const provider = projectToCheck.gitHost as (typeof projectProviderEnum.enumValues)[number];
 
       if (projectToCheck.ownerId) {
         return { canClaim: false, reason: 'Project already claimed' };
@@ -333,7 +333,7 @@ export const projectsRouter = createTRPCRouter({
         return { error: 'Project not found' };
       }
 
-      const provider = projectToCheck.gitHost as 'github' | 'gitlab';
+      const provider = projectToCheck.gitHost as (typeof projectProviderEnum.enumValues)[number];
 
       const userAccount = await ctx.db
         .select({ accessToken: account.accessToken })
