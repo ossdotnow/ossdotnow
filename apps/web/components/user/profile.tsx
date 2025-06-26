@@ -70,22 +70,23 @@ export default function ProfilePage({ id }: { id: string }) {
   const { data: projects } = useQuery(
     trpc.projects.getProjects.queryOptions({
       approvalStatus: 'all',
-      ownerId: user?.id,
+      page: 1,
+      pageSize: 100,
     }),
   );
 
   // if the id is me then
 
-  const { data: contributions } = useQuery(
-    trpc.user.getContributions.queryOptions({
-      ownerId: ,
-    }),
-  );
+  // const { data: contributions } = useQuery(
+  //   trpc.user.getContributions.queryOptions({
+  //     ownerId: ,
+  //   }),
+  // );
 
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
 
   const projectQueries = useQueries({
-    queries: (projects || []).map((project) => {
+    queries: (projects?.data || []).map((project) => {
       if (!project.gitRepoUrl) {
         return {
           queryKey: ['github-repo', project.id],
@@ -106,11 +107,11 @@ export default function ProfilePage({ id }: { id: string }) {
       const [, owner, repo] = match;
       const repoPath = `${owner}/${repo}`;
 
-      return trpc.github.getRepo.queryOptions({ repo: repoPath });
+      return trpc.repository.getRepo.queryOptions({ url: repoPath, provider: 'github' });
     }),
   });
 
-  const projectsWithGithubData = projects?.map((project, index) => {
+  const projectsWithGithubData = projects?.data?.map((project, index) => {
     const githubData = projectQueries[index]?.data;
     return {
       ...project,
