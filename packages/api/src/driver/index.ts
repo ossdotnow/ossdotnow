@@ -11,7 +11,7 @@ export const createDriver = (
   provider: keyof typeof supportedProviders,
   config: GitManagerConfig,
 ): GitManager => {
-  const Provider = supportedProviders[provider as keyof typeof supportedProviders];
+  const Provider = supportedProviders[provider];
   if (!Provider)
     throw new Error(
       `Provider "${provider}" not supported. Supported providers: ${Object.keys(supportedProviders).join(', ')}`,
