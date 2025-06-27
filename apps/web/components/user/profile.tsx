@@ -66,7 +66,9 @@ export default function ProfilePage({ id }: { id: string }) {
   ];
 
   const { data: user } = useQuery(trpc.user.get.queryOptions(id));
-  const { data: githubDetails } = useQuery(trpc.profile.githubDetails.queryOptions());
+  const { data: githubDetails } = useQuery(
+    trpc.profile.gitDetails.queryOptions({ provider: 'github', username: user?.username }),
+  );
   const { data: projects } = useQuery(
     trpc.projects.getProjects.queryOptions({
       approvalStatus: 'all',
