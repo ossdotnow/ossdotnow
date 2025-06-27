@@ -21,15 +21,18 @@ import { projectProviderEnum, tagsEnum } from '@workspace/db/schema';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
+import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
 import { Button } from '@workspace/ui/components/button';
+import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
 import { track } from '@vercel/analytics/react';
+import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
 import { useTRPC } from '@/hooks/use-trpc';
@@ -57,13 +60,15 @@ function useEarlySubmission() {
         if (isMounted) {
           localStorage.setItem('early-submission-success', 'true');
         }
-        track('early_submission_success');
+        vercelTrack('early_submission_success');
+        databuddyTrack('early_submission_success');
       },
       onError: (err) => {
         const errorMessage = err.message || 'Something went wrong. Please try again.';
         setError(errorMessage);
         toast.error(errorMessage);
-        track('early_submission_error', { error: errorMessage });
+        vercelTrack('early_submission_error', { error: errorMessage });
+        databuddyTrack('early_submission_error', { error: errorMessage });
       },
     }),
   );

@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Form, FormField } from '@workspace/ui/components/form';
+import { track as vercelTrack } from '@vercel/analytics/react';
 import { ComponentProps, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
+import { track as databuddyTrack } from '@databuddy/sdk';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { track } from '@vercel/analytics/react';
 import { cn } from '@workspace/ui/lib/utils';
 import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
@@ -38,11 +39,13 @@ function useWaitlistCount() {
         if (isMounted) {
           localStorage.setItem('waitlist-joined', 'true');
         }
-        track('waitlist_join_success');
+        vercelTrack('waitlist_join_success');
+        databuddyTrack('waitlist_join_success');
       },
       onError: () => {
         toast.error('Something went wrong. Please try again.');
-        track('waitlist_join_error');
+        vercelTrack('waitlist_join_error');
+        databuddyTrack('waitlist_join_error');
       },
     }),
   );
@@ -109,7 +112,7 @@ export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
 
       <div className="relative flex flex-row items-center justify-center gap-2">
         <span className="size-2 animate-pulse rounded-full bg-green-600 dark:bg-green-400" />
-        <span className="blur-xs absolute left-0 size-2 animate-pulse rounded-full bg-green-600 dark:bg-green-400" />
+        <span className="absolute left-0 size-2 animate-pulse rounded-full bg-green-600 blur-xs dark:bg-green-400" />
         <span className="text-sm">
           <NumberFlow value={waitlist.count} /> people already joined
         </span>
