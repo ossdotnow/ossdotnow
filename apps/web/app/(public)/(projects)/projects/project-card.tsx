@@ -1,4 +1,4 @@
-import { project as projectSchema } from '@workspace/db/schema';
+import { project as projectSchema, projectProviderEnum } from '@workspace/db/schema';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Star, GitFork, Clock } from 'lucide-react';
 import Link from '@workspace/ui/components/link';
@@ -9,10 +9,27 @@ import Image from 'next/image';
 
 type Project = typeof projectSchema.$inferSelect;
 
+// TODO: finish this file
+
+const isValidProvider = (
+  provider: string | null,
+): provider is (typeof projectProviderEnum.enumValues)[number] => {
+  return provider === 'github' || provider === 'gitlab';
+};
+
 export default function ProjectCard({ project }: { project: Project }) {
   const trpc = useTRPC();
-  const { data: repo } = useQuery(trpc.github.getRepo.queryOptions({ repo: project.gitRepoUrl! }));
-  // TODO: batch this with the project query
+  const { data: repoData } = useQuery({
+    ...trpc.repository.getRepoData.queryOptions({
+      url: project.gitRepoUrl,
+      provider: project.gitHost as (typeof projectProviderEnum.enumValues)[number],
+    }),
+    enabled: !!project.gitRepoUrl && isValidProvider(project.gitHost),
+  });
+
+  if (!repoData?.repo) return null;
+
+  const { repo, contributors, issues, pullRequests } = repoData;
 
   return (
     <div className="group/project relative border border-neutral-800 bg-neutral-900/50 p-6 transition-all hover:border-neutral-700">
@@ -23,13 +40,16 @@ export default function ProjectCard({ project }: { project: Project }) {
       >
         <span className="sr-only">View {project.name}</span>
         <div className="mb-4 flex items-start gap-3">
-          <Image
-            src={repo?.owner.avatar_url ?? 'https://placehold.co/48x48'}
-            alt={project.name ?? 'Project Logo'}
-            width={48}
-            height={48}
-            className="h-20 w-20 rounded-full"
-          />
+          {(repo && repo?.owner && repo?.owner?.avatar_url) ||
+          (repo?.namespace && repo?.namespace?.avatar_url) ? (
+            <Image
+              src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
+              alt={project.name ?? 'Project Logo'}
+              width={48}
+              height={48}
+              className="h-20 w-20 rounded-full"
+            />
+          ) : null}
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-white">{project.name}</h3>
@@ -57,7 +77,9 @@ export default function ProjectCard({ project }: { project: Project }) {
         <div className="flex items-center gap-6 text-sm">
           <div className="flex items-center gap-1.5">
             <Star className="h-4 w-4 text-neutral-500" />
-            <span className="text-neutral-300">{repo?.stargazers_count?.toLocaleString()}</span>
+            <span className="text-neutral-300">
+              {repo?.stargazers_count?.toLocaleString() || repo?.star_count.toLocaleString()}
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <GitFork className="h-4 w-4 text-neutral-500" />

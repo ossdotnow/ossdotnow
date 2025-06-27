@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { projectProviderEnum, tagsEnum } from '@workspace/db/schema';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
@@ -30,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
+import { track } from '@vercel/analytics/react';
 import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
@@ -133,19 +135,19 @@ export default function SubmissionForm() {
 
   const parseRepositoryUrl = (
     input: string,
-  ): { repo: string; host: 'github' | 'gitlab' } | null => {
+  ): { repo: string; host: (typeof projectProviderEnum.enumValues)[number] } | null => {
     const trimmedInput = input.trim();
 
     const githubPatterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@github\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     const gitlabPatterns = [
-      /^https?:\/\/gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@gitlab\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@gitlab\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     for (const pattern of githubPatterns) {
@@ -192,15 +194,6 @@ export default function SubmissionForm() {
         return;
       }
 
-      if (gitHost !== 'github') {
-        setRepoValidation({
-          isValidating: false,
-          isValid: true,
-          message: 'GitLab validation coming soon',
-        });
-        return;
-      }
-
       setRepoValidation({
         isValidating: true,
         isValid: null,
@@ -209,21 +202,58 @@ export default function SubmissionForm() {
 
       try {
         const result = await queryClient.fetchQuery(
-          trpc.github.getRepo.queryOptions({ repo: repoUrl }),
+          trpc.repository.getRepo.queryOptions({
+            url: repoUrl, // org/repo
+            provider: gitHost as (typeof projectProviderEnum.enumValues)[number],
+          }),
         );
+
+        console.log('result', result);
+
         if (result) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: true,
-            message: 'Repository found!',
-          });
+          try {
+            const duplicateCheck = await queryClient.fetchQuery(
+              trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                gitRepoUrl: repoUrl,
+              }),
+            );
 
-          if (result.name) {
-            form.setValue('name', result.name, { shouldValidate: true });
-          }
+            if (duplicateCheck.exists) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: false,
+                message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
+              });
+              return;
+            }
 
-          if (result.description) {
-            form.setValue('description', result.description, { shouldValidate: true });
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found and available!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          } catch (duplicateError) {
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found! (could not verify if already submitted, awkward..)',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
           }
         }
       } catch (error) {
@@ -425,7 +455,7 @@ export default function SubmissionForm() {
                         <SelectItem className="rounded-none" value="github">
                           GitHub
                         </SelectItem>
-                        <SelectItem className="rounded-none" value="gitlab" disabled>
+                        <SelectItem className="rounded-none" value="gitlab">
                           GitLab
                         </SelectItem>
                       </SelectContent>

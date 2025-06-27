@@ -1,17 +1,15 @@
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { Api } from '@octokit/plugin-rest-endpoint-methods';
-import { account, project } from '@workspace/db/schema';
+import { account, project, projectProviderEnum } from '@workspace/db/schema';
+import { getActiveDriver } from '../driver/utils';
+import { and, asc, count, eq } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
-import { createOctokitInstance } from './github';
 import type { createTRPCContext } from '../trpc';
+import type { Context } from '../driver/utils';
 import { TRPCError } from '@trpc/server';
-import { Octokit } from '@octokit/core';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project);
 
-type Project = typeof project.$inferSelect;
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 interface VerifyGitHubOwnershipContext {
@@ -42,139 +40,58 @@ export interface DebugPermissionsResult {
   orgMembershipError?: string;
 }
 
-async function verifyGitHubOwnership(
-  github: Octokit & Api,
-  owner: string,
-  repo: string,
-  ctx: VerifyGitHubOwnershipContext,
-  input: { projectId: string },
-): Promise<{ success: boolean; project: Project; ownershipType: string; verifiedAs: string }> {
-  const { data: currentUser } = await github.rest.users.getAuthenticated();
-
-  const { data: repoData } = await github.rest.repos.get({
-    owner,
-    repo,
-  });
-
-  let isOwner = false;
-  let ownershipType = '';
-
-  if (repoData.owner.login === currentUser.login) {
-    isOwner = true;
-    ownershipType = 'repository owner';
-  } else if (repoData.owner.type === 'Organization') {
-    console.log(`Checking org ownership for ${currentUser.login} in org ${repoData.owner.login}`);
-
-    try {
-      const { data: repoPermissions } = await github.rest.repos.getCollaboratorPermissionLevel({
-        owner,
-        repo,
-        username: currentUser.login,
-      });
-
-      console.log(
-        `User ${currentUser.login} has ${repoPermissions.permission} permission on the repository`,
-      );
-
-      if (repoPermissions.permission === 'admin') {
-        try {
-          const { data: membership } = await github.rest.orgs.getMembershipForUser({
-            org: repoData.owner.login,
-            username: currentUser.login,
-          });
-
-          console.log(
-            `User ${currentUser.login} has role '${membership.role}' in org with state '${membership.state}'`,
-          );
-
-          if (membership.role === 'admin' && membership.state === 'active') {
-            isOwner = true;
-            ownershipType = 'organization owner';
-          }
-        } catch (orgError) {
-          console.log('Error checking org membership:', orgError);
-          isOwner = true;
-          ownershipType = 'repository admin';
-        }
-      }
-    } catch (error: unknown) {
-      console.log(
-        'User does not have collaborator access to the repository:',
-        (error as Error).message,
-      );
-
-      try {
-        const { data: membership } = await github.rest.orgs.getMembershipForUser({
-          org: repoData.owner.login,
-          username: currentUser.login,
-        });
-
-        if (membership.role === 'admin' && membership.state === 'active') {
-          isOwner = true;
-          ownershipType = 'organization owner';
-        }
-      } catch (orgError) {
-        console.log('User is not a member of the organization');
-      }
-    }
-  }
-
-  if (!isOwner) {
-    console.log(`Claim denied for user ${currentUser.login} on repo ${owner}/${repo}`);
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.login}, Repository owner: ${repoData.owner.login}`,
-    });
-  }
-
-  console.log(`Claim approved: ${currentUser.login} is ${ownershipType} for ${owner}/${repo}`);
-
-  const updatedProject = await ctx.db
-    .update(project)
-    .set({
-      ownerId: ctx.session.userId,
-      updatedAt: new Date(),
-    })
-    .where(eq(project.id, input.projectId))
-    .returning();
-
-  if (!updatedProject[0]) {
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to update project ownership',
-    });
-  }
-
-  // Create a notification or send an email to inform about the claim
-  // This would require implementing a notification system
-  // Example: await createNotification({
-  //   type: 'project_claimed',
-  //   projectId: input.projectId,
-  //   newOwnerId: ctx.session.userId,
-  // });
-
-  return {
-    success: true,
-    project: updatedProject[0],
-    ownershipType,
-    verifiedAs: currentUser.login,
-  };
-}
-
 export const projectsRouter = createTRPCRouter({
   getProjects: publicProcedure
     .input(
       z.object({
         approvalStatus: z.enum(['approved', 'rejected', 'pending', 'all']).optional(),
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(20),
       }),
     )
-    .query(({ ctx, input }) => {
-      return ctx.db.query.project.findMany({
-        where:
-          input.approvalStatus === 'all' || !input.approvalStatus
-            ? undefined
-            : eq(project.approvalStatus, input.approvalStatus),
+    .query(async ({ ctx, input }) => {
+      const { page, pageSize, approvalStatus } = input;
+      const offset = (page - 1) * pageSize;
+
+      // Build where clause based on approval status
+      const whereClause =
+        approvalStatus === 'all' || !approvalStatus
+          ? undefined
+          : eq(project.approvalStatus, approvalStatus);
+
+      // Get total count
+      const [totalCountResult] = await ctx.db
+        .select({ totalCount: count() })
+        .from(project)
+        .where(whereClause)
+        .limit(1);
+
+      // Get paginated results
+      const projects = await ctx.db.query.project.findMany({
+        where: whereClause,
+        orderBy: [asc(project.name)],
+        limit: pageSize,
+        offset,
       });
+
+      const totalCount = totalCountResult?.totalCount ?? 0;
+
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+
+      return {
+        data: projects,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+      };
     }),
   getProject: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
     return ctx.db.query.project.findFirst({
@@ -250,8 +167,6 @@ export const projectsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const github = await createOctokitInstance(ctx);
-
       // 1. Get the project details
       const projectToClaim = await ctx.db.query.project.findFirst({
         where: eq(project.id, input.projectId),
@@ -274,9 +189,13 @@ export const projectsRouter = createTRPCRouter({
       if (!projectToClaim.gitRepoUrl) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'This project does not have a GitHub repository URL',
+          message: 'This project does not have a repository URL',
         });
       }
+
+      const provider = projectToClaim.gitHost as (typeof projectProviderEnum.enumValues)[number];
+
+      const driver = await getActiveDriver(provider, ctx as Context);
 
       const userId = ctx.session.userId;
       if (!userId) {
@@ -289,22 +208,26 @@ export const projectsRouter = createTRPCRouter({
       const userAccount = await ctx.db
         .select({ accessToken: account.accessToken })
         .from(account)
-        .where(and(eq(account.userId, userId), eq(account.providerId, 'github')))
+        .where(and(eq(account.userId, userId), eq(account.providerId, provider)))
         .limit(1);
 
       if (!userAccount[0]?.accessToken) {
         throw new TRPCError({
           code: 'UNAUTHORIZED',
-          message: 'Please connect your GitHub account to claim this project',
+          message: `Please connect your ${provider} account to claim this project`,
         });
       }
 
-      const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/;
-      const match = projectToClaim.gitRepoUrl.match(githubUrlRegex);
+      const providerUrlRegex = {
+        github: /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
+        gitlab: /(?:https?:\/\/gitlab\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
+      };
+
+      const match = projectToClaim.gitRepoUrl.match(providerUrlRegex[provider]);
       if (!match) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Invalid GitHub repository URL format',
+          message: `Invalid ${provider} repository URL format`,
         });
       }
 
@@ -330,7 +253,11 @@ export const projectsRouter = createTRPCRouter({
           session: { userId: ctx.session.userId },
         };
 
-        const result = await verifyGitHubOwnership(github, owner, repo, verifyContext, input);
+        const result = await driver.verifyOwnership(
+          `${owner}/${repo}`,
+          verifyContext,
+          input.projectId,
+        );
         return result;
       } catch (error) {
         if (error instanceof TRPCError) {
@@ -355,12 +282,14 @@ export const projectsRouter = createTRPCRouter({
         return { canClaim: false, reason: 'Project not found' };
       }
 
+      const provider = projectToCheck.gitHost as (typeof projectProviderEnum.enumValues)[number];
+
       if (projectToCheck.ownerId) {
         return { canClaim: false, reason: 'Project already claimed' };
       }
 
       if (!projectToCheck.gitRepoUrl) {
-        return { canClaim: false, reason: 'No GitHub repository URL' };
+        return { canClaim: false, reason: `No ${provider} repository URL` };
       }
 
       const userId = ctx.session.userId;
@@ -371,14 +300,14 @@ export const projectsRouter = createTRPCRouter({
       const userAccount = await ctx.db
         .select({ accessToken: account.accessToken })
         .from(account)
-        .where(and(eq(account.userId, userId), eq(account.providerId, 'github')))
+        .where(and(eq(account.userId, userId), eq(account.providerId, provider)))
         .limit(1);
 
       if (!userAccount[0]?.accessToken) {
         return {
           canClaim: false,
-          reason: 'GitHub account not connected',
-          needsGitHubAuth: true,
+          reason: `${provider} account not connected`,
+          needsAuth: true,
         };
       }
 
@@ -388,58 +317,61 @@ export const projectsRouter = createTRPCRouter({
         gitRepoUrl: projectToCheck.gitRepoUrl,
       };
     }),
-
   debugGitHubPermissions: protectedProcedure
-    .input(z.object({ repoUrl: z.string() }))
+    .input(z.object({ repoUrl: z.string(), projectId: z.string() }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.userId;
       if (!userId) {
         return { error: 'Not logged in' };
       }
 
+      const projectToCheck = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+      });
+
+      if (!projectToCheck) {
+        return { error: 'Project not found' };
+      }
+
+      const provider = projectToCheck.gitHost as (typeof projectProviderEnum.enumValues)[number];
+
       const userAccount = await ctx.db
         .select({ accessToken: account.accessToken })
         .from(account)
-        .where(and(eq(account.userId, userId), eq(account.providerId, 'github')))
+        .where(and(eq(account.userId, userId), eq(account.providerId, provider)))
         .limit(1);
 
       if (!userAccount[0]?.accessToken) {
-        return { error: 'GitHub account not connected' };
+        return { error: `${provider} account not connected` };
       }
 
       const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/;
       const match = input.repoUrl.match(githubUrlRegex);
       if (!match) {
-        return { error: 'Invalid GitHub repository URL format' };
+        return { error: `Invalid ${provider} repository URL format` };
       }
       const [, owner, repo] = match;
 
-      const github = await createOctokitInstance(ctx);
+      const driver = await getActiveDriver(provider, ctx as Context);
 
       if (!owner || !repo) {
         return { error: 'Invalid repository format' };
       }
 
       try {
-        const { data: currentUser } = await github.rest.users.getAuthenticated();
-        const { data: repoData } = await github.rest.repos.get({
-          owner,
-          repo,
-        });
+        const currentUser = await driver.getCurrentUser();
+        const repoData = await driver.getRepo(`${owner}/${repo}`);
 
         const result: DebugPermissionsResult = {
-          currentUser: currentUser.login,
+          currentUser: currentUser.username,
           repoOwner: repoData.owner.login,
           repoOwnerType: repoData.owner.type,
-          isDirectOwner: repoData.owner.login === currentUser.login,
+          isDirectOwner: repoData.owner.login === currentUser.username,
         };
 
         try {
-          const { data: repoPermissions } = await github.rest.repos.getCollaboratorPermissionLevel({
-            owner,
-            repo,
-            username: currentUser.login,
-          });
+          const repoPermissions = await driver.getRepoPermissions(`${owner}/${repo}`);
+
           result.repoPermission = repoPermissions.permission;
           result.repoPermissionDetails = repoPermissions;
         } catch (e: unknown) {
@@ -449,10 +381,10 @@ export const projectsRouter = createTRPCRouter({
 
         if (repoData.owner.type === 'Organization') {
           try {
-            const { data: membership } = await github.rest.orgs.getMembershipForUser({
-              org: repoData.owner.login,
-              username: currentUser.login,
-            });
+            const membership = await driver.getOrgMembership(
+              repoData.owner.login,
+              currentUser.username,
+            );
             result.orgMembership = {
               role: membership.role,
               state: membership.state,
