@@ -5,7 +5,7 @@ import Link from '@workspace/ui/components/link';
 
 export default function GitAvatars() {
   return (
-    <div className="bg-background group mt-8 flex items-center rounded-full border p-2 shadow-sm">
+    <div className="bg-background group mt-8 flex items-center rounded-none border p-2 shadow-sm">
       <div className="flex justify-center">
         {projects.map((project, index) => (
           <Tooltip key={project.name}>

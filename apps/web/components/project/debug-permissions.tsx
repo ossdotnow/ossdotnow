@@ -6,12 +6,18 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-export function DebugGitHubPermissions({ repoUrl }: { repoUrl: string }) {
+export function DebugGitHubPermissions({
+  repoUrl,
+  projectId,
+}: {
+  repoUrl: string;
+  projectId: string;
+}) {
   const [showDebug, setShowDebug] = useState(false);
   const trpc = useTRPC();
 
   const { data, isLoading, refetch, error } = useQuery({
-    ...trpc.projects.debugGitHubPermissions.queryOptions({ repoUrl }),
+    ...trpc.projects.debugRepositoryPermissions.queryOptions({ repoUrl, projectId }),
     enabled: showDebug,
   });
 

@@ -4,6 +4,8 @@ import { extractRouterConfig } from 'uploadthing/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
+import Footer from '@/components/layout/footer';
+import { env } from '@workspace/env/server';
 import { Databuddy } from '@databuddy/sdk';
 import { connection } from 'next/server';
 import { Toaster } from 'sonner';
@@ -31,6 +33,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
+  metadataBase: new URL(
+    env.VERCEL_URL === 'localhost' ? 'http://localhost:3000' : `https://${env.VERCEL_URL}`,
+  ),
 };
 
 async function UTSSR() {
@@ -53,8 +58,15 @@ export default function RootLayout({
         </Suspense>
         <Providers>
           {children}
+          <Footer />
           <Analytics />
-          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} />
+          <Databuddy
+            clientId="kg5_9BY_IEWCCEbukXJPm"
+            enableBatching={true}
+            trackErrors
+            trackOutgoingLinks
+            disabled={env.VERCEL_ENV === 'development'}
+          />
           <Toaster />
         </Providers>
       </body>

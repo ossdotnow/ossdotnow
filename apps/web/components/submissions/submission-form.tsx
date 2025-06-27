@@ -17,24 +17,25 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
 import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
+// import { UploadDropzone } from '@/lib/uploadthing';
+import { earlySubmissionForm, submisionForm } from '@/forms';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
+import { FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { tagsEnum } from '@workspace/db/schema';
-// import { UploadDropzone } from '@/lib/uploadthing';
-import { earlySubmissionForm } from '@/forms';
+import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -82,7 +83,55 @@ function useEarlySubmission() {
   };
 }
 
-export default function SubmissionForm() {
+function useSubmission() {
+  const trpc = useTRPC();
+  const [isMounted, setIsMounted] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setSuccess(localStorage.getItem('submission-success') === 'true');
+  }, []);
+
+  const { mutate, isPending } = useMutation(
+    trpc.submission.addProject.mutationOptions({
+      onSuccess: () => {
+        setSuccess(true);
+        setError(null);
+
+        if (isMounted) {
+          localStorage.setItem('submission-success', 'true');
+        }
+        vercelTrack('submission_success');
+        databuddyTrack('submission_success');
+      },
+      onError: (err) => {
+        const errorMessage = err.message || 'Something went wrong. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        vercelTrack('submission_error', { error: errorMessage });
+        databuddyTrack('submission_error', { error: errorMessage });
+      },
+    }),
+  );
+
+  const clearError = () => setError(null);
+
+  return {
+    mutate,
+    success,
+    error,
+    isLoading: isPending,
+    clearError,
+  };
+}
+
+export default function SubmissionForm({
+  earlySubmission = false,
+}: {
+  earlySubmission?: boolean;
+} = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -95,13 +144,27 @@ export default function SubmissionForm() {
     isValid: null,
     message: null,
   });
-  const { mutate, success, error, isLoading, clearError } = useEarlySubmission();
+  const { mutate, success, error, isLoading, clearError } = earlySubmission
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useEarlySubmission()
+    : // eslint-disable-next-line react-hooks/rules-of-hooks
+      useSubmission();
   const trpc = useTRPC();
+  const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 
-  type FormData = z.infer<typeof earlySubmissionForm>;
+  // Fetch categories from database
+  const { data: projectTypes, isLoading: projectTypesLoading } = useQuery(
+    trpc.categories.getProjectTypes.queryOptions({ activeOnly: true }),
+  );
+  const { data: projectStatuses, isLoading: projectStatusesLoading } = useQuery(
+    trpc.categories.getProjectStatuses.queryOptions({ activeOnly: true }),
+  );
+  const { data: tags } = useQuery(trpc.categories.getTags.queryOptions({ activeOnly: true }));
+
+  type FormData = z.infer<typeof formSchema>;
 
   const form = useForm<FormData>({
-    resolver: zodResolver(earlySubmissionForm),
+    resolver: zodResolver(formSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
@@ -110,8 +173,8 @@ export default function SubmissionForm() {
       logoUrl: '',
       gitRepoUrl: '',
       gitHost: 'github',
-      status: 'early-stage',
-      type: 'other',
+      status: '',
+      type: '',
       socialLinks: {
         twitter: '',
         discord: '',
@@ -133,19 +196,19 @@ export default function SubmissionForm() {
 
   const parseRepositoryUrl = (
     input: string,
-  ): { repo: string; host: 'github' | 'gitlab' } | null => {
+  ): { repo: string; host: (typeof projectProviderEnum.enumValues)[number] } | null => {
     const trimmedInput = input.trim();
 
     const githubPatterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@github\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     const gitlabPatterns = [
-      /^https?:\/\/gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@gitlab\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@gitlab\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     for (const pattern of githubPatterns) {
@@ -192,15 +255,6 @@ export default function SubmissionForm() {
         return;
       }
 
-      if (gitHost !== 'github') {
-        setRepoValidation({
-          isValidating: false,
-          isValid: true,
-          message: 'GitLab validation coming soon',
-        });
-        return;
-      }
-
       setRepoValidation({
         isValidating: true,
         isValid: null,
@@ -209,24 +263,67 @@ export default function SubmissionForm() {
 
       try {
         const result = await queryClient.fetchQuery(
-          trpc.github.getRepo.queryOptions({ repo: repoUrl }),
+          trpc.repository.getRepo.queryOptions({
+            url: repoUrl, // org/repo
+            provider: gitHost as (typeof projectProviderEnum.enumValues)[number],
+          }),
         );
+
+        console.log('result', result);
+
         if (result) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: true,
-            message: 'Repository found!',
-          });
+          try {
+            const duplicateCheck = await queryClient.fetchQuery(
+              earlySubmission
+                ? trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                    gitRepoUrl: repoUrl,
+                  })
+                : trpc.submission.checkDuplicateRepo.queryOptions({
+                    gitRepoUrl: repoUrl,
+                  }),
+            );
 
-          if (result.name) {
-            form.setValue('name', result.name, { shouldValidate: true });
-          }
+            if (duplicateCheck.exists) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: false,
+                message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
+              });
+              return;
+            }
 
-          if (result.description) {
-            form.setValue('description', result.description, { shouldValidate: true });
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found and available!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          } catch (duplicateError) {
+            console.error('duplicateError', duplicateError);
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found! (could not verify if already submitted, awkward..)',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
           }
         }
       } catch (error) {
+        console.error('error', error);
         setRepoValidation({
           isValidating: false,
           isValid: false,
@@ -234,6 +331,7 @@ export default function SubmissionForm() {
         });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [queryClient, trpc, form],
   );
 
@@ -293,7 +391,11 @@ export default function SubmissionForm() {
   ];
 
   function handleProjectSubmission(formData: FormData) {
-    mutate(formData);
+    mutate({
+      ...formData,
+      status: formData.status || '',
+      type: formData.type || '',
+    });
   }
 
   const nextStep = async () => {
@@ -309,7 +411,7 @@ export default function SubmissionForm() {
       fieldsToValidate = [...fieldsToValidate, ...socialLinkFields];
     }
 
-    const isStepValid = await trigger(fieldsToValidate as any);
+    const isStepValid = await trigger(fieldsToValidate as (keyof FormData)[]);
 
     if (currentStep === 0) {
       const gitRepoUrl = form.getValues('gitRepoUrl');
@@ -329,8 +431,9 @@ export default function SubmissionForm() {
       const errors = form.formState.errors;
       const hasErrors = fieldsToValidate.some((field) => {
         const fieldParts = field.split('.');
-        let error: any = errors;
+        let error: FieldErrors<FormData> | undefined = errors;
         for (const part of fieldParts) {
+          // @ts-expect-error - TODO: fix this
           error = error?.[part];
         }
         return !!error;
@@ -354,13 +457,8 @@ export default function SubmissionForm() {
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-
-  const submissionCount =
-    typeof window !== 'undefined'
-      ? parseInt(localStorage.getItem('early-submission-count') ?? '0')
-      : 0;
-
-  return success ? (
+  return success && env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
+    // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>
@@ -425,7 +523,7 @@ export default function SubmissionForm() {
                         <SelectItem className="rounded-none" value="github">
                           GitHub
                         </SelectItem>
-                        <SelectItem className="rounded-none" value="gitlab" disabled>
+                        <SelectItem className="rounded-none" value="gitlab">
                           GitLab
                         </SelectItem>
                       </SelectContent>
@@ -478,6 +576,7 @@ export default function SubmissionForm() {
                                 pastedText = e.clipboardData.getData('text');
                               }
                             } catch (error) {
+                              console.error('error', error);
                               setTimeout(() => {
                                 const inputValue = (e.target as HTMLInputElement).value;
                                 const parsed = parseRepositoryUrl(inputValue);
@@ -614,30 +713,21 @@ export default function SubmissionForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none">
-                        <SelectItem className="rounded-none" value="active">
-                          Active - Currently being developed
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="inactive">
-                          Inactive - Not currently maintained
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="early-stage">
-                          Early Stage - Just getting started
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="beta">
-                          Beta - Testing with limited users
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="production-ready">
-                          Production Ready - Stable for use
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="experimental">
-                          Experimental - Proof of concept
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="cancelled">
-                          Cancelled - No longer pursuing
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="paused">
-                          Paused - Temporarily on hold
-                        </SelectItem>
+                        {projectStatusesLoading ? (
+                          <SelectItem className="rounded-none" value="" disabled>
+                            Loading statuses...
+                          </SelectItem>
+                        ) : (
+                          (projectStatuses || []).map((status) => (
+                            <SelectItem
+                              key={status.id}
+                              className="rounded-none"
+                              value={status.name}
+                            >
+                              {status.displayName}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -662,39 +752,17 @@ export default function SubmissionForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none">
-                        <SelectItem className="rounded-none" value="fintech">
-                          Fintech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="healthtech">
-                          Healthtech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="edtech">
-                          Edtech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="ecommerce">
-                          E-commerce
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="productivity">
-                          Productivity
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="social">
-                          Social
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="entertainment">
-                          Entertainment
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="developer-tools">
-                          Developer Tools
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="content-management">
-                          Content Management
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="analytics">
-                          Analytics
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="other">
-                          Other
-                        </SelectItem>
+                        {projectTypesLoading ? (
+                          <SelectItem className="rounded-none" value="" disabled>
+                            Loading types...
+                          </SelectItem>
+                        ) : (
+                          (projectTypes || []).map((type) => (
+                            <SelectItem key={type.id} className="rounded-none" value={type.name}>
+                              {type.displayName}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -716,9 +784,9 @@ export default function SubmissionForm() {
                       <MultiSelect
                         className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
                         placeholder="Select tags..."
-                        options={tagsEnum.enumValues.map((tag) => ({
-                          label: tag,
-                          value: tag,
+                        options={(tags || []).map((tag) => ({
+                          label: tag.displayName,
+                          value: tag.name,
                         }))}
                         selected={field.value ?? []}
                         onChange={(value) => {
@@ -847,7 +915,8 @@ export default function SubmissionForm() {
               </Button>
 
               {currentStep === steps.length - 1 ? (
-                <Button type="submit" className="rounded-none" disabled={isLoading || success}>
+                // add || success to disabled
+                <Button type="submit" className="rounded-none" disabled={isLoading}>
                   {isLoading ? 'Submitting...' : 'Submit Project'}
                 </Button>
               ) : (

@@ -50,6 +50,69 @@
       "when": 1750701189110,
       "tag": "0006_late_brother_voodoo",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1750979356801,
+      "tag": "0007_serious_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751120772473,
+      "tag": "0008_regular_starfox",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751158031807,
+      "tag": "0009_eager_northstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1751162088103,
+      "tag": "0010_dear_swordsman",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1751267878346,
+      "tag": "0011_fine_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1751781742230,
+      "tag": "0012_known_skrulls",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1751782131871,
+      "tag": "0013_bright_piledriver",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1751784169749,
+      "tag": "0014_remove_enum_columns_and_types",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1751784724679,
+      "tag": "0015_supreme_king_bedlam",
+      "breakpoints": true
     }
   ]
 }
