@@ -206,18 +206,49 @@ export default function SubmissionForm() {
         console.log('result', result);
 
         if (result) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: true,
-            message: 'Repository found!',
-          });
+          try {
+            const duplicateCheck = await queryClient.fetchQuery(
+              trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                gitRepoUrl: repoUrl,
+              }),
+            );
 
-          if (result.name) {
-            form.setValue('name', result.name, { shouldValidate: true });
-          }
+            if (duplicateCheck.exists) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: false,
+                message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
+              });
+              return;
+            }
 
-          if (result.description) {
-            form.setValue('description', result.description, { shouldValidate: true });
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found and available!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          } catch (duplicateError) {
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found! (could not verify if already submitted, awkward..)',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
           }
         }
       } catch (error) {
