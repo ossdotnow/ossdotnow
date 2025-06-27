@@ -5,6 +5,8 @@ import {
   IssueData,
   PullRequestData,
   GitManagerConfig,
+  ContributionData,
+  UserData,
 } from './types';
 import {
   restEndpointMethods,
@@ -261,5 +263,46 @@ export class GithubManager implements GitManager {
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']> {
     const { data } = await this.octokit.rest.orgs.getMembershipForUser({ org, username });
     return data;
+  }
+
+  async getUserDetails(username: string): Promise<UserData> {
+    try {
+      const { data } = await this.octokit.rest.users.getByUsername({ username });
+
+      return {
+        provider: 'github',
+        login: data.login,
+        id: data.id,
+        avatarUrl: data.avatar_url,
+        name: data.name ?? undefined,
+        company: data.company ?? undefined,
+        blog: data.blog ?? undefined,
+        location: data.location ?? undefined,
+        email: data.email ?? undefined,
+        bio: data.bio ?? undefined,
+        publicRepos: data.public_repos,
+        publicGists: data.public_gists,
+        followers: data.followers,
+        following: data.following,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        htmlUrl: data.html_url,
+      };
+    } catch (error: any) {
+      if (error.status === 404) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `GitHub user '${username}' not found`,
+        });
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch GitHub user details: ${error.message}`,
+      });
+    }
+  }
+
+  getContributions(username: string): Promise<ContributionData[]> {
+    throw new Error('Method not implemented.');
   }
 }

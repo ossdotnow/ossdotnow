@@ -1,7 +1,17 @@
-import { adminProcedure, createTRPCRouter } from '../trpc';
+import { adminProcedure, createTRPCRouter, publicProcedure } from '../trpc';
+import { user } from '@workspace/db/schema';
+import { eq } from 'drizzle-orm';
 import z from 'zod/v4';
 
 export const usersRouter = createTRPCRouter({
+  getUsername: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
+    return ctx.db.query.user.findFirst({
+      where: eq(user.id, input.id),
+      columns: {
+        username: true,
+      },
+    });
+  }),
   getUsers: adminProcedure
     .input(
       z.object({

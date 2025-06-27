@@ -1,10 +1,12 @@
 import {
+  ContributionData,
   ContributorData,
   GitManager,
   GitManagerConfig,
   IssueData,
   PullRequestData,
   RepoData,
+  UserData,
 } from './types';
 import { project } from '@workspace/db/schema';
 import { Gitlab } from '@gitbeaker/rest';
@@ -320,5 +322,52 @@ export class GitlabManager implements GitManager {
     } catch (error) {
       throw new Error(`User ${username} is not a member of group ${org}`);
     }
+  }
+
+  async getUserDetails(username: string): Promise<UserData> {
+    try {
+      const users = await this.gitlab.Users.all({ username });
+
+      if (!users || users.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `GitLab user '${username}' not found`,
+        });
+      }
+
+      const user = users[0];
+
+      const userDetails = await this.gitlab.Users.show(user!.id);
+
+      return {
+        provider: 'gitlab',
+        login: userDetails.username,
+        id: userDetails.id,
+        avatarUrl: userDetails.avatar_url,
+        name: userDetails.name ?? undefined,
+        company: (userDetails as any).organization ?? undefined,
+        blog: userDetails.website_url ?? undefined,
+        location: (userDetails as any).location ?? undefined,
+        email: (userDetails as any).public_email ?? undefined,
+        bio: (userDetails as any).bio ?? undefined,
+        publicRepos: (userDetails as any).projects?.length || 0,
+        followers: (userDetails as any).followers || 0,
+        following: (userDetails as any).following || 0,
+        createdAt: userDetails.created_at,
+        htmlUrl: userDetails.web_url,
+      };
+    } catch (error: any) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch GitLab user details: ${error.message}`,
+      });
+    }
+  }
+
+  getContributions(username: string): Promise<ContributionData[]> {
+    throw new Error('Method not implemented.');
   }
 }

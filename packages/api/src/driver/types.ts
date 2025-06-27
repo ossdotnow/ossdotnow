@@ -32,8 +32,32 @@ export interface PullRequestData {
   [key: string]: any;
 }
 
+export interface UserData {
+  provider: 'github' | 'gitlab';
+  login: string;
+  id: string | number;
+  avatarUrl?: string;
+  name?: string;
+  company?: string;
+  blog?: string;
+  location?: string;
+  email?: string;
+  bio?: string;
+  publicRepos?: number;
+  publicGists?: number;
+  followers?: number;
+  following?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  htmlUrl?: string;
+}
+
 export type GitManagerConfig = {
   token: string;
+};
+
+export type ContributionData = {
+  count: number;
 };
 
 export interface GitManager {
@@ -70,4 +94,6 @@ export interface GitManager {
     org: string,
     username: string,
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
+  getContributions(username: string): Promise<ContributionData[]>;
+  getUserDetails(username: string): Promise<UserData>;
 }
