@@ -334,6 +334,12 @@
 
     "@gitbeaker/rest": ["@gitbeaker/rest@42.5.0", "", { "dependencies": { "@gitbeaker/core": "^42.5.0", "@gitbeaker/requester-utils": "^42.5.0" } }, "sha512-oC5cM6jS7aFOp0luTw5mWSRuMgdxwHRLZQ/aWkI+ETMfsprR/HyxsXfljlMY/XJ/fRxTbRJiodR5Axf66WjO3w=="],
 
+    "@gitbeaker/core": ["@gitbeaker/core@42.5.0", "", { "dependencies": { "@gitbeaker/requester-utils": "^42.5.0", "qs": "^6.12.2", "xcase": "^2.0.1" } }, "sha512-rMWpOPaZi1iLiifnOIoVO57p2EmQQdfIwP4txqNyMvG4WjYP5Ez0U7jRD9Nra41x6K5kTPBZkuQcAdxVWRJcEQ=="],
+
+    "@gitbeaker/requester-utils": ["@gitbeaker/requester-utils@42.5.0", "", { "dependencies": { "picomatch-browser": "^2.2.6", "qs": "^6.12.2", "rate-limiter-flexible": "^4.0.1", "xcase": "^2.0.1" } }, "sha512-HLdLS9LPBMVQumvroQg/4qkphLDtwDB+ygEsrD2u4oYCMUtXV4V1xaVqU4yTXjbTJ5sItOtdB43vYRkBcgueBw=="],
+
+    "@gitbeaker/rest": ["@gitbeaker/rest@42.5.0", "", { "dependencies": { "@gitbeaker/core": "^42.5.0", "@gitbeaker/requester-utils": "^42.5.0" } }, "sha512-oC5cM6jS7aFOp0luTw5mWSRuMgdxwHRLZQ/aWkI+ETMfsprR/HyxsXfljlMY/XJ/fRxTbRJiodR5Axf66WjO3w=="],
+
     "@hexagon/base64": ["@hexagon/base64@1.1.28", "", {}, "sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.1.1", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg=="],
