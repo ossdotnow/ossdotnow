@@ -15,38 +15,46 @@ const createProjectInput = createInsertSchema(project).omit({
   deletedAt: true,
 });
 
+const APPROVAL_STATUS = {
+  APPROVED: 'approved',
+  PENDING: 'pending',
+  REJECTED: 'rejected',
+} as const;
+
+async function checkProjectDuplicate(db: any, gitRepoUrl: string) {
+  const existingProject = await db.query.project.findFirst({
+    where: eq(project.gitRepoUrl, gitRepoUrl),
+    columns: {
+      id: true,
+      name: true,
+      approvalStatus: true,
+    },
+  });
+
+  if (!existingProject) {
+    return { exists: false };
+  }
+
+  const statusMessage =
+    existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
+      ? 'approved and is already listed'
+      : existingProject.approvalStatus === APPROVAL_STATUS.PENDING
+        ? 'pending review'
+        : 'been submitted but was rejected';
+
+  return {
+    exists: true,
+    projectName: existingProject.name,
+    statusMessage,
+    approvalStatus: existingProject.approvalStatus,
+  };
+}
+
 export const earlySubmissionRouter = createTRPCRouter({
   checkDuplicateRepo: publicProcedure
     .input(z.object({ gitRepoUrl: z.string() }))
     .query(async ({ ctx, input }) => {
-      const existingProject = await ctx.db.query.project.findFirst({
-        where: eq(project.gitRepoUrl, input.gitRepoUrl),
-        columns: {
-          id: true,
-          name: true,
-          approvalStatus: true,
-        },
-      });
-
-      if (existingProject) {
-        const statusMessage =
-          existingProject.approvalStatus === 'approved'
-            ? 'approved and is already listed'
-            : existingProject.approvalStatus === 'pending'
-              ? 'pending review'
-              : 'been submitted but was rejected';
-
-        return {
-          exists: true,
-          projectName: existingProject.name,
-          statusMessage,
-          approvalStatus: existingProject.approvalStatus,
-        };
-      }
-
-      return {
-        exists: false,
-      };
+      return await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
     }),
   addProject: publicProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
     const limiter = getRateLimiter('early-access-waitlist');
@@ -63,33 +71,19 @@ export const earlySubmissionRouter = createTRPCRouter({
       }
     }
 
-    const existingProject = await ctx.db.query.project.findFirst({
-      where: eq(project.gitRepoUrl, input.gitRepoUrl),
-      columns: {
-        id: true,
-        name: true,
-        approvalStatus: true,
-      },
-    });
+    const duplicateCheck = await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
 
-    if (existingProject) {
-      const statusMessage =
-        existingProject.approvalStatus === 'approved'
-          ? 'approved and is already listed'
-          : existingProject.approvalStatus === 'pending'
-            ? 'pending review'
-            : 'been submitted but was rejected';
-
+    if (duplicateCheck.exists) {
       throw new TRPCError({
         code: 'CONFLICT',
-        message: `This repository has already been submitted! The project "${existingProject.name}" has ${statusMessage}. If you think this is an error, please contact support.`,
+        message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}. If you think this is an error, please contact support.`,
       });
     }
 
     await ctx.db.insert(project).values({
       ...input,
       ownerId: null,
-      approvalStatus: 'pending',
+      approvalStatus: APPROVAL_STATUS.PENDING,
     });
 
     return {
