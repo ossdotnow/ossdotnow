@@ -4,6 +4,7 @@ import { extractRouterConfig } from 'uploadthing/server';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
+import { env } from '@workspace/env/server';
 import { Databuddy } from '@databuddy/sdk';
 import { connection } from 'next/server';
 import { Toaster } from 'sonner';
@@ -54,7 +55,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Analytics />
-          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} />
+          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} trackErrors trackOutgoingLinks disabled={env.NODE_ENV === 'development'}/>
           <Toaster />
         </Providers>
       </body>
