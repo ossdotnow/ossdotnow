@@ -22,3 +22,5 @@ export const tagsEnum = pgEnum('tags', [
 ]);
 
 export const userRoleEnum = pgEnum('user_role', ['admin', 'user', 'moderator']);
+
+export const projectProviderEnum = pgEnum('project_provider', ['github', 'gitlab']);

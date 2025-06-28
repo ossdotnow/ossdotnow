@@ -24,6 +24,7 @@ import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
@@ -133,19 +134,19 @@ export default function SubmissionForm() {
 
   const parseRepositoryUrl = (
     input: string,
-  ): { repo: string; host: 'github' | 'gitlab' } | null => {
+  ): { repo: string; host: (typeof projectProviderEnum.enumValues)[number] } | null => {
     const trimmedInput = input.trim();
 
     const githubPatterns = [
-      /^https?:\/\/github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@github\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^github\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@github\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^github\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     const gitlabPatterns = [
-      /^https?:\/\/gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
-      /^git@gitlab\.com:([^\/]+)\/([^\/\s]+?)(?:\.git)?$/,
-      /^gitlab\.com\/([^\/]+)\/([^\/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^https?:\/\/gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
+      /^git@gitlab\.com:([^/]+)\/([^/\s]+?)(?:\.git)?$/,
+      /^gitlab\.com\/([^/]+)\/([^/\s]+?)(?:\.git)?(?:\/.*)?$/,
     ];
 
     for (const pattern of githubPatterns) {
@@ -192,15 +193,6 @@ export default function SubmissionForm() {
         return;
       }
 
-      if (gitHost !== 'github') {
-        setRepoValidation({
-          isValidating: false,
-          isValid: true,
-          message: 'GitLab validation coming soon',
-        });
-        return;
-      }
-
       setRepoValidation({
         isValidating: true,
         isValid: null,
@@ -209,21 +201,58 @@ export default function SubmissionForm() {
 
       try {
         const result = await queryClient.fetchQuery(
-          trpc.github.getRepo.queryOptions({ repo: repoUrl }),
+          trpc.repository.getRepo.queryOptions({
+            url: repoUrl, // org/repo
+            provider: gitHost as (typeof projectProviderEnum.enumValues)[number],
+          }),
         );
+
+        console.log('result', result);
+
         if (result) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: true,
-            message: 'Repository found!',
-          });
+          try {
+            const duplicateCheck = await queryClient.fetchQuery(
+              trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                gitRepoUrl: repoUrl,
+              }),
+            );
 
-          if (result.name) {
-            form.setValue('name', result.name, { shouldValidate: true });
-          }
+            if (duplicateCheck.exists) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: false,
+                message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
+              });
+              return;
+            }
 
-          if (result.description) {
-            form.setValue('description', result.description, { shouldValidate: true });
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found and available!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          } catch (duplicateError) {
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found! (could not verify if already submitted, awkward..)',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
           }
         }
       } catch (error) {
@@ -425,7 +454,7 @@ export default function SubmissionForm() {
                         <SelectItem className="rounded-none" value="github">
                           GitHub
                         </SelectItem>
-                        <SelectItem className="rounded-none" value="gitlab" disabled>
+                        <SelectItem className="rounded-none" value="gitlab">
                           GitLab
                         </SelectItem>
                       </SelectContent>

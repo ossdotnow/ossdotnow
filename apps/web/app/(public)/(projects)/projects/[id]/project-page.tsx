@@ -25,17 +25,27 @@ import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-meth
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
 import { Separator } from '@workspace/ui/components/separator';
 import ProjectTicks from '@/components/project/project-ticks';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import { useQuery } from '@tanstack/react-query';
+import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 
+// TODO: finish this file
+
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
 type GitHubPullRequest = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
+
+const isValidProvider = (
+  provider: string | null | undefined,
+): provider is (typeof projectProviderEnum.enumValues)[number] => {
+  return provider === 'github' || provider === 'gitlab';
+};
 
 function useProject(id: string) {
   const trpc = useTRPC();
@@ -53,22 +63,50 @@ export default function ProjectPage({ id }: { id: string }) {
 
   const trpc = useTRPC();
 
-  const { data: repoData } = useQuery(
-    trpc.github.getRepoData.queryOptions(
-      { repo: project?.gitRepoUrl! },
-      { enabled: !!project?.gitRepoUrl },
-    ),
-  );
-
-  const repo = repoData?.repo;
-  const contributors = repoData?.contributors;
-  const issues = repoData?.issues;
-  const pullRequests = repoData?.pullRequests;
+  const repoData = useQueries({
+    queries: [
+      trpc.repository.getRepo.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getContributors.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getIssues.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+      trpc.repository.getPullRequests.queryOptions(
+        {
+          url: project?.gitRepoUrl!,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+      ),
+    ],
+  });
 
   if (!project || !project.gitRepoUrl) return <div>Project not found</div>;
 
   const isUnclaimed = !project.ownerId;
   const isOwner = user?.id === project.ownerId;
+
+  const repo = repoData[0].data;
+  const contributors = repoData[1].data;
+  const issues = repoData[2].data;
+  const pullRequests = repoData[3].data;
+
+  console.dir(contributors, { depth: null });
 
   return (
     <div className="mt-8">
@@ -76,14 +114,19 @@ export default function ProjectPage({ id }: { id: string }) {
         <div className="px-4">
           <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-4">
-              <Image
-                src={repo?.owner.avatar_url ?? 'https://placehold.co/100x100'}
-                alt={project?.name ?? 'Project Logo'}
-                width={100}
-                height={100}
-                className="h-24 w-24 rounded-full border border-neutral-800"
-                unoptimized
-              />
+              {(repo && repo?.owner && repo?.owner?.avatar_url) ||
+              (repo?.namespace && repo?.namespace?.avatar_url) ? (
+                <Image
+                  src={
+                    repo?.owner?.avatar_url ||
+                    `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
+                  }
+                  alt={project.name ?? 'Project Logo'}
+                  width={48}
+                  height={48}
+                  className="h-20 w-20 rounded-full"
+                />
+              ) : null}
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <h1 className="text-3xl font-bold text-white">{project?.name}</h1>
@@ -102,7 +145,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     </span>
                   )}
                 </div>
-                {project?.socialLinks && (
+                {/* {project?.socialLinks && (
                   <div className="mt-4 flex gap-4">
                     {project.socialLinks.website && (
                       <Link
@@ -160,11 +203,11 @@ export default function ProjectPage({ id }: { id: string }) {
                       </Link>
                     )}
                   </div>
-                )}
+                )} */}
               </div>
             </div>
             <div className="flex flex-col items-end justify-end gap-2">
-              <Link
+              {/* <Link
                 href={repo?.html_url ?? '#'}
                 target="_blank"
                 event="project_page_github_link_clicked"
@@ -177,7 +220,7 @@ export default function ProjectPage({ id }: { id: string }) {
                   <Github className="h-4 w-4" />
                   View on GitHub
                 </Button>
-              </Link>
+              </Link> */}
 
               {isUnclaimed && user && (
                 <div className="bg-background/50 mt-4 flex flex-col items-end gap-2 border p-4">
@@ -185,14 +228,17 @@ export default function ProjectPage({ id }: { id: string }) {
                   <p className="text-muted-foreground mb-3 text-sm">
                     This project hasn&apos;t been claimed yet.
                   </p>
-                  <ClaimProjectDialog projectId={project.id} />
+                  <ClaimProjectDialog
+                    projectId={project.id}
+                    provider={project.gitHost as (typeof projectProviderEnum.enumValues)[number]}
+                  />
                 </div>
               )}
 
               {isOwner && (
                 <div className="mt-4">
                   <Button variant="outline" size="sm" asChild className="rounded-none">
-                    <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link>
+                    {/* <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link> */}
                   </Button>
                 </div>
               )}
@@ -217,7 +263,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Stars</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {repo?.stargazers_count?.toLocaleString()}
+                    <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -226,7 +272,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Forks</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {repo?.forks_count?.toLocaleString()}
+                    <NumberFlow value={repo?.forks_count || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -235,7 +281,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Contributors</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {contributors?.length?.toLocaleString()}
+                    <NumberFlow value={contributors?.length || 0} />
                   </p>
                 </div>
                 <div className="text-center">
@@ -244,9 +290,8 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Open Issues</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {issues?.filter(
-                      (issue: GitHubIssue) => !issue.pull_request && issue.state === 'open',
-                    ).length || 0}
+                    {issues?.filter((issue: any) => !issue.pull_request && issue.state === 'open')
+                      .length || 0}
                   </p>
                 </div>
               </div>
@@ -306,13 +351,12 @@ export default function ProjectPage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="issues">
-                  {issues &&
-                  issues.filter((issue: GitHubIssue) => !issue.pull_request).length > 0 ? (
+                  {issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
                     <div className="space-y-3">
                       {issues
-                        .filter((issue: GitHubIssue) => !issue.pull_request)
+                        .filter((issue: any) => !issue.pull_request)
                         .slice(0, 10)
-                        .map((issue: GitHubIssue) => (
+                        .map((issue: any) => (
                           <div
                             key={issue.id}
                             className="rounded-md border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
@@ -333,7 +377,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   )}
                                   <span className="text-xs text-neutral-500">#{issue.number}</span>
                                 </div>
-                                <Link
+                                {/* <Link
                                   href={issue.html_url}
                                   event="project_page_issue_link_clicked"
                                   eventObject={{ projectId: project.id }}
@@ -341,7 +385,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                                 >
                                   {issue.title}
-                                </Link>
+                                </Link> */}
                                 {issue.labels && issue.labels.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {issue.labels.map((label: any) => (
@@ -367,17 +411,17 @@ export default function ProjectPage({ id }: { id: string }) {
                                   <span>by {issue.user?.login}</span>
                                 </div>
                               </div>
-                              <Link
+                              {/* <Link
                                 href={issue.html_url}
                                 target="_blank"
                                 className="text-neutral-400 transition-colors hover:text-white"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                              </Link>
+                              </Link> */}
                             </div>
                           </div>
                         ))}
-                      {issues.filter((issue: GitHubIssue) => !issue.pull_request).length > 10 && (
+                      {/* {issues.filter((issue: GitHubIssue) => !issue.pull_request).length > 10 && (
                         <Link
                           href={`${repo?.html_url}/issues`}
                           target="_blank"
@@ -389,7 +433,7 @@ export default function ProjectPage({ id }: { id: string }) {
                           {issues.filter((issue: GitHubIssue) => !issue.pull_request).length} issues
                           on GitHub →
                         </Link>
-                      )}
+                      )} */}
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No issues found</p>
@@ -398,7 +442,7 @@ export default function ProjectPage({ id }: { id: string }) {
                 <TabsContent value="pull-requests">
                   {pullRequests && pullRequests.length > 0 ? (
                     <div className="space-y-3">
-                      {pullRequests.slice(0, 10).map((pr: GitHubPullRequest) => (
+                      {pullRequests.slice(0, 10).map((pr: any) => (
                         <div
                           key={pr.id}
                           className="rounded-md border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
@@ -429,7 +473,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                 )}
                                 <span className="text-xs text-neutral-500">#{pr.number}</span>
                               </div>
-                              <Link
+                              {/* <Link
                                 href={pr.html_url}
                                 target="_blank"
                                 event="project_page_pull_request_link_clicked"
@@ -437,7 +481,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                 className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                               >
                                 {pr.title}
-                              </Link>
+                              </Link> */}
                               {pr.labels && pr.labels.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1">
                                   {pr.labels.map((label: any) => (
@@ -468,7 +512,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                 )}
                               </div>
                             </div>
-                            <Link
+                            {/* <Link
                               href={pr.html_url}
                               event="project_page_pull_request_link_clicked"
                               eventObject={{ projectId: project.id }}
@@ -476,11 +520,11 @@ export default function ProjectPage({ id }: { id: string }) {
                               className="text-neutral-400 transition-colors hover:text-white"
                             >
                               <ExternalLink className="h-4 w-4" />
-                            </Link>
+                            </Link> */}
                           </div>
                         </div>
                       ))}
-                      {pullRequests.length > 10 && (
+                      {/* {pullRequests.length > 10 && (
                         <Link
                           href={`${repo?.html_url}/pulls`}
                           target="_blank"
@@ -490,7 +534,7 @@ export default function ProjectPage({ id }: { id: string }) {
                         >
                           View all {pullRequests.length} pull requests on GitHub →
                         </Link>
-                      )}
+                      )} */}
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No pull requests</p>

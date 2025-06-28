@@ -10,7 +10,7 @@ import {
 } from '@workspace/ui/components/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Skeleton } from '@workspace/ui/components/skeleton';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard, LogOut, User } from 'lucide-react';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
@@ -55,6 +55,12 @@ export default function NavUser() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/profile/me">
+            <User />
+            Profile
+          </Link>
+        </DropdownMenuItem>
         {user?.role === 'admin' && (
           <>
             <DropdownMenuItem asChild>
