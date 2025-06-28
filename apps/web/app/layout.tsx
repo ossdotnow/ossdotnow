@@ -54,7 +54,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Analytics />
-          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} />
+          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} trackErrors trackOutgoingLinks disabled={process.env.NODE_ENV === 'development'}/>
           <Toaster />
         </Providers>
       </body>
