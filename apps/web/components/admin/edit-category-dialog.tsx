@@ -96,6 +96,22 @@ export function EditCategoryDialog({ isOpen, onClose, category, type }: EditCate
     }),
   );
 
+  // Auto-generate name from display name (kebab-case)
+  const handleDisplayNameChange = (value: string) => {
+    setDisplayName(value);
+
+    // Always auto-generate kebab-case name from display name
+    const kebabName = value
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .replace(/[^a-z0-9-]/g, '') // Remove special characters except dashes
+      .replace(/-+/g, '-') // Replace multiple dashes with single dash
+      .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+
+    setName(kebabName);
+  };
+
   const handleSubmit = () => {
     if (!category) return;
 
@@ -151,9 +167,10 @@ export function EditCategoryDialog({ isOpen, onClose, category, type }: EditCate
               onChange={(e) => setName(e.target.value)}
               placeholder="kebab-case-name"
               disabled={isLoading}
+              className="bg-muted"
             />
             <p className="text-muted-foreground text-sm">
-              Used internally as identifier (kebab-case recommended)
+              Auto-generated from display name (spaces become dashes)
             </p>
           </div>
 
@@ -162,7 +179,7 @@ export function EditCategoryDialog({ isOpen, onClose, category, type }: EditCate
             <Input
               id="displayName"
               value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              onChange={(e) => handleDisplayNameChange(e.target.value)}
               placeholder="Display Name"
               disabled={isLoading}
             />

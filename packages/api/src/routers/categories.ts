@@ -4,6 +4,17 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { and, asc, eq } from 'drizzle-orm';
 import { z } from 'zod/v4';
 
+// Utility function to slugify category names
+function slugifyName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // Replace spaces with dashes
+    .replace(/[^a-z0-9-]/g, '') // Remove special characters except dashes
+    .replace(/-+/g, '-') // Replace multiple dashes with single dash
+    .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+}
+
 // Zod schemas for validation
 const insertTagSchema = createInsertSchema(categoryTags).omit({
   id: true,
@@ -41,11 +52,21 @@ export const categoriesRouter = createTRPCRouter({
     }),
 
   createTag: adminProcedure.input(insertTagSchema).mutation(async ({ ctx, input }) => {
-    return ctx.db.insert(categoryTags).values(input).returning();
+    return ctx.db
+      .insert(categoryTags)
+      .values({
+        ...input,
+        name: slugifyName(input.name),
+      })
+      .returning();
   }),
 
   updateTag: adminProcedure.input(updateTagSchema).mutation(async ({ ctx, input }) => {
     const { id, ...updateData } = input;
+    // Slugify name if it's being updated
+    if (updateData.name) {
+      updateData.name = slugifyName(updateData.name);
+    }
     return ctx.db.update(categoryTags).set(updateData).where(eq(categoryTags.id, id)).returning();
   }),
 
@@ -80,13 +101,23 @@ export const categoriesRouter = createTRPCRouter({
   createProjectType: adminProcedure
     .input(insertProjectTypeSchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.insert(categoryProjectTypes).values(input).returning();
+      return ctx.db
+        .insert(categoryProjectTypes)
+        .values({
+          ...input,
+          name: slugifyName(input.name),
+        })
+        .returning();
     }),
 
   updateProjectType: adminProcedure
     .input(updateProjectTypeSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
+      // Slugify name if it's being updated
+      if (updateData.name) {
+        updateData.name = slugifyName(updateData.name);
+      }
       return ctx.db
         .update(categoryProjectTypes)
         .set(updateData)
@@ -130,13 +161,23 @@ export const categoriesRouter = createTRPCRouter({
   createProjectStatus: adminProcedure
     .input(insertProjectStatusSchema)
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.insert(categoryProjectStatuses).values(input).returning();
+      return ctx.db
+        .insert(categoryProjectStatuses)
+        .values({
+          ...input,
+          name: slugifyName(input.name),
+        })
+        .returning();
     }),
 
   updateProjectStatus: adminProcedure
     .input(updateProjectStatusSchema)
     .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
+      // Slugify name if it's being updated
+      if (updateData.name) {
+        updateData.name = slugifyName(updateData.name);
+      }
       return ctx.db
         .update(categoryProjectStatuses)
         .set(updateData)

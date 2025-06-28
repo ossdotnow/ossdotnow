@@ -135,24 +135,16 @@ export function AddCategoryDialog({ isOpen, onClose, type }: AddCategoryDialogPr
   const handleDisplayNameChange = (value: string) => {
     setDisplayName(value);
 
-    // Auto-generate kebab-case name if name is empty or matches the previous display name
-    if (
-      !name ||
-      name ===
-        displayName
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
-    ) {
-      const kebabName = value
-        .toLowerCase()
-        .trim()
-        .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
-      setName(kebabName);
-    }
+    // Always auto-generate kebab-case name from display name
+    const kebabName = value
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-') // Replace spaces with dashes
+      .replace(/[^a-z0-9-]/g, '') // Remove special characters except dashes
+      .replace(/-+/g, '-') // Replace multiple dashes with single dash
+      .replace(/^-|-$/g, ''); // Remove leading/trailing dashes
+
+    setName(kebabName);
   };
 
   // Get the current mutation status
@@ -197,9 +189,10 @@ export function AddCategoryDialog({ isOpen, onClose, type }: AddCategoryDialogPr
               onChange={(e) => setName(e.target.value)}
               placeholder={placeholders.name}
               disabled={isLoading}
+              className="bg-muted"
             />
             <p className="text-muted-foreground text-sm">
-              Used internally as identifier (auto-generated from display name)
+              Auto-generated from display name (spaces become dashes)
             </p>
           </div>
 
