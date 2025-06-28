@@ -34,6 +34,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
+import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -384,12 +385,7 @@ export default function SubmissionForm() {
 
   const progress = ((currentStep + 1) / steps.length) * 100;
 
-  const submissionCount =
-    typeof window !== 'undefined'
-      ? parseInt(localStorage.getItem('early-submission-count') ?? '0')
-      : 0;
-
-  return success ? (
+  return success && env.NEXT_PUBLIC_ENV === 'production' ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>
