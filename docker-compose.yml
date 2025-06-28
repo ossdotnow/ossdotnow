@@ -3,7 +3,7 @@ name: ossdotnow
 services:
   db:
     container_name: ossdotnow
-    image: bitnami/postgresql:15
+    image: bitnami/postgresql:17
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -20,6 +20,22 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+
+  serverless-redis-http:
+    ports:
+      - '8079:80'
+    image: hiett/serverless-redis-http:latest
+    restart: always
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: password
+      SRH_CONNECTION_STRING: 'redis://redis:6379' # Using `redis` hostname since they're in the same Docker network.
 
 volumes:
   postgres_data:
