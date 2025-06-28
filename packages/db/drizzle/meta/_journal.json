@@ -57,6 +57,13 @@
       "when": 1750979356801,
       "tag": "0007_serious_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1751120772473,
+      "tag": "0008_regular_starfox",
+      "breakpoints": true
     }
   ]
 }
