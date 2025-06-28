@@ -50,6 +50,13 @@
       "when": 1750701189110,
       "tag": "0006_late_brother_voodoo",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1750979356801,
+      "tag": "0007_serious_paladin",
+      "breakpoints": true
     }
   ]
 }

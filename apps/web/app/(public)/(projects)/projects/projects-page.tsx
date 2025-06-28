@@ -28,7 +28,7 @@ export default function ProjectsPage() {
 
   const { data, isLoading, isError } = useQuery(
     trpc.projects.getProjects.queryOptions({
-      approvalStatus: 'approved',
+      approvalStatus: 'all',
       page: pageNumber,
       pageSize,
     }),

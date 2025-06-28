@@ -1,5 +1,6 @@
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectProviderEnum } from '@workspace/db/schema';
+import { PROVIDER_URL_PATTERNS } from '../utils/constants';
 import { getActiveDriver } from '../driver/utils';
 import { and, asc, count, eq } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
@@ -218,12 +219,7 @@ export const projectsRouter = createTRPCRouter({
         });
       }
 
-      const providerUrlRegex = {
-        github: /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
-        gitlab: /(?:https?:\/\/gitlab\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/,
-      };
-
-      const match = projectToClaim.gitRepoUrl.match(providerUrlRegex[provider]);
+      const match = projectToClaim.gitRepoUrl.match(PROVIDER_URL_PATTERNS[provider]);
       if (!match) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -317,7 +313,7 @@ export const projectsRouter = createTRPCRouter({
         gitRepoUrl: projectToCheck.gitRepoUrl,
       };
     }),
-  debugGitHubPermissions: protectedProcedure
+  debugRepositoryPermissions: protectedProcedure
     .input(z.object({ repoUrl: z.string(), projectId: z.string() }))
     .query(async ({ ctx, input }) => {
       const userId = ctx.session.userId;
@@ -345,8 +341,7 @@ export const projectsRouter = createTRPCRouter({
         return { error: `${provider} account not connected` };
       }
 
-      const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^\/]+)\/([^\/]+?)(?:\.git|\/|$)/;
-      const match = input.repoUrl.match(githubUrlRegex);
+      const match = input.repoUrl.match(PROVIDER_URL_PATTERNS[provider]);
       if (!match) {
         return { error: `Invalid ${provider} repository URL format` };
       }

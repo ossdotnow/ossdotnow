@@ -3,13 +3,12 @@ import ProjectTicks from '@/components/project/project-ticks';
 import { Star, GitFork, Clock } from 'lucide-react';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
+import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 
 type Project = typeof projectSchema.$inferSelect;
-
-// TODO: finish this file
 
 const isValidProvider = (
   provider: string | null,
@@ -19,17 +18,16 @@ const isValidProvider = (
 
 export default function ProjectCard({ project }: { project: Project }) {
   const trpc = useTRPC();
-  const { data: repoData } = useQuery({
-    ...trpc.repository.getRepoData.queryOptions({
+  const { data: repo, isError } = useQuery({
+    ...trpc.repository.getRepo.queryOptions({
       url: project.gitRepoUrl,
       provider: project.gitHost as (typeof projectProviderEnum.enumValues)[number],
     }),
     enabled: !!project.gitRepoUrl && isValidProvider(project.gitHost),
+    staleTime: 1000 * 60 * 60 * 24,
   });
 
-  if (!repoData?.repo) return null;
-
-  const { repo, contributors, issues, pullRequests } = repoData;
+  if (isError) return <div>Error</div>;
 
   return (
     <div className="group/project relative border border-neutral-800 bg-neutral-900/50 p-6 transition-all hover:border-neutral-700">
@@ -49,7 +47,9 @@ export default function ProjectCard({ project }: { project: Project }) {
               height={48}
               className="h-20 w-20 rounded-full"
             />
-          ) : null}
+          ) : (
+            <div className="h-20 w-20 animate-pulse rounded-md bg-neutral-800" />
+          )}
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-white">{project.name}</h3>
@@ -78,16 +78,24 @@ export default function ProjectCard({ project }: { project: Project }) {
           <div className="flex items-center gap-1.5">
             <Star className="h-4 w-4 text-neutral-500" />
             <span className="text-neutral-300">
-              {repo?.stargazers_count?.toLocaleString() || repo?.star_count.toLocaleString()}
+              <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <GitFork className="h-4 w-4 text-neutral-500" />
-            <span className="text-neutral-300">{repo?.forks_count?.toLocaleString()}</span>
+            <span className="text-neutral-300">
+              <NumberFlow value={repo?.forks_count || 0} />
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="h-4 w-4 text-neutral-500" />
-            <span className="text-neutral-300">{formatDate(new Date(repo?.created_at!))}</span>
+            <span className="text-neutral-300">
+              <NumberFlow value={new Date(repo?.created_at).getDate() || 0} />
+              /
+              <NumberFlow value={new Date(repo?.created_at).getMonth() + 1 || 0} />
+              /
+              <NumberFlow value={new Date(repo?.created_at).getFullYear() || 0} />
+            </span>
           </div>
         </div>
       </Link>

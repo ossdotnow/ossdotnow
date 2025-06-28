@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { projectProviderEnum, tagsEnum } from '@workspace/db/schema';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
@@ -25,13 +24,13 @@ import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { track } from '@vercel/analytics/react';
 import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
