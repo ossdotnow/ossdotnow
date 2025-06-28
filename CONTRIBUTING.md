@@ -25,13 +25,6 @@ Thank you for your interest in contributing to oss.now! This guide will help you
    cp .env.example .env
    ```
 
-3. Fill in the environment variables:
-   - `DATABASE_URL`: Use `postgresql://postgres:postgres@localhost:5432/ossdotnow_db` for local development
-   - `BETTER_AUTH_SECRET`: Generate a random string for local development
-   - `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`: Create a free tier Redis database at [Upstash](https://upstash.com/), then copy the HTTP URL and token from your database dashboard.
-   - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`: Follow the guide at [BetterAuth](https://www.better-auth.com/docs/authentication/github) to create a GitHub OAuth application and get your credentials.
-   - `UPLOADTHING_TOKEN`: Create a free App from [UploadThing](https://uploadthing.com/) when needed
-
 ### Starting the Development Environment
 
 
