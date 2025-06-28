@@ -2,7 +2,7 @@ import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure }
 import { account, project, projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
 import { getActiveDriver } from '../driver/utils';
-import { and, asc, count, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import type { createTRPCContext } from '../trpc';
 import type { Context } from '../driver/utils';
@@ -70,7 +70,7 @@ export const projectsRouter = createTRPCRouter({
       // Get paginated results
       const projects = await ctx.db.query.project.findMany({
         where: whereClause,
-        orderBy: [asc(project.name)],
+        orderBy: [desc(project.isPinned), asc(project.name)],
         limit: pageSize,
         offset,
       });
@@ -192,6 +192,24 @@ export const projectsRouter = createTRPCRouter({
       return ctx.db
         .update(project)
         .set({ approvalStatus: 'rejected' })
+        .where(eq(project.id, input.projectId))
+        .returning();
+    }),
+  pinProject: adminProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db
+        .update(project)
+        .set({ isPinned: true })
+        .where(eq(project.id, input.projectId))
+        .returning();
+    }),
+  unpinProject: adminProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db
+        .update(project)
+        .set({ isPinned: false })
         .where(eq(project.id, input.projectId))
         .returning();
     }),

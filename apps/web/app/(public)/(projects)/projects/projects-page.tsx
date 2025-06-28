@@ -28,9 +28,17 @@ export default function ProjectsPage() {
 
   const { data, isLoading, isError } = useQuery(
     trpc.projects.getProjects.queryOptions({
-      approvalStatus: 'all',
+      approvalStatus: 'approved',
       page: pageNumber,
       pageSize,
+    }),
+  );
+
+  const { data: featuredProjects } = useQuery(
+    trpc.projects.getProjects.queryOptions({
+      approvalStatus: 'approved',
+      page: 1,
+      pageSize: 4,
     }),
   );
 
@@ -71,6 +79,33 @@ export default function ProjectsPage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {featuredProjects && featuredProjects.data.some((p) => p.isPinned) && (
+          <div className="mb-12">
+            <div className="mb-6">
+              <h2 className="mb-2 text-2xl font-bold text-white">Featured Projects</h2>
+              <p className="text-neutral-400">
+                Your favorite projects, curated by the community
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+              {featuredProjects.data
+                .filter((project) => project.isPinned)
+                .map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+            </div>
+          </div>
+        )}
+
+        <div className="mb-6">
+          <h2 className="mb-2 text-2xl font-bold text-white">
+            {featuredProjects && featuredProjects.data.some((p) => p.isPinned)
+              ? 'All Projects'
+              : 'Projects'}
+          </h2>
+          <p className="text-neutral-400">Discover amazing open source projects</p>
         </div>
 
         {isLoading ? (
