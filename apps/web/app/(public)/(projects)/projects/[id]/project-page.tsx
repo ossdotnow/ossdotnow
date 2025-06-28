@@ -106,6 +106,10 @@ export default function ProjectPage({ id }: { id: string }) {
   const issues = repoData[2].data;
   const pullRequests = repoData[3].data;
 
+  if (!repo || !contributors || !issues || !pullRequests) {
+    return <div>Loading...</div>;
+  }
+
   console.dir(contributors, { depth: null });
 
   return (
@@ -145,7 +149,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     </span>
                   )}
                 </div>
-                {/* {project?.socialLinks && (
+                {project?.socialLinks && (
                   <div className="mt-4 flex gap-4">
                     {project.socialLinks.website && (
                       <Link
@@ -203,12 +207,12 @@ export default function ProjectPage({ id }: { id: string }) {
                       </Link>
                     )}
                   </div>
-                )} */}
+                )}
               </div>
             </div>
             <div className="flex flex-col items-end justify-end gap-2">
-              {/* <Link
-                href={repo?.html_url ?? '#'}
+              <Link
+                href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
                 target="_blank"
                 event="project_page_github_link_clicked"
                 eventObject={{ projectId: project.id }}
@@ -217,10 +221,19 @@ export default function ProjectPage({ id }: { id: string }) {
                   variant="outline"
                   className="rounded-none border-neutral-800 bg-neutral-900 hover:border-neutral-700"
                 >
-                  <Github className="h-4 w-4" />
-                  View on GitHub
+                  {project.gitHost === 'github' ? (
+                    <>
+                      <Icons.github className="h-4 w-4 fill-white" />
+                      View on GitHub
+                    </>
+                  ) : (
+                    <>
+                      <Icons.gitlab className="h-4 w-4 fill-white" />
+                      View on GitLab
+                    </>
+                  )}
                 </Button>
-              </Link> */}
+              </Link>
 
               {isUnclaimed && user && (
                 <div className="bg-background/50 mt-4 flex flex-col items-end gap-2 border p-4">
@@ -235,13 +248,13 @@ export default function ProjectPage({ id }: { id: string }) {
                 </div>
               )}
 
-              {isOwner && (
+              {/* {isOwner && (
                 <div className="mt-4">
                   <Button variant="outline" size="sm" asChild className="rounded-none">
-                    {/* <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link> */}
+                    <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link>
                   </Button>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>
@@ -290,8 +303,10 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="text-sm">Open Issues</span>
                   </div>
                   <p className="mt-1 text-2xl font-bold text-white">
-                    {issues?.filter((issue: any) => !issue.pull_request && issue.state === 'open')
-                      .length || 0}
+                    {issues?.filter(
+                      (issue: any) =>
+                        !issue.pull_request && (issue.state === 'open' || issue.state === 'opened'),
+                    ).length || 0}
                   </p>
                 </div>
               </div>
@@ -375,22 +390,24 @@ export default function ProjectPage({ id }: { id: string }) {
                                       <span className="text-xs font-medium">Closed</span>
                                     </div>
                                   )}
-                                  <span className="text-xs text-neutral-500">#{issue.number}</span>
+                                  <span className="text-xs text-neutral-500">
+                                    #{issue.number || issue.iid}
+                                  </span>
                                 </div>
-                                {/* <Link
-                                  href={issue.html_url}
+                                <Link
+                                  href={issue.html_url || issue.web_url}
                                   event="project_page_issue_link_clicked"
                                   eventObject={{ projectId: project.id }}
                                   target="_blank"
                                   className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                                 >
                                   {issue.title}
-                                </Link> */}
+                                </Link>
                                 {issue.labels && issue.labels.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {issue.labels.map((label: any) => (
                                       <span
-                                        key={label.id}
+                                        key={label.id || label}
                                         className="rounded-full px-2 py-0.5 text-xs"
                                         style={{
                                           backgroundColor: `#${label.color}20`,
@@ -408,20 +425,20 @@ export default function ProjectPage({ id }: { id: string }) {
                                     <Clock className="h-3 w-3" />
                                     <span>{formatDate(new Date(issue.created_at))}</span>
                                   </div>
-                                  <span>by {issue.user?.login}</span>
+                                  <span>by {issue.user?.login || issue.author?.username}</span>
                                 </div>
                               </div>
-                              {/* <Link
-                                href={issue.html_url}
+                              <Link
+                                href={issue.html_url || issue.web_url}
                                 target="_blank"
                                 className="text-neutral-400 transition-colors hover:text-white"
                               >
                                 <ExternalLink className="h-4 w-4" />
-                              </Link> */}
+                              </Link>
                             </div>
                           </div>
                         ))}
-                      {/* {issues.filter((issue: GitHubIssue) => !issue.pull_request).length > 10 && (
+                      {issues.filter((issue: any) => !issue.pull_request).length > 10 && (
                         <Link
                           href={`${repo?.html_url}/issues`}
                           target="_blank"
@@ -429,11 +446,10 @@ export default function ProjectPage({ id }: { id: string }) {
                           eventObject={{ projectId: project.id }}
                           className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
                         >
-                          View all{' '}
-                          {issues.filter((issue: GitHubIssue) => !issue.pull_request).length} issues
-                          on GitHub →
+                          View all {issues.filter((issue: any) => !issue.pull_request).length}{' '}
+                          issues on GitHub →
                         </Link>
-                      )} */}
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No issues found</p>
@@ -471,22 +487,24 @@ export default function ProjectPage({ id }: { id: string }) {
                                     <span className="text-xs font-medium">Closed</span>
                                   </div>
                                 )}
-                                <span className="text-xs text-neutral-500">#{pr.number}</span>
+                                <span className="text-xs text-neutral-500">
+                                  #{pr.number || pr.iid}
+                                </span>
                               </div>
-                              {/* <Link
-                                href={pr.html_url}
+                              <Link
+                                href={pr.html_url || pr.web_url}
                                 target="_blank"
                                 event="project_page_pull_request_link_clicked"
                                 eventObject={{ projectId: project.id }}
                                 className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                               >
                                 {pr.title}
-                              </Link> */}
+                              </Link>
                               {pr.labels && pr.labels.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1">
                                   {pr.labels.map((label: any) => (
                                     <span
-                                      key={label.id}
+                                      key={label.id || label}
                                       className="rounded-full px-2 py-0.5 text-xs"
                                       style={{
                                         backgroundColor: `#${label.color}20`,
@@ -504,7 +522,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   <Clock className="h-3 w-3" />
                                   <span>{formatDate(new Date(pr.created_at))}</span>
                                 </div>
-                                <span>by {pr.user?.login}</span>
+                                <span>by {pr.user?.login || pr.author?.username}</span>
                                 {pr.merged_at && (
                                   <span className="text-purple-400">
                                     merged {formatDate(new Date(pr.merged_at))}
@@ -512,19 +530,19 @@ export default function ProjectPage({ id }: { id: string }) {
                                 )}
                               </div>
                             </div>
-                            {/* <Link
-                              href={pr.html_url}
+                            <Link
+                              href={pr.html_url || pr.web_url}
                               event="project_page_pull_request_link_clicked"
                               eventObject={{ projectId: project.id }}
                               target="_blank"
                               className="text-neutral-400 transition-colors hover:text-white"
                             >
                               <ExternalLink className="h-4 w-4" />
-                            </Link> */}
+                            </Link>
                           </div>
                         </div>
                       ))}
-                      {/* {pullRequests.length > 10 && (
+                      {pullRequests.length > 10 && (
                         <Link
                           href={`${repo?.html_url}/pulls`}
                           target="_blank"
@@ -534,7 +552,7 @@ export default function ProjectPage({ id }: { id: string }) {
                         >
                           View all {pullRequests.length} pull requests on GitHub →
                         </Link>
-                      )} */}
+                      )}
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No pull requests</p>
