@@ -113,201 +113,149 @@ export default function ProjectPage({ id }: { id: string }) {
   console.dir(contributors, { depth: null });
 
   return (
-    <div className="mt-8">
-      <div className="mx-auto max-w-6xl border border-neutral-800 bg-neutral-900/50 py-8">
-        <div className="px-4">
-          <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-4">
-              {(repo && repo?.owner && repo?.owner?.avatar_url) ||
-              (repo?.namespace && repo?.namespace?.avatar_url) ? (
-                <Image
-                  src={
-                    repo?.owner?.avatar_url ||
-                    `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
-                  }
-                  alt={project.name ?? 'Project Logo'}
-                  width={48}
-                  height={48}
-                  className="h-20 w-20 rounded-full"
-                />
-              ) : null}
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-white">{project?.name}</h1>
-                  <ProjectTicks project={project} />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <span className="rounded-md bg-neutral-800 px-3 py-1 text-sm font-medium text-neutral-300">
-                    {project?.status?.replace('-', ' ')}
-                  </span>
-                  <span className="rounded-md bg-neutral-800 px-3 py-1 text-sm font-medium text-neutral-300">
-                    {project?.type?.replace('-', ' ')}
-                  </span>
-                  {project?.hasBeenAcquired && (
-                    <span className="rounded-md bg-yellow-500/10 px-3 py-1 text-sm font-medium text-yellow-400">
-                      Acquired
-                    </span>
-                  )}
-                </div>
-                {project?.socialLinks && (
-                  <div className="mt-4 flex gap-4">
-                    {project.socialLinks.website && (
-                      <Link
-                        href={project.socialLinks.website}
-                        target="_blank"
-                        event="project_page_website_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Globe className="h-3 w-3" />
-                        <span className="text-sm">Website</span>
-                        <ExternalLink className="ml-auto h-3 w-3" />
-                      </Link>
-                    )}
-                    {project.socialLinks.discord && (
-                      <Link
-                        href={project.socialLinks.discord}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_discord_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Icons.discord className="h-3 w-3" />
-                        <span className="text-sm">Discord</span>
-                        <ExternalLink className="ml-auto h-3 w-3" />
-                      </Link>
-                    )}
-                    {project.socialLinks.twitter && (
-                      <Link
-                        href={project.socialLinks.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_twitter_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Twitter className="h-3 w-3" />
-                        <span className="text-sm">Twitter</span>
-                        <ExternalLink className="ml-auto h-3 w-3" />
-                      </Link>
-                    )}
-                    {project.socialLinks.linkedin && (
-                      <Link
-                        href={project.socialLinks.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_linkedin_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Linkedin className="h-3 w-3" />
-                        <span className="text-sm">LinkedIn</span>
-                        <ExternalLink className="ml-auto h-3 w-3" />
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex flex-col items-end justify-end gap-2">
-              <Link
-                href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
-                target="_blank"
-                event="project_page_github_link_clicked"
-                eventObject={{ projectId: project.id }}
-              >
-                <Button
-                  variant="outline"
-                  className="rounded-none border-neutral-800 bg-neutral-900 hover:border-neutral-700"
-                >
-                  {project.gitHost === 'github' ? (
-                    <>
-                      <Icons.github className="h-4 w-4 fill-white" />
-                      View on GitHub
-                    </>
-                  ) : (
-                    <>
-                      <Icons.gitlab className="h-4 w-4 fill-white" />
-                      View on GitLab
-                    </>
-                  )}
-                </Button>
-              </Link>
-
-              {isUnclaimed && user && (
-                <div className="bg-background/50 mt-4 flex flex-col items-end gap-2 border p-4">
-                  <h3 className="mb-2 text-sm font-medium">Project Ownership</h3>
-                  <p className="text-muted-foreground mb-3 text-sm">
-                    This project hasn&apos;t been claimed yet.
-                  </p>
-                  <ClaimProjectDialog
-                    projectId={project.id}
-                    provider={project.gitHost as (typeof projectProviderEnum.enumValues)[number]}
-                  />
-                </div>
-              )}
-
-              {/* {isOwner && (
-                <div className="mt-4">
-                  <Button variant="outline" size="sm" asChild className="rounded-none">
-                    <Link href={`/projects/${project.id}/edit`}>Edit Project Details</Link>
-                  </Button>
-                </div>
-              )} */}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-6xl py-4">
+    <div className="mt-4 md:mt-8">
+      <div className="mx-auto max-w-6xl px-4 py-4">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex flex-col gap-4 lg:col-span-2">
-            <div className="border border-neutral-800 bg-neutral-900/50 p-6">
-              <h2 className="mb-4 text-lg font-semibold text-white">Description</h2>
-              <div className="mb-4">
-                <p className="mt-2 text-base text-neutral-400">{project?.description}</p>
-              </div>
-              <h2 className="mb-4 text-lg font-semibold text-white">Repository Stats</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 text-neutral-400">
-                    <Star className="h-4 w-4" />
-                    <span className="text-sm">Stars</span>
+            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                {(repo && repo?.owner && repo?.owner?.avatar_url) ||
+                (repo?.namespace && repo?.namespace?.avatar_url) ? (
+                  <Image
+                    src={
+                      repo?.owner?.avatar_url ||
+                      `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
+                    }
+                    alt={project.name ?? 'Project Logo'}
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 rounded-full sm:h-16 sm:w-16"
+                  />
+                ) : null}
+                <div className="flex-1">
+                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-xl font-bold text-white sm:text-2xl">{project?.name}</h1>
+                      <ProjectTicks project={project} />
+                    </div>
+                    <Link
+                      href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
+                      target="_blank"
+                      event="project_page_github_link_clicked"
+                      eventObject={{ projectId: project.id }}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600 sm:w-auto"
+                      >
+                        {project.gitHost === 'github' ? (
+                          <>
+                            <Icons.github className="h-4 w-4 fill-white" />
+                            View on GitHub
+                          </>
+                        ) : (
+                          <>
+                            <Icons.gitlab className="h-4 w-4 fill-white" />
+                            View on GitLab
+                          </>
+                        )}
+                      </Button>
+                    </Link>
                   </div>
-                  <p className="mt-1 text-2xl font-bold text-white">
-                    <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 text-neutral-400">
-                    <GitFork className="h-4 w-4" />
-                    <span className="text-sm">Forks</span>
+
+                  <p className="mb-4 leading-relaxed text-neutral-400">{project?.description}</p>
+
+                  {isUnclaimed && user && (
+                    <div className="mb-4 rounded-md border border-neutral-700 bg-neutral-800/30 p-3 md:p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-neutral-200">Project Ownership</p>
+                          <p className="text-xs text-neutral-400">
+                            This project hasn't been claimed yet
+                          </p>
+                        </div>
+                        <div className="sm:flex-shrink-0">
+                          <ClaimProjectDialog
+                            projectId={project.id}
+                            provider={
+                              project.gitHost as (typeof projectProviderEnum.enumValues)[number]
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
+                      {project?.status?.replace('-', ' ')}
+                    </span>
+                    <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
+                      {project?.type?.replace('-', ' ')}
+                    </span>
+                    {project?.hasBeenAcquired && (
+                      <span className="rounded-md bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400">
+                        Acquired
+                      </span>
+                    )}
                   </div>
-                  <p className="mt-1 text-2xl font-bold text-white">
-                    <NumberFlow value={repo?.forks_count || 0} />
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 text-neutral-400">
-                    <Users className="h-4 w-4" />
-                    <span className="text-sm">Contributors</span>
-                  </div>
-                  <p className="mt-1 text-2xl font-bold text-white">
-                    <NumberFlow value={contributors?.length || 0} />
-                  </p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 text-neutral-400">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="text-sm">Open Issues</span>
-                  </div>
-                  <p className="mt-1 text-2xl font-bold text-white">
-                    {issues?.filter(
-                      (issue: any) =>
-                        !issue.pull_request && (issue.state === 'open' || issue.state === 'opened'),
-                    ).length || 0}
-                  </p>
+
+                  {project?.socialLinks && (
+                    <div className="flex flex-wrap gap-3 md:gap-4">
+                      {project.socialLinks.website && (
+                        <Link
+                          href={project.socialLinks.website}
+                          target="_blank"
+                          event="project_page_website_link_clicked"
+                          eventObject={{ projectId: project.id }}
+                          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+                        >
+                          <Globe className="h-4 w-4" />
+                          <span className="text-sm">Website</span>
+                        </Link>
+                      )}
+                      {project.socialLinks.discord && (
+                        <Link
+                          href={project.socialLinks.discord}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          event="project_page_discord_link_clicked"
+                          eventObject={{ projectId: project.id }}
+                          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+                        >
+                          <Icons.discord className="h-4 w-4" />
+                          <span className="text-sm">Discord</span>
+                        </Link>
+                      )}
+                      {project.socialLinks.twitter && (
+                        <Link
+                          href={project.socialLinks.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          event="project_page_twitter_link_clicked"
+                          eventObject={{ projectId: project.id }}
+                          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+                        >
+                          <Twitter className="h-4 w-4" />
+                          <span className="text-sm">Twitter</span>
+                        </Link>
+                      )}
+                      {project.socialLinks.linkedin && (
+                        <Link
+                          href={project.socialLinks.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          event="project_page_linkedin_link_clicked"
+                          eventObject={{ projectId: project.id }}
+                          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+                        >
+                          <Linkedin className="h-4 w-4" />
+                          <span className="text-sm">LinkedIn</span>
+                        </Link>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -315,12 +263,12 @@ export default function ProjectPage({ id }: { id: string }) {
             {(project?.isLookingForContributors ||
               project?.isLookingForInvestors ||
               project?.isHiring) && (
-              <div className="border border-neutral-800 bg-neutral-900/50 p-6">
+              <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
                 <h2 className="mb-4 text-lg font-semibold text-white">Opportunities</h2>
                 <div className="space-y-3">
                   {project?.isLookingForContributors && (
-                    <div className="flex items-center gap-3 rounded-md bg-emerald-500/10 p-3 pl-4">
-                      <Users className="h-5 w-5 text-emerald-400" />
+                    <div className="flex items-start gap-3 rounded-md bg-emerald-500/10 p-3">
+                      <Users className="mt-0.5 h-5 w-5 text-emerald-400" />
                       <div>
                         <p className="font-medium text-emerald-400">Open to Contributors</p>
                         <p className="text-sm text-neutral-400">
@@ -330,8 +278,8 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   )}
                   {project?.isLookingForInvestors && (
-                    <div className="flex items-center gap-3 rounded-md bg-blue-500/10 p-3 pl-4">
-                      <DollarSign className="h-5 w-5 text-blue-400" />
+                    <div className="flex items-start gap-3 rounded-md bg-blue-500/10 p-3">
+                      <DollarSign className="mt-0.5 h-5 w-5 text-blue-400" />
                       <div>
                         <p className="font-medium text-blue-400">Seeking Investment</p>
                         <p className="text-sm text-neutral-400">
@@ -341,8 +289,8 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   )}
                   {project?.isHiring && (
-                    <div className="flex items-center gap-3 rounded-md bg-purple-500/10 p-3 pl-4">
-                      <Briefcase className="h-5 w-5 text-purple-400" />
+                    <div className="flex items-start gap-3 rounded-md bg-purple-500/10 p-3">
+                      <Briefcase className="mt-0.5 h-5 w-5 text-purple-400" />
                       <div>
                         <p className="font-medium text-purple-400">We&apos;re Hiring!</p>
                         <p className="text-sm text-neutral-400">Check out available positions</p>
@@ -353,16 +301,18 @@ export default function ProjectPage({ id }: { id: string }) {
               </div>
             )}
 
-            <div className="border border-neutral-800 bg-neutral-900/50 p-6">
+            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
               <Tabs defaultValue="issues" className="w-full">
                 <TabsList className="bg-neutral-900/0 p-0">
-                  <TabsTrigger value="issues">
+                  <TabsTrigger value="issues" className="text-sm">
                     <AlertCircle className="h-4 w-4" />
-                    Issues
+                    <span className="hidden sm:inline">Issues</span>
+                    <span className="sm:hidden">Issues</span>
                   </TabsTrigger>
-                  <TabsTrigger value="pull-requests">
+                  <TabsTrigger value="pull-requests" className="text-sm">
                     <GitPullRequest className="h-4 w-4" />
-                    Pull Requests
+                    <span className="hidden sm:inline">Pull Requests</span>
+                    <span className="sm:hidden">PRs</span>
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="issues">
@@ -563,57 +513,109 @@ export default function ProjectPage({ id }: { id: string }) {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="border border-neutral-800 bg-neutral-900/50 p-6">
-              <h2 className="mb-4 text-lg font-semibold text-white">About</h2>
-              <div className="space-y-2 text-sm">
-                {project?.createdAt && (
+            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+              <h2 className="mb-4 text-lg font-semibold text-white">Project Info</h2>
+
+              <div className="mb-6">
+                <h3 className="mb-3 text-sm font-medium text-neutral-300">Repository Stats</h3>
+                <div className="grid grid-cols-2 gap-3 sm:block sm:space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-neutral-400">Created</span>
-                    <span className="text-neutral-300">
-                      {formatDate(new Date(repo?.created_at!))}
+                    <div className="flex items-center gap-2 text-neutral-400">
+                      <Star className="h-4 w-4" />
+                      <span className="text-sm">Stars</span>
+                    </div>
+                    <span className="text-base font-bold text-white sm:text-lg">
+                      <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
                     </span>
                   </div>
-                )}
-                {project?.updatedAt && (
-                  <>
-                    <Separator className="bg-neutral-800" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-400">
+                      <GitFork className="h-4 w-4" />
+                      <span className="text-sm">Forks</span>
+                    </div>
+                    <span className="text-base font-bold text-white sm:text-lg">
+                      <NumberFlow value={repo?.forks_count || 0} />
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-400">
+                      <Users className="h-4 w-4" />
+                      <span className="text-sm">Contributors</span>
+                    </div>
+                    <span className="text-base font-bold text-white sm:text-lg">
+                      <NumberFlow value={contributors?.length || 0} />
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-400">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Issues</span>
+                    </div>
+                    <span className="text-base font-bold text-white sm:text-lg">
+                      {issues?.filter(
+                        (issue: any) =>
+                          !issue.pull_request &&
+                          (issue.state === 'open' || issue.state === 'opened'),
+                      ).length || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Separator className="my-6 bg-neutral-700" />
+
+              <div>
+                <h3 className="mb-3 text-sm font-medium text-neutral-300">About</h3>
+                <div className="space-y-2 text-sm">
+                  {project?.createdAt && (
                     <div className="flex items-center justify-between">
-                      <span className="text-neutral-400">Last Updated</span>
+                      <span className="text-neutral-400">Created</span>
                       <span className="text-neutral-300">
-                        {formatDate(new Date(repo?.updated_at!))}
+                        {formatDate(new Date(repo?.created_at!))}
                       </span>
                     </div>
-                  </>
-                )}
-                {project?.gitHost && (
-                  <>
-                    <Separator className="bg-neutral-800" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-400">Host</span>
-                      <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
-                    </div>
-                  </>
-                )}
-                <Separator className="bg-neutral-800" />
-                <div className="flex items-center justify-between">
-                  <span className="text-neutral-400">Visibility</span>
-                  <span className="text-neutral-300">
-                    {project?.isPublic ? 'Public' : 'Private'}
-                  </span>
+                  )}
+                  {project?.updatedAt && (
+                    <>
+                      <Separator className="bg-neutral-800" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-400">Updated</span>
+                        <span className="text-neutral-300">
+                          {formatDate(new Date(repo?.updated_at!))}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {project?.gitHost && (
+                    <>
+                      <Separator className="bg-neutral-800" />
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-400">Host</span>
+                        <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
+                      </div>
+                    </>
+                  )}
+                  <Separator className="bg-neutral-800" />
+                  <div className="flex items-center justify-between">
+                    <span className="text-neutral-400">Visibility</span>
+                    <span className="text-neutral-300">
+                      {project?.isPublic ? 'Public' : 'Private'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="border border-neutral-800 bg-neutral-900/50 p-6">
+            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
                 <Tag className="h-5 w-5" />
                 Tags
               </h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 md:gap-2">
                 {project?.tags?.map((tag: string, index: number) => (
                   <span
                     key={index}
-                    className="rounded-full bg-neutral-800 px-3 py-1 text-sm text-neutral-300 transition-colors hover:bg-neutral-700"
+                    className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 md:px-3 md:text-sm"
                   >
                     #{tag}
                   </span>
@@ -622,7 +624,7 @@ export default function ProjectPage({ id }: { id: string }) {
             </div>
 
             {project?.hasBeenAcquired && project?.acquiredBy && (
-              <div className="border border-yellow-500/20 bg-yellow-500/5 p-6">
+              <div className="border border-yellow-500/20 bg-yellow-500/5 p-4 md:p-6">
                 <div className="flex items-center gap-2 text-yellow-400">
                   <Building className="h-5 w-5" />
                   <h2 className="text-lg font-semibold">Acquisition</h2>

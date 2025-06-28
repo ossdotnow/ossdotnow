@@ -74,8 +74,28 @@ export class GithubManager implements GitManager {
 
   async getContributors(identifier: string): Promise<ContributorData[]> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
-    const { data } = await this.octokit.rest.repos.listContributors({ owner, repo });
-    return data.map((c) => ({
+
+    let allContributors: any[] = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data } = await this.octokit.rest.repos.listContributors({
+        owner,
+        repo,
+        per_page: 100,
+        page,
+      });
+
+      allContributors.push(...data);
+
+      hasMore = data.length === 100;
+      page++;
+
+      if (page > 50) break;
+    }
+
+    return allContributors.map((c) => ({
       ...c,
       id: c.id!,
       username: c.login!,

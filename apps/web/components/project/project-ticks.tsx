@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
 import type { project } from '@workspace/db/schema';
 import { cn } from '@workspace/ui/lib/utils';
-import { CheckIcon } from 'lucide-react';
+import { ShieldCheck, Briefcase } from 'lucide-react';
 
 const SPLIT_DISTANCE = 10;
 const OVERLAP = 10;
@@ -11,8 +11,18 @@ type Project = typeof project.$inferSelect;
 
 export default function ProjectTicks({ project }: { project: Project }) {
   const ticks = [
-    { label: 'Verified', color: '#10B981', isActive: !!project.ownerId },
-    { label: 'Hiring', color: '#3B82F6', isActive: !!project.isHiring },
+    {
+      label: 'Verified',
+      color: '#10B981',
+      isActive: !!project.ownerId,
+      icon: ShieldCheck,
+    },
+    {
+      label: 'Hiring',
+      color: '#3B82F6',
+      isActive: !!project.isHiring,
+      icon: Briefcase,
+    },
   ];
 
   const activeTicks = ticks.filter((tick) => tick.isActive);
@@ -27,12 +37,13 @@ export default function ProjectTicks({ project }: { project: Project }) {
         }}
       >
         {activeTicks.map((tick, index) => {
+          const IconComponent = tick.icon;
           return tick.isActive ? (
             <Tooltip key={index}>
               <TooltipTrigger asChild>
                 <div
                   className={cn(
-                    'absolute rounded-full bg-white p-[1px] shadow-sm transition-all duration-300 ease-in-out',
+                    'absolute transition-all duration-300 ease-in-out',
                     'group-hover/ticks:[transform:translateX(var(--split-distance))]',
                   )}
                   style={
@@ -43,16 +54,11 @@ export default function ProjectTicks({ project }: { project: Project }) {
                     } as React.CSSProperties
                   }
                 >
-                  <div
-                    className="group/tick relative flex items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: tick.color,
-                      width: `${SIZE}px`,
-                      height: `${SIZE}px`,
-                    }}
-                  >
-                    <CheckIcon className="text-white" size={SIZE * 0.6} />
-                  </div>
+                  <IconComponent
+                    className="drop-shadow-sm"
+                    size={SIZE}
+                    style={{ color: tick.color }}
+                  />
                 </div>
               </TooltipTrigger>
               <TooltipContent>

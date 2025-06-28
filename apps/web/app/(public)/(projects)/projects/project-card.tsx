@@ -30,7 +30,7 @@ export default function ProjectCard({ project }: { project: Project }) {
   if (isError) return <div>Error</div>;
 
   return (
-    <div className="group/project relative border border-neutral-800 bg-neutral-900/50 p-4 transition-all hover:border-neutral-700">
+    <div className="group/project relative border border-neutral-800 bg-neutral-900/50 p-3 transition-all hover:border-neutral-700 md:p-4">
       <Link
         href={`/projects/${project.id}`}
         event="project_card_link_clicked"
@@ -45,28 +45,30 @@ export default function ProjectCard({ project }: { project: Project }) {
               alt={project.name ?? 'Project Logo'}
               width={32}
               height={32}
-              className="h-12 w-12 flex-shrink-0 rounded-full"
+              className="h-10 w-10 flex-shrink-0 rounded-full md:h-12 md:w-12"
             />
           ) : (
-            <div className="h-12 w-12 flex-shrink-0 animate-pulse rounded-md bg-neutral-800" />
+            <div className="h-10 w-10 flex-shrink-0 animate-pulse rounded-md bg-neutral-800 md:h-12 md:w-12" />
           )}
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex items-center gap-2">
-              <h3 className="truncate text-base font-semibold text-white">{project.name}</h3>
+              <h3 className="truncate text-sm font-semibold text-white md:text-base">
+                {project.name}
+              </h3>
               <ProjectTicks project={project} />
             </div>
-            <p className="mb-2 line-clamp-2 text-sm leading-relaxed text-neutral-400">
+            <p className="mb-2 line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
               {project.description}
             </p>
             {(project.isLookingForContributors || project.hasBeenAcquired) && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1 md:gap-1.5">
                 {project.isLookingForContributors && (
-                  <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400">
+                  <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium text-emerald-400 md:px-2">
                     Open to contributors
                   </span>
                 )}
                 {project.hasBeenAcquired && (
-                  <span className="rounded-md bg-yellow-500/10 px-2 py-0.5 text-xs font-medium text-yellow-400">
+                  <span className="rounded-md bg-yellow-500/10 px-1.5 py-0.5 text-xs font-medium text-yellow-400 md:px-2">
                     Acquired
                   </span>
                 )}
@@ -75,21 +77,21 @@ export default function ProjectCard({ project }: { project: Project }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex items-center gap-3 text-xs md:gap-4 md:text-sm">
           <div className="flex items-center gap-1">
-            <Star className="h-3.5 w-3.5 text-neutral-500" />
+            <Star className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />
             <span className="text-neutral-300">
               <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <GitFork className="h-3.5 w-3.5 text-neutral-500" />
+            <GitFork className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />
             <span className="text-neutral-300">
               <NumberFlow value={repo?.forks_count || 0} />
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-neutral-500" />
+            <Clock className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />
             <span className="text-neutral-300">
               {repo?.created_at ? formatDate(new Date(repo.created_at)) : 'N/A'}
             </span>
