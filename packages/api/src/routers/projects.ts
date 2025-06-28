@@ -94,6 +94,51 @@ export const projectsRouter = createTRPCRouter({
         },
       };
     }),
+  getProjectsByUserId: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(20),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { page, pageSize, userId } = input;
+      const offset = (page - 1) * pageSize;
+
+      const whereClause = eq(project.ownerId, userId);
+
+      const [totalCountResult] = await ctx.db
+        .select({ totalCount: count() })
+        .from(project)
+        .where(whereClause)
+        .limit(1);
+
+      const projects = await ctx.db.query.project.findMany({
+        where: whereClause,
+        orderBy: [asc(project.name)],
+        limit: pageSize,
+        offset,
+      });
+
+      const totalCount = totalCountResult?.totalCount ?? 0;
+
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+
+      return {
+        data: projects,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+      };
+    }),
   getProject: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
     return ctx.db.query.project.findFirst({
       where: eq(project.id, input.id),

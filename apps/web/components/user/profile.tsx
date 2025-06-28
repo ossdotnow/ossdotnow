@@ -15,6 +15,7 @@ import {
   Calendar,
   MapPin,
 } from 'lucide-react';
+import { Skeleton } from '@workspace/ui/components/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Card, CardContent, CardHeader } from '@workspace/ui/components/card';
@@ -65,16 +66,21 @@ export default function ProfilePage({ id }: { id: string }) {
     },
   ];
 
-  const { data: user } = useQuery(trpc.user.get.queryOptions(id));
-  const { data: githubDetails } = useQuery(
-    trpc.profile.gitDetails.queryOptions({ provider: 'github', username: user?.username }),
+  const { data: profile, isLoading: isProfileLoading } = useQuery(
+    trpc.profile.getProfile.queryOptions({ id }),
   );
+
   const { data: projects } = useQuery(
-    trpc.projects.getProjects.queryOptions({
-      approvalStatus: 'all',
-      page: 1,
-      pageSize: 100,
-    }),
+    trpc.projects.getProjectsByUserId.queryOptions(
+      {
+        userId: profile?.id ?? '',
+        page: 1,
+        pageSize: 100,
+      },
+      {
+        enabled: !!profile?.id,
+      },
+    ),
   );
 
   // if the id is me then
@@ -135,63 +141,73 @@ export default function ProfilePage({ id }: { id: string }) {
         <div className="container mx-auto py-8">
           <div className="grid gap-8 lg:grid-cols-4">
             <div className="lg:col-span-1">
-              <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
-                <CardContent className="px-6">
-                  <div className="text-center">
-                    <Avatar className="mx-auto mb-4 h-24 w-24">
-                      <AvatarImage src="/placeholder.svg?height=96&width=96" />
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <h1 className="mb-2 text-2xl font-bold">{user?.name}</h1>
-                    <p className="mb-4 text-neutral-400">
-                      Full-stack developer & Open source enthusiast
-                    </p>
+              {isProfileLoading ? (
+                <ProfileSidebarSkeleton />
+              ) : (
+                <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
+                  <CardContent className="px-6">
+                    <div className="text-center">
+                      <Avatar className="mx-auto mb-4 h-24 w-24">
+                        <AvatarImage src={profile?.image} />
+                        <AvatarFallback>
+                          {profile?.name?.charAt(0).toUpperCase() ?? 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <h1 className="mb-2 text-2xl font-bold">{profile?.name}</h1>
+                      <p className="mb-4 text-neutral-400">
+                        Full-stack developer & Open source enthusiast
+                      </p>
 
-                    <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                      <MapPin className="h-4 w-4" />
-                      <span>{githubDetails?.location}</span>
-                    </div>
-
-                    <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                      <Calendar className="h-4 w-4" />
-                      <span>Joined {new Date(githubDetails?.createdAt).toLocaleDateString()}</span>
-                    </div>
-
-                    <div className="mb-6 flex justify-center space-x-3">
-                      <Button variant="ghost" size="sm">
-                        <Github className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Twitter className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Globe className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <div className="text-2xl font-bold">
-                          {projectsWithGithubData?.length || 0}
-                        </div>
-                        <div className="text-xs text-neutral-400">Projects</div>
+                      <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+                        <MapPin className="h-4 w-4" />
+                        <span>{profile?.git?.location}</span>
                       </div>
-                      <div>
-                        <div className="text-2xl font-bold">
-                          {projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0}
-                        </div>
-                        <div className="text-xs text-neutral-400">Total Stars</div>
+
+                      <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          Joined{' '}
+                          {profile?.git?.createdAt &&
+                            new Date(profile.git.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
-                      <div>
-                        <div className="text-2xl font-bold">
-                          {projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0}
+
+                      <div className="mb-6 flex justify-center space-x-3">
+                        <Button variant="ghost" size="sm">
+                          <Github className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Twitter className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Globe className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold">
+                            {projectsWithGithubData?.length || 0}
+                          </div>
+                          <div className="text-xs text-neutral-400">Projects</div>
                         </div>
-                        <div className="text-xs text-neutral-400">Total Forks</div>
+                        <div>
+                          <div className="text-2xl font-bold">
+                            {projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0}
+                          </div>
+                          <div className="text-xs text-neutral-400">Total Stars</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold">
+                            {projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0}
+                          </div>
+                          <div className="text-xs text-neutral-400">Total Forks</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="mt-6 rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
                 <CardHeader>
@@ -281,41 +297,41 @@ export default function ProfilePage({ id }: { id: string }) {
                                 {project.description}
                               </p>
 
-                              <div className="mb-4 flex flex-wrap gap-2">
-                                {project.tags?.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-xs">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
+                                  <div className="mb-4 flex flex-wrap gap-2">
+                                    {project.tags?.map((tag) => (
+                                      <Badge key={tag} variant="secondary" className="text-xs">
+                                        {tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
 
-                              <div className="flex items-center justify-between text-sm text-neutral-400">
-                                <div className="flex items-center space-x-4">
-                                  <div className="flex items-center space-x-1">
-                                    <Star className="h-4 w-4" />
-                                    <span>{project.stars.toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <GitFork className="h-4 w-4" />
-                                    <span>{project.forks.toLocaleString()}</span>
-                                  </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Clock className="h-4 w-4" />
-                                    <span>{project.lastCommit}</span>
+                                  <div className="flex items-center justify-between text-sm text-neutral-400">
+                                    <div className="flex items-center space-x-4">
+                                      <div className="flex items-center space-x-1">
+                                        <Star className="h-4 w-4" />
+                                        <span>{project.stars.toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <GitFork className="h-4 w-4" />
+                                        <span>{project.forks.toLocaleString()}</span>
+                                      </div>
+                                      <div className="flex items-center space-x-1">
+                                        <Clock className="h-4 w-4" />
+                                        <span>{project.lastCommit}</span>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                              </CardContent>
+                            </Card>
+                          ))}
                     </div>
                   </div>
 
@@ -377,45 +393,45 @@ export default function ProfilePage({ id }: { id: string }) {
                                   ))}
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4 text-sm text-neutral-400">
-                                    <div className="flex items-center space-x-1">
-                                      <Star className="h-4 w-4" />
-                                      <span>{project.stars.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <GitFork className="h-4 w-4" />
-                                      <span>{project.forks.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <Clock className="h-4 w-4" />
-                                      <span>{project.lastCommit}</span>
-                                    </div>
-                                    {project.openIssues > 0 && (
-                                      <div className="flex items-center space-x-1">
-                                        <MessageCircle className="h-4 w-4" />
-                                        <span>{project.openIssues}</span>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-4 text-sm text-neutral-400">
+                                        <div className="flex items-center space-x-1">
+                                          <Star className="h-4 w-4" />
+                                          <span>{project.stars.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                          <GitFork className="h-4 w-4" />
+                                          <span>{project.forks.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                          <Clock className="h-4 w-4" />
+                                          <span>{project.lastCommit}</span>
+                                        </div>
+                                        {project.openIssues > 0 && (
+                                          <div className="flex items-center space-x-1">
+                                            <MessageCircle className="h-4 w-4" />
+                                            <span>{project.openIssues}</span>
+                                          </div>
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm">
-                                      <Heart className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                    >
-                                      <ExternalLink className="h-4 w-4" />
-                                    </Button>
+                                      <div className="flex items-center space-x-2">
+                                        <Button variant="ghost" size="sm">
+                                          <Heart className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                        >
+                                          <ExternalLink className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                              </CardContent>
+                            </Card>
+                          ))}
                     </div>
                   </div>
                 </TabsContent>
@@ -443,5 +459,50 @@ export default function ProfilePage({ id }: { id: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ProfileSidebarSkeleton() {
+  return (
+    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
+      <CardContent className="px-6">
+        <div className="text-center">
+          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-full" />
+          <Skeleton className="mb-2 mx-auto h-7 w-40" />
+          <Skeleton className="mb-4 mx-auto h-5 w-60" />
+
+          <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+
+          <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+            <Skeleton className="h-4 w-4" />
+            <Skeleton className="h-4 w-28" />
+          </div>
+
+          <div className="mb-6 flex justify-center space-x-3">
+            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9" />
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <Skeleton className="h-7 w-12" />
+              <Skeleton className="mt-1 h-3 w-12" />
+            </div>
+            <div>
+              <Skeleton className="h-7 w-12" />
+              <Skeleton className="mt-1 h-3 w-12" />
+            </div>
+            <div>
+              <Skeleton className="h-7 w-12" />
+              <Skeleton className="mt-1 h-3 w-12" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
