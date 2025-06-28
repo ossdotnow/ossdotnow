@@ -12,8 +12,8 @@ Thank you for your interest in contributing to oss.now! This guide will help you
 
 ### Environment Setup
 
-1. Clone the repository:
-
+1. Fork & Clone the repository:
+   First, fork the repository on GitHub and then clone it to your local machine:
    ```bash
    git clone https://github.com/yourusername/ossdotnow.git
    cd ossdotnow
@@ -34,6 +34,8 @@ Thank you for your interest in contributing to oss.now! This guide will help you
 
 ### Starting the Development Environment
 
+
+
 1. Start the PostgreSQL database using Docker:
 
    ```bash
@@ -51,9 +53,13 @@ Thank you for your interest in contributing to oss.now! This guide will help you
    bun dev
    ```
 
+> **Note:** Make sure to not have any other Next.Js runnning or OAuth flows may not work correctly.
+
 ## Development Workflow
 
 1. Create a new branch for your feature or bugfix:
+
+> Always branch off from the `dev` branch (not `main`).
 
    ```bash
    git checkout -b feature/your-feature-name
@@ -61,34 +67,7 @@ Thank you for your interest in contributing to oss.now! This guide will help you
 
 2. Make your changes and commit them with descriptive messages.
 
-3. Run tests to ensure your changes don't break existing functionality:
-
-   ```bash
-   bun test
-   ```
-
-4. Push your branch and create a pull request.
-
-## Project Structure
-
-This is a monorepo using Turborepo with the following structure:
-
-- `apps/`
-  - `web/` - The main web application
-- `packages/`
-  - `api/` - API endpoints
-  - `auth/` - Authentication logic
-  - `db/` - Database schema and utilities
-  - `env/` - Environment variable handling
-  - `ui/` - Shared UI components
-  - And more...
-
-## Database Management
-
-- Generate Prisma client: `bun db:generate`
-- Apply migrations: `bun db:migrate`
-- Push schema changes: `bun db:push`
-- Open Prisma Studio: `bun db:studio`
+3. Push your branch and create a pull request.
 
 ## Need Help?
 
