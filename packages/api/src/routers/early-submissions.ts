@@ -7,13 +7,20 @@ import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
 
-const createProjectInput = createInsertSchema(project).omit({
-  id: true,
-  ownerId: true,
-  createdAt: true,
-  updatedAt: true,
-  deletedAt: true,
-});
+const createProjectInput = createInsertSchema(project)
+  .omit({
+    id: true,
+    ownerId: true,
+    createdAt: true,
+    updatedAt: true,
+    deletedAt: true,
+  })
+  .extend({
+    // Override enum validations to accept database values
+    status: z.string().min(1, 'Project status is required'),
+    type: z.string().min(1, 'Project type is required'),
+    tags: z.array(z.string()).default([]),
+  });
 
 const APPROVAL_STATUS = {
   APPROVED: 'approved',
