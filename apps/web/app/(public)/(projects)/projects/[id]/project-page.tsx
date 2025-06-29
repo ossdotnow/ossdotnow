@@ -127,8 +127,8 @@ export default function ProjectPage({ id }: { id: string }) {
                       `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
                     }
                     alt={project.name ?? 'Project Logo'}
-                    width={48}
-                    height={48}
+                    width={256}
+                    height={256}
                     className="h-12 w-12 rounded-full sm:h-16 sm:w-16"
                   />
                 ) : null}
