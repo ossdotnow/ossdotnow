@@ -4,6 +4,7 @@ import { earlySubmissionRouter } from './routers/early-submissions';
 import { createTRPCContext, createTRPCRouter } from './trpc';
 import { earlyAccessRouter } from './routers/early-access';
 import { repositoryRouter } from './routers/repository';
+import { categoriesRouter } from './routers/categories';
 import { projectsRouter } from './routers/projects';
 import { profileRouter } from './routers/profile';
 import { usersRouter } from './routers/users';
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   users: usersRouter,
   projects: projectsRouter,
+  categories: categoriesRouter,
   earlySubmission: earlySubmissionRouter,
   repository: repositoryRouter,
   admin: adminRouter,

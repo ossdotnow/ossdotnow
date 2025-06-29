@@ -28,4 +28,7 @@ export const earlySubmissionForm = createInsertSchema(project).extend({
       website: z.string().url('Invalid URL format').optional().or(z.literal('')),
     })
     .optional(),
+  status: z.string().min(1, 'Project status is required'),
+  type: z.string().min(1, 'Project type is required'),
+  tags: z.array(z.string()).default([]),
 });

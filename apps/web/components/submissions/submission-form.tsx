@@ -17,8 +17,8 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DialogFooter } from '@workspace/ui/components/dialog';
 import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
@@ -31,7 +31,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { tagsEnum } from '@workspace/db/schema';
 // import { UploadDropzone } from '@/lib/uploadthing';
 import { earlySubmissionForm } from '@/forms';
 import { env } from '@workspace/env/client';
@@ -99,6 +98,17 @@ export default function SubmissionForm() {
   });
   const { mutate, success, error, isLoading, clearError } = useEarlySubmission();
   const trpc = useTRPC();
+
+  // Fetch categories from database
+  const { data: projectTypes, isLoading: projectTypesLoading } = useQuery(
+    trpc.categories.getProjectTypes.queryOptions({ activeOnly: true }),
+  );
+  const { data: projectStatuses, isLoading: projectStatusesLoading } = useQuery(
+    trpc.categories.getProjectStatuses.queryOptions({ activeOnly: true }),
+  );
+  const { data: tags, isLoading: tagsLoading } = useQuery(
+    trpc.categories.getTags.queryOptions({ activeOnly: true }),
+  );
 
   type FormData = z.infer<typeof earlySubmissionForm>;
 
@@ -639,30 +649,21 @@ export default function SubmissionForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none">
-                        <SelectItem className="rounded-none" value="active">
-                          Active - Currently being developed
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="inactive">
-                          Inactive - Not currently maintained
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="early-stage">
-                          Early Stage - Just getting started
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="beta">
-                          Beta - Testing with limited users
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="production-ready">
-                          Production Ready - Stable for use
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="experimental">
-                          Experimental - Proof of concept
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="cancelled">
-                          Cancelled - No longer pursuing
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="paused">
-                          Paused - Temporarily on hold
-                        </SelectItem>
+                        {projectStatusesLoading ? (
+                          <SelectItem className="rounded-none" value="" disabled>
+                            Loading statuses...
+                          </SelectItem>
+                        ) : (
+                          (projectStatuses || []).map((status) => (
+                            <SelectItem
+                              key={status.id}
+                              className="rounded-none"
+                              value={status.name}
+                            >
+                              {status.displayName}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -687,39 +688,17 @@ export default function SubmissionForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="rounded-none">
-                        <SelectItem className="rounded-none" value="fintech">
-                          Fintech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="healthtech">
-                          Healthtech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="edtech">
-                          Edtech
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="ecommerce">
-                          E-commerce
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="productivity">
-                          Productivity
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="social">
-                          Social
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="entertainment">
-                          Entertainment
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="developer-tools">
-                          Developer Tools
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="content-management">
-                          Content Management
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="analytics">
-                          Analytics
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="other">
-                          Other
-                        </SelectItem>
+                        {projectTypesLoading ? (
+                          <SelectItem className="rounded-none" value="" disabled>
+                            Loading types...
+                          </SelectItem>
+                        ) : (
+                          (projectTypes || []).map((type) => (
+                            <SelectItem key={type.id} className="rounded-none" value={type.name}>
+                              {type.displayName}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -741,9 +720,9 @@ export default function SubmissionForm() {
                       <MultiSelect
                         className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
                         placeholder="Select tags..."
-                        options={tagsEnum.enumValues.map((tag) => ({
-                          label: tag,
-                          value: tag,
+                        options={(tags || []).map((tag) => ({
+                          label: tag.displayName,
+                          value: tag.name,
                         }))}
                         selected={field.value ?? []}
                         onChange={(value) => {
