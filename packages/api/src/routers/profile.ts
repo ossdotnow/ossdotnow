@@ -1,9 +1,33 @@
+import {
+  account,
+  user,
+  project,
+  projectComment,
+  projectVote,
+  projectLaunch,
+  projectClaim,
+} from '@workspace/db/schema';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { getActiveDriver, type Context } from '../driver/utils';
+import { and, eq, desc, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { account, user } from '@workspace/db/schema';
-import { and, eq } from 'drizzle-orm';
+
+type ActivityItem = {
+  id: string;
+  type: 'project_created' | 'comment' | 'upvote' | 'project_launch' | 'project_claim';
+  timestamp: Date;
+  title: string;
+  description: string | null;
+  projectName: string;
+  projectId: string;
+  projectLogoUrl?: string | null;
+  commentContent?: string;
+  tagline?: string;
+  claimSuccess?: boolean;
+  verificationMethod?: string;
+  data: any;
+};
 
 export const profileRouter = createTRPCRouter({
   getProfile: protectedProcedure
@@ -79,5 +103,134 @@ export const profileRouter = createTRPCRouter({
           message: 'Failed to fetch user details',
         });
       }
+    }),
+  getRecentActivities: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const { userId } = input;
+
+      const [userProjects, userComments, userVotes, userClaims] = await Promise.all([
+        ctx.db.query.project.findMany({
+          where: eq(project.ownerId, userId),
+          orderBy: [desc(project.createdAt)],
+          limit: 20,
+          with: {
+            owner: true,
+          },
+        }),
+
+        ctx.db.query.projectComment.findMany({
+          where: eq(projectComment.userId, userId),
+          orderBy: [desc(projectComment.createdAt)],
+          limit: 20,
+          with: {
+            project: true,
+            user: true,
+          },
+        }),
+
+        ctx.db.query.projectVote.findMany({
+          where: eq(projectVote.userId, userId),
+          orderBy: [desc(projectVote.createdAt)],
+          limit: 20,
+          with: {
+            project: true,
+            user: true,
+          },
+        }),
+
+        ctx.db.query.projectClaim.findMany({
+          where: eq(projectClaim.userId, userId),
+          orderBy: [desc(projectClaim.createdAt)],
+          limit: 20,
+          with: {
+            project: true,
+            user: true,
+          },
+        }),
+      ]);
+
+      const projectsWithLaunches = await ctx.db.query.projectLaunch.findMany({
+        where: (launch, { inArray }) =>
+          inArray(
+            launch.projectId,
+            userProjects.map((p) => p.id),
+          ),
+        orderBy: [desc(projectLaunch.launchDate)],
+        with: {
+          project: {
+            with: {
+              owner: true,
+            },
+          },
+        },
+      });
+
+      const activities: ActivityItem[] = [
+        ...userProjects.map((p) => ({
+          id: p.id,
+          type: 'project_created' as const,
+          timestamp: p.createdAt,
+          title: `Created project "${p.name}"`,
+          description: p.description,
+          projectName: p.name,
+          projectId: p.id,
+          projectLogoUrl: p.logoUrl,
+          data: p,
+        })),
+        ...userComments.map((c) => ({
+          id: c.id,
+          type: 'comment' as const,
+          timestamp: c.createdAt,
+          title: `Commented on "${c.project.name}"`,
+          description: c.content.length > 100 ? c.content.substring(0, 100) + '...' : c.content,
+          projectName: c.project.name,
+          projectId: c.project.id,
+          commentContent: c.content,
+          data: c,
+        })),
+        ...userVotes.map((v) => ({
+          id: v.id,
+          type: 'upvote' as const,
+          timestamp: v.createdAt,
+          title: `Upvoted "${v.project.name}"`,
+          description: v.project.description,
+          projectName: v.project.name,
+          projectId: v.project.id,
+          projectLogoUrl: v.project.logoUrl,
+          data: v,
+        })),
+        ...userClaims.map((c) => ({
+          id: c.id,
+          type: 'project_claim' as const,
+          timestamp: c.createdAt,
+          title: `${c.success ? 'Successfully claimed' : 'Attempted to claim'} "${c.project.name}"`,
+          description: c.success
+            ? `Verified ownership via ${c.verificationMethod}`
+            : `Failed: ${c.errorReason || 'Unknown error'}`,
+          projectName: c.project.name,
+          projectId: c.project.id,
+          projectLogoUrl: c.project.logoUrl,
+          claimSuccess: c.success,
+          verificationMethod: c.verificationMethod,
+          data: c,
+        })),
+        ...projectsWithLaunches.map((l) => ({
+          id: l.id,
+          type: 'project_launch' as const,
+          timestamp: l.launchDate,
+          title: `Launched "${l.project.name}"`,
+          description: l.tagline || l.project.description,
+          projectName: l.project.name,
+          projectId: l.project.id,
+          projectLogoUrl: l.project.logoUrl,
+          tagline: l.tagline,
+          data: l,
+        })),
+      ];
+
+      activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+      return activities.slice(0, 50);
     }),
 });

@@ -64,6 +64,20 @@
       "when": 1751120772473,
       "tag": "0008_regular_starfox",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1751158031807,
+      "tag": "0009_eager_northstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1751162088103,
+      "tag": "0010_dear_swordsman",
+      "breakpoints": true
     }
   ]
 }

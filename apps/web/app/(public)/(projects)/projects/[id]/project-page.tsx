@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
+import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
 import { Separator } from '@workspace/ui/components/separator';
 import ProjectTicks from '@/components/project/project-ticks';
@@ -138,30 +139,35 @@ export default function ProjectPage({ id }: { id: string }) {
                       <h1 className="text-xl font-bold text-white sm:text-2xl">{project?.name}</h1>
                       <ProjectTicks project={project} />
                     </div>
-                    <Link
-                      href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
-                      target="_blank"
-                      event="project_page_github_link_clicked"
-                      eventObject={{ projectId: project.id }}
-                    >
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600 sm:w-auto"
+                    <div className="flex items-center gap-2">
+                      {isOwner && (
+                        <LaunchProjectDialog projectId={project.id} projectName={project.name} />
+                      )}
+                      <Link
+                        href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
+                        target="_blank"
+                        event="project_page_github_link_clicked"
+                        eventObject={{ projectId: project.id }}
                       >
-                        {project.gitHost === 'github' ? (
-                          <>
-                            <Icons.github className="h-4 w-4 fill-white" />
-                            View on GitHub
-                          </>
-                        ) : (
-                          <>
-                            <Icons.gitlab className="h-4 w-4 fill-white" />
-                            View on GitLab
-                          </>
-                        )}
-                      </Button>
-                    </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600 sm:w-auto"
+                        >
+                          {project.gitHost === 'github' ? (
+                            <>
+                              <Icons.github className="h-4 w-4" />
+                              View on GitHub
+                            </>
+                          ) : (
+                            <>
+                              <Icons.gitlab className="h-4 w-4" />
+                              View on GitLab
+                            </>
+                          )}
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
 
                   <p className="mb-4 leading-relaxed text-neutral-400">{project?.description}</p>
@@ -172,7 +178,7 @@ export default function ProjectPage({ id }: { id: string }) {
                         <div className="flex-1">
                           <p className="text-sm font-medium text-neutral-200">Project Ownership</p>
                           <p className="text-xs text-neutral-400">
-                            This project hasn't been claimed yet
+                            This project hasn&apos;t been claimed yet
                           </p>
                         </div>
                         <div className="sm:flex-shrink-0">
@@ -237,7 +243,7 @@ export default function ProjectPage({ id }: { id: string }) {
                           eventObject={{ projectId: project.id }}
                           className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
                         >
-                          <Twitter className="h-4 w-4" />
+                          <Icons.twitter className="h-4 w-4" />
                           <span className="text-sm">Twitter</span>
                         </Link>
                       )}

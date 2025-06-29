@@ -15,7 +15,7 @@ export function TempNav() {
           rel="noopener noreferrer"
           event="github_nav_click"
         >
-          <Icons.github className="size-4 fill-white sm:size-5" />
+          <Icons.github className="size-4 sm:size-5" />
         </Link>
       </Button>
       <Button variant="ghost" size="icon" className="rounded-none" asChild>
@@ -25,7 +25,7 @@ export function TempNav() {
           rel="noopener noreferrer"
           event="twitter_nav_click"
         >
-          <Icons.twitter className="size-4 fill-white sm:size-5" />
+          <Icons.twitter className="size-4 sm:size-5" />
         </Link>
       </Button>
     </>

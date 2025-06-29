@@ -1,70 +1,32 @@
 'use client';
 
 import {
-  Star,
-  GitFork,
+  Calendar,
   Clock,
   ExternalLink,
-  Github,
-  Twitter,
+  GitFork,
   Globe,
-  ArrowUp,
-  MessageCircle,
   Heart,
-  TrendingUp,
-  Calendar,
   MapPin,
+  MessageCircle,
+  Star,
+  TrendingUp,
 } from 'lucide-react';
-import { Skeleton } from '@workspace/ui/components/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
-import { Card, CardContent, CardHeader } from '@workspace/ui/components/card';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { Card, CardContent } from '@workspace/ui/components/card';
+import { Skeleton } from '@workspace/ui/components/skeleton';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
+import Icons from '@workspace/ui/components/icons';
+import { RecentActivity } from './recent-activity';
+import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useState } from 'react';
 import Image from 'next/image';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
-  const [votedProjects, setVotedProjects] = useState<Set<string>>(new Set());
-
-  const handleVote = (projectId: string) => {
-    setVotedProjects((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(projectId)) {
-        newSet.delete(projectId);
-      } else {
-        newSet.add(projectId);
-      }
-      return newSet;
-    });
-  };
-
-  const activities = [
-    {
-      type: 'project',
-      action: 'launched',
-      target: 'ReactFlow v2.0',
-      time: '2 hours ago',
-      votes: 45,
-    },
-    {
-      type: 'vote',
-      action: 'upvoted',
-      target: 'Supabase Dashboard',
-      time: '1 day ago',
-      votes: 12,
-    },
-    {
-      type: 'comment',
-      action: 'commented on',
-      target: 'Next.js 14 Discussion',
-      time: '3 days ago',
-      votes: 8,
-    },
-  ];
 
   const { data: profile, isLoading: isProfileLoading } = useQuery(
     trpc.profile.getProfile.queryOptions({ id }),
@@ -82,14 +44,6 @@ export default function ProfilePage({ id }: { id: string }) {
       },
     ),
   );
-
-  // if the id is me then
-
-  // const { data: contributions } = useQuery(
-  //   trpc.user.getContributions.queryOptions({
-  //     ownerId: ,
-  //   }),
-  // );
 
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
 
@@ -135,11 +89,16 @@ export default function ProfilePage({ id }: { id: string }) {
     };
   });
 
+  // const featuredProjects = projectsWithGithubData?.filter((project) => project.featured);
+  const featuredProjects = [] as any[];
+
+  console.log(profile);
+
   return (
     <div className="min-h-[calc(100vh-80px)] px-6">
       <div className="relative z-10">
         <div className="container mx-auto py-8">
-          <div className="grid gap-8 lg:grid-cols-4">
+          <div className="grid gap-4 lg:grid-cols-4">
             <div className="lg:col-span-1">
               {isProfileLoading ? (
                 <ProfileSidebarSkeleton />
@@ -158,10 +117,12 @@ export default function ProfilePage({ id }: { id: string }) {
                         Full-stack developer & Open source enthusiast
                       </p>
 
-                      <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                        <MapPin className="h-4 w-4" />
-                        <span>{profile?.git?.location}</span>
-                      </div>
+                      {profile?.git?.location && (
+                        <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+                          <MapPin className="h-4 w-4" />
+                          <span>{profile?.git?.location}</span>
+                        </div>
+                      )}
 
                       <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
                         <Calendar className="h-4 w-4" />
@@ -173,15 +134,26 @@ export default function ProfilePage({ id }: { id: string }) {
                       </div>
 
                       <div className="mb-6 flex justify-center space-x-3">
-                        <Button variant="ghost" size="sm">
-                          <Github className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link
+                            href={`https://${profile?.git?.provider}.com/${profile?.git?.login}`}
+                            target="_blank"
+                          >
+                            {profile?.git?.provider === 'github' ? (
+                              <Icons.github className="h-4 w-4" />
+                            ) : (
+                              <Icons.gitlab className="h-4 w-4" />
+                            )}
+                          </Link>
                         </Button>
-                        <Button variant="ghost" size="sm">
-                          <Twitter className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Globe className="h-4 w-4" />
-                        </Button>
+
+                        {profile?.git?.blog ? (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={profile?.git?.blog ?? ''} target="_blank">
+                              <Globe className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : null}
                       </div>
 
                       <div className="grid grid-cols-3 gap-4 text-center">
@@ -193,13 +165,17 @@ export default function ProfilePage({ id }: { id: string }) {
                         </div>
                         <div>
                           <div className="text-2xl font-bold">
-                            {(projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0).toLocaleString()}
+                            {(
+                              projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
+                            ).toLocaleString()}
                           </div>
                           <div className="text-xs text-neutral-400">Total Stars</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold">
-                            {(projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0).toLocaleString()}
+                            {(
+                              projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
+                            ).toLocaleString()}
                           </div>
                           <div className="text-xs text-neutral-400">Total Forks</div>
                         </div>
@@ -209,33 +185,7 @@ export default function ProfilePage({ id }: { id: string }) {
                 </Card>
               )}
 
-              <Card className="mt-6 rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
-                <CardHeader>
-                  <h3 className="text-lg font-semibold">Recent Activity</h3>
-                </CardHeader>
-                <CardContent className="px-6">
-                  <div className="space-y-4">
-                    {activities.map((activity, index) => (
-                      <div key={index} className="flex items-start space-x-3">
-                        <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-none bg-orange-500" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm">
-                            <span className="text-neutral-400">{activity.action}</span>{' '}
-                            <span className="font-medium text-white">{activity.target}</span>
-                          </p>
-                          <div className="mt-1 flex items-center space-x-2">
-                            <span className="text-xs text-neutral-500">{activity.time}</span>
-                            <div className="flex items-center space-x-1">
-                              <ArrowUp className="h-3 w-3 text-orange-500" />
-                              <span className="text-xs text-neutral-400">{activity.votes}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              {profile?.id && <RecentActivity userId={profile.id} />}
             </div>
 
             <div className="lg:col-span-3">
@@ -247,123 +197,123 @@ export default function ProfilePage({ id }: { id: string }) {
                 </TabsList>
 
                 <TabsContent value="projects" className="mt-6">
-                  <div className="mb-8">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h2 className="flex items-center text-xl font-semibold">
-                        <TrendingUp className="mr-2 h-5 w-5 text-orange-500" />
-                        Featured Projects
-                      </h2>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const container = document.getElementById('featured-carousel');
-                            if (container) {
-                              container.scrollBy({ left: -300, behavior: 'smooth' });
-                            }
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          ←
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const container = document.getElementById('featured-carousel');
-                            if (container) {
-                              container.scrollBy({ left: 300, behavior: 'smooth' });
-                            }
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          →
-                        </Button>
+                  {featuredProjects.length > 0 ? (
+                    <div className="mb-8">
+                      <div className="mb-4 flex items-center justify-between">
+                        <h2 className="flex items-center text-xl font-semibold">
+                          <TrendingUp className="mr-2 h-5 w-5 text-orange-500" />
+                          Featured Projects
+                        </h2>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const container = document.getElementById('featured-carousel');
+                              if (container) {
+                                container.scrollBy({ left: -300, behavior: 'smooth' });
+                              }
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            ←
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const container = document.getElementById('featured-carousel');
+                              if (container) {
+                                container.scrollBy({ left: 300, behavior: 'smooth' });
+                              }
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            →
+                          </Button>
+                        </div>
+                      </div>
+                      <div
+                        id="featured-carousel"
+                        className="flex space-x-4 overflow-x-auto pb-4"
+                        style={{
+                          scrollbarWidth: 'none',
+                          msOverflowStyle: 'none',
+                        }}
+                      >
+                        {featuredProjects.length > 0 ? (
+                          featuredProjects?.map((project) => (
+                            <Card
+                              key={project.id}
+                              className="h-48 min-w-[320px] rounded-none border-neutral-800 bg-neutral-900/50 pb-0 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
+                            >
+                              <CardContent className="flex h-full flex-col p-4">
+                                <div className="flex flex-1 space-x-4">
+                                  <div className="flex-shrink-0">
+                                    <div className="h-16 w-16 overflow-hidden bg-white">
+                                      <Image
+                                        src={
+                                          project.githubData?.owner.avatar_url || '/placeholder.svg'
+                                        }
+                                        alt={project.name}
+                                        width={64}
+                                        height={64}
+                                        className="h-full w-full object-contain"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex min-w-0 flex-1 flex-col justify-between">
+                                    <div>
+                                      <div className="mb-1 flex items-center justify-between">
+                                        <h3 className="truncate pr-2 text-lg font-semibold">
+                                          {project.name}
+                                        </h3>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge className="bg-orange-500 text-xs hover:bg-orange-600">
+                                          {project.approvalStatus}
+                                        </Badge>
+                                        {project.language && (
+                                          <Badge className="bg-neutral-700 text-xs hover:bg-neutral-600">
+                                            {project.language}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center justify-between border-neutral-800/50 pt-3 text-sm text-neutral-400">
+                                  <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-1">
+                                      <Star className="h-4 w-4" />
+                                      <span>{project.stars.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <GitFork className="h-4 w-4" />
+                                      <span>{project.forks.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                    className="transition-colors duration-150 hover:text-neutral-200"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            <p className="text-neutral-400">No featured projects</p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <div
-                      id="featured-carousel"
-                      className="flex space-x-4 overflow-x-auto pb-4"
-                      style={{
-                        scrollbarWidth: 'none',
-                        msOverflowStyle: 'none'
-                      }}
-                    >
-                      {projectsWithGithubData?.map((project) => (
-                        <Card
-                          key={project.id}
-                          className="min-w-[320px] h-48 rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70 pb-0"
-                        >
-                          <CardContent className="p-4 h-full flex flex-col">
-                            <div className="flex space-x-4 flex-1">
-                              <div className="flex-shrink-0">
-                                <div className="h-16 w-16 overflow-hidden bg-white">
-                                  <Image
-                                    src={project.githubData?.owner.avatar_url || '/placeholder.svg'}
-                                    alt={project.name}
-                                    width={64}
-                                    height={64}
-                                    className="h-full w-full object-contain"
-                                  />
-                                </div>
-                              </div>
-                              <div className="min-w-0 flex-1 flex flex-col justify-between">
-                                <div>
-                                  <div className="flex items-center justify-between mb-1">
-                                    <h3 className="text-lg font-semibold truncate pr-2">{project.name}</h3>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleVote(project.id)}
-                                      className={`flex items-center space-x-1 transition-colors duration-150 flex-shrink-0 ${votedProjects.has(project.id)
-                                        ? 'bg-orange-500/10 text-orange-500'
-                                        : 'text-neutral-400 hover:text-orange-500'
-                                        }`}
-                                    >
-                                      <ArrowUp className="h-4 w-4" />
-                                      <span className="text-sm font-medium">{project.stars}</span>
-                                    </Button>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <Badge className="bg-orange-500 hover:bg-orange-600 text-xs">
-                                      {project.approvalStatus}
-                                    </Badge>
-                                    {project.language && (
-                                      <Badge className="bg-neutral-700 hover:bg-neutral-600 text-xs">
-                                        {project.language}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-sm text-neutral-400 mt-4 pt-3 border-neutral-800/50">
-                              <div className="flex items-center space-x-4">
-                                <div className="flex items-center space-x-1">
-                                  <Star className="h-4 w-4" />
-                                  <span>{project.stars.toLocaleString()}</span>
-                                </div>
-                                <div className="flex items-center space-x-1">
-                                  <GitFork className="h-4 w-4" />
-                                  <span>{project.forks.toLocaleString()}</span>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                className="hover:text-neutral-200 transition-colors duration-150"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
+                  ) : null}
 
                   <div>
                     <h2 className="mb-4 text-xl font-semibold">All Projects</h2>
@@ -397,18 +347,6 @@ export default function ProfilePage({ id }: { id: string }) {
                                       )}
                                     </div>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleVote(project.id)}
-                                    className={`flex items-center space-x-1 transition-colors duration-150 ${votedProjects.has(project.id)
-                                      ? 'bg-orange-500/10 text-orange-500'
-                                      : 'text-neutral-400 hover:text-orange-500'
-                                      }`}
-                                  >
-                                    <ArrowUp className="h-4 w-4" />
-                                    <span className="text-sm font-medium">{project.stars}</span>
-                                  </Button>
                                 </div>
                                 <p className="mb-3 text-sm text-neutral-400">
                                   {project.description}
@@ -444,16 +382,25 @@ export default function ProfilePage({ id }: { id: string }) {
                                     )}
                                   </div>
                                   <div className="flex items-center space-x-2">
-                                    <Button variant="ghost" size="sm" className="hover:text-neutral-200 transition-colors duration-150">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="transition-colors duration-150 hover:text-neutral-200"
+                                    >
                                       <Heart className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                      className="hover:text-neutral-200 transition-colors duration-150"
+                                      asChild
+                                      className="transition-colors duration-150 hover:text-neutral-200"
                                     >
-                                      <ExternalLink className="h-4 w-4" />
+                                      <Link
+                                        href={`https://${project.gitHost}.com/${project.gitRepoUrl}`}
+                                        target="_blank"
+                                      >
+                                        <ExternalLink className="h-4 w-4" />
+                                      </Link>
                                     </Button>
                                   </div>
                                 </div>
@@ -469,7 +416,7 @@ export default function ProfilePage({ id }: { id: string }) {
                 <TabsContent value="contributions" className="mt-6">
                   <div className="py-12 text-center">
                     <div className="mb-4 text-neutral-400">
-                      <Github className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                      <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
                       <p>Contribution history coming soon...</p>
                     </div>
                   </div>
@@ -498,8 +445,8 @@ function ProfileSidebarSkeleton() {
       <CardContent className="px-6">
         <div className="text-center">
           <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-full" />
-          <Skeleton className="mb-2 mx-auto h-7 w-40" />
-          <Skeleton className="mb-4 mx-auto h-5 w-60" />
+          <Skeleton className="mx-auto mb-2 h-7 w-40" />
+          <Skeleton className="mx-auto mb-4 h-5 w-60" />
 
           <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
             <Skeleton className="h-4 w-4" />
