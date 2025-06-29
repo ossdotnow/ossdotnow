@@ -43,8 +43,8 @@ export default function ProjectCard({ project }: { project: Project }) {
             <Image
               src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
               alt={project.name ?? 'Project Logo'}
-              width={32}
-              height={32}
+              width={256}
+              height={256}
               className="h-10 w-10 flex-shrink-0 rounded-full md:h-12 md:w-12"
             />
           ) : (
