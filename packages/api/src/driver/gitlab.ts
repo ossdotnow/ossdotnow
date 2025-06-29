@@ -125,7 +125,12 @@ export class GitlabManager implements GitManager {
 
   async getContributors(identifier: string): Promise<ContributorData[]> {
     this.parseRepoIdentifier(identifier);
-    const members = await this.gitlab.ProjectMembers.all(identifier);
+
+    const members = await this.gitlab.ProjectMembers.all(identifier, {
+      perPage: 100,
+      maxPages: 50,
+    });
+
     return members.map((m: any) => ({
       ...m,
       id: m.id,

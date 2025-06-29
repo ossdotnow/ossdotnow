@@ -32,7 +32,7 @@ import {
 } from '@workspace/ui/components/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Edit, Eye, XCircle } from 'lucide-react';
+import { CheckCircle, Edit, Eye, Pin, PinOff, XCircle } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
@@ -84,6 +84,28 @@ export default function AdminProjectsDashboard() {
     },
   });
 
+  const { mutate: pinProject } = useMutation({
+    ...trpc.projects.pinProject.mutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: trpc.projects.getProjects.queryKey({
+          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+        }),
+      });
+    },
+  });
+
+  const { mutate: unpinProject } = useMutation({
+    ...trpc.projects.unpinProject.mutationOptions(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: trpc.projects.getProjects.queryKey({
+          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+        }),
+      });
+    },
+  });
+
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;
   if (!projects) return <div>No projects found</div>;
@@ -97,6 +119,20 @@ export default function AdminProjectsDashboard() {
 
   const handleReject = (projectId: string) => {
     rejectProject({ projectId });
+    queryClient.invalidateQueries({
+      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
+    });
+  };
+
+  const handlePin = (projectId: string) => {
+    pinProject({ projectId });
+    queryClient.invalidateQueries({
+      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
+    });
+  };
+
+  const handleUnpin = (projectId: string) => {
+    unpinProject({ projectId });
     queryClient.invalidateQueries({
       queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
     });
@@ -246,6 +282,8 @@ export default function AdminProjectsDashboard() {
                   )}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
+                  handlePin={handlePin}
+                  handleUnpin={handleUnpin}
                 />
               </CardContent>
             </Card>
@@ -260,10 +298,14 @@ function ProjectsTable({
   projects,
   handleAccept,
   handleReject,
+  handlePin,
+  handleUnpin,
 }: {
   projects: Project[];
   handleAccept: (projectId: string) => void;
   handleReject: (projectId: string) => void;
+  handlePin: (projectId: string) => void;
+  handleUnpin: (projectId: string) => void;
 }) {
   return (
     <Table>
@@ -276,6 +318,7 @@ function ProjectsTable({
           <TableHead>Status</TableHead>
           <TableHead>Approval</TableHead>
           <TableHead>Type</TableHead>
+          <TableHead>Pinned</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -312,8 +355,34 @@ function ProjectsTable({
               </Badge>
             </TableCell>
             <TableCell>{project.type}</TableCell>
+            <TableCell>
+              <Badge variant={project.isPinned ? 'default' : 'outline'}>
+                {project.isPinned ? 'Pinned' : 'Not Pinned'}
+              </Badge>
+            </TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-2">
+                {project.isPinned ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-orange-600"
+                    onClick={() => handleUnpin(project.id)}
+                    title="Unpin project"
+                  >
+                    <PinOff className="h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600"
+                    onClick={() => handlePin(project.id)}
+                    title="Pin project"
+                  >
+                    <Pin className="h-4 w-4" />
+                  </Button>
+                )}
                 {project.approvalStatus === 'pending' && (
                   <>
                     <Button

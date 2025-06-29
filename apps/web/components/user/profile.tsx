@@ -187,19 +187,19 @@ export default function ProfilePage({ id }: { id: string }) {
                       <div className="grid grid-cols-3 gap-4 text-center">
                         <div>
                           <div className="text-2xl font-bold">
-                            {projectsWithGithubData?.length || 0}
+                            {(projectsWithGithubData?.length || 0).toLocaleString()}
                           </div>
                           <div className="text-xs text-neutral-400">Projects</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold">
-                            {projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0}
+                            {(projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0).toLocaleString()}
                           </div>
                           <div className="text-xs text-neutral-400">Total Stars</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold">
-                            {projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0}
+                            {(projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0).toLocaleString()}
                           </div>
                           <div className="text-xs text-neutral-400">Total Forks</div>
                         </div>
@@ -248,90 +248,120 @@ export default function ProfilePage({ id }: { id: string }) {
 
                 <TabsContent value="projects" className="mt-6">
                   <div className="mb-8">
-                    <h2 className="mb-4 flex items-center text-xl font-semibold">
-                      <TrendingUp className="mr-2 h-5 w-5 text-orange-500" />
-                      Featured Projects
-                    </h2>
-                    <div className="grid gap-6 md:grid-cols-2">
-                      {projectsWithGithubData?.slice(0, 2).map((project) => (
+                    <div className="mb-4 flex items-center justify-between">
+                      <h2 className="flex items-center text-xl font-semibold">
+                        <TrendingUp className="mr-2 h-5 w-5 text-orange-500" />
+                        Featured Projects
+                      </h2>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const container = document.getElementById('featured-carousel');
+                            if (container) {
+                              container.scrollBy({ left: -300, behavior: 'smooth' });
+                            }
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          ←
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const container = document.getElementById('featured-carousel');
+                            if (container) {
+                              container.scrollBy({ left: 300, behavior: 'smooth' });
+                            }
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          →
+                        </Button>
+                      </div>
+                    </div>
+                    <div
+                      id="featured-carousel"
+                      className="flex space-x-4 overflow-x-auto pb-4"
+                      style={{
+                        scrollbarWidth: 'none',
+                        msOverflowStyle: 'none'
+                      }}
+                    >
+                      {projectsWithGithubData?.map((project) => (
                         <Card
                           key={project.id}
-                          className="rounded-none border-neutral-800 bg-neutral-900/50 pt-0 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
+                          className="min-w-[320px] h-48 rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70 pb-0"
                         >
-                          <div className="relative">
-                            <Image
-                              src={project.githubData?.owner.avatar_url || '/placeholder.svg'}
-                              alt={project.name}
-                              width={400}
-                              height={200}
-                              className="h-48 w-full object-cover"
-                            />
-                            <Badge className="absolute top-3 left-3 bg-orange-500 hover:bg-orange-600">
-                              {project.approvalStatus}
-                            </Badge>
-                            {project.language && (
-                              <Badge className="absolute top-3 right-3 bg-neutral-700 hover:bg-neutral-600">
-                                {project.language}
-                              </Badge>
-                            )}
-                          </div>
-                          <CardContent className="p-0">
-                            <div className="px-6">
-                              <div className="mb-3 flex items-start justify-between">
-                                <h3 className="text-lg font-semibold">{project.name}</h3>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleVote(project.id)}
-                                  className={`flex items-center space-x-1 ${
-                                    votedProjects.has(project.id)
-                                      ? 'bg-orange-500/10 text-orange-500'
-                                      : 'text-neutral-400 hover:text-orange-500'
-                                  }`}
-                                >
-                                  <ArrowUp className="h-4 w-4" />
-                                  <span className="text-sm font-medium">{project.stars}</span>
-                                </Button>
+                          <CardContent className="p-4 h-full flex flex-col">
+                            <div className="flex space-x-4 flex-1">
+                              <div className="flex-shrink-0">
+                                <div className="h-16 w-16 overflow-hidden bg-white">
+                                  <Image
+                                    src={project.githubData?.owner.avatar_url || '/placeholder.svg'}
+                                    alt={project.name}
+                                    width={64}
+                                    height={64}
+                                    className="h-full w-full object-contain"
+                                  />
+                                </div>
                               </div>
-                              <p className="mb-4 line-clamp-2 text-sm text-neutral-400">
-                                {project.description}
-                              </p>
-
-                                  <div className="mb-4 flex flex-wrap gap-2">
-                                    {project.tags?.map((tag) => (
-                                      <Badge key={tag} variant="secondary" className="text-xs">
-                                        {tag}
-                                      </Badge>
-                                    ))}
-                                  </div>
-
-                                  <div className="flex items-center justify-between text-sm text-neutral-400">
-                                    <div className="flex items-center space-x-4">
-                                      <div className="flex items-center space-x-1">
-                                        <Star className="h-4 w-4" />
-                                        <span>{project.stars.toLocaleString()}</span>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <GitFork className="h-4 w-4" />
-                                        <span>{project.forks.toLocaleString()}</span>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <Clock className="h-4 w-4" />
-                                        <span>{project.lastCommit}</span>
-                                      </div>
-                                    </div>
+                              <div className="min-w-0 flex-1 flex flex-col justify-between">
+                                <div>
+                                  <div className="flex items-center justify-between mb-1">
+                                    <h3 className="text-lg font-semibold truncate pr-2">{project.name}</h3>
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                      onClick={() => handleVote(project.id)}
+                                      className={`flex items-center space-x-1 transition-colors duration-150 flex-shrink-0 ${votedProjects.has(project.id)
+                                        ? 'bg-orange-500/10 text-orange-500'
+                                        : 'text-neutral-400 hover:text-orange-500'
+                                        }`}
                                     >
-                                      <ExternalLink className="h-4 w-4" />
+                                      <ArrowUp className="h-4 w-4" />
+                                      <span className="text-sm font-medium">{project.stars}</span>
                                     </Button>
                                   </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge className="bg-orange-500 hover:bg-orange-600 text-xs">
+                                      {project.approvalStatus}
+                                    </Badge>
+                                    {project.language && (
+                                      <Badge className="bg-neutral-700 hover:bg-neutral-600 text-xs">
+                                        {project.language}
+                                      </Badge>
+                                    )}
+                                  </div>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm text-neutral-400 mt-4 pt-3 border-neutral-800/50">
+                              <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-1">
+                                  <Star className="h-4 w-4" />
+                                  <span>{project.stars.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <GitFork className="h-4 w-4" />
+                                  <span>{project.forks.toLocaleString()}</span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                className="hover:text-neutral-200 transition-colors duration-150"
+                              >
+                                <ExternalLink className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </div>
 
@@ -371,11 +401,10 @@ export default function ProfilePage({ id }: { id: string }) {
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleVote(project.id)}
-                                    className={`flex items-center space-x-1 ${
-                                      votedProjects.has(project.id)
-                                        ? 'bg-orange-500/10 text-orange-500'
-                                        : 'text-neutral-400 hover:text-orange-500'
-                                    }`}
+                                    className={`flex items-center space-x-1 transition-colors duration-150 ${votedProjects.has(project.id)
+                                      ? 'bg-orange-500/10 text-orange-500'
+                                      : 'text-neutral-400 hover:text-orange-500'
+                                      }`}
                                   >
                                     <ArrowUp className="h-4 w-4" />
                                     <span className="text-sm font-medium">{project.stars}</span>
@@ -393,45 +422,46 @@ export default function ProfilePage({ id }: { id: string }) {
                                   ))}
                                 </div>
 
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-4 text-sm text-neutral-400">
-                                        <div className="flex items-center space-x-1">
-                                          <Star className="h-4 w-4" />
-                                          <span>{project.stars.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-1">
-                                          <GitFork className="h-4 w-4" />
-                                          <span>{project.forks.toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center space-x-1">
-                                          <Clock className="h-4 w-4" />
-                                          <span>{project.lastCommit}</span>
-                                        </div>
-                                        {project.openIssues > 0 && (
-                                          <div className="flex items-center space-x-1">
-                                            <MessageCircle className="h-4 w-4" />
-                                            <span>{project.openIssues}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <Button variant="ghost" size="sm">
-                                          <Heart className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                        >
-                                          <ExternalLink className="h-4 w-4" />
-                                        </Button>
-                                      </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-4 text-sm text-neutral-400">
+                                    <div className="flex items-center space-x-1">
+                                      <Star className="h-4 w-4" />
+                                      <span>{project.stars.toLocaleString()}</span>
                                     </div>
+                                    <div className="flex items-center space-x-1">
+                                      <GitFork className="h-4 w-4" />
+                                      <span>{project.forks.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <Clock className="h-4 w-4" />
+                                      <span>{project.lastCommit}</span>
+                                    </div>
+                                    {project.openIssues > 0 && (
+                                      <div className="flex items-center space-x-1">
+                                        <MessageCircle className="h-4 w-4" />
+                                        <span>{project.openIssues}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Button variant="ghost" size="sm" className="hover:text-neutral-200 transition-colors duration-150">
+                                      <Heart className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                      className="hover:text-neutral-200 transition-colors duration-150"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
                                   </div>
                                 </div>
-                              </CardContent>
-                            </Card>
-                          ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </div>
                 </TabsContent>

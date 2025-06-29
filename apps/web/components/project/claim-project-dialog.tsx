@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DebugGitHubPermissions } from './debug-permissions';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
@@ -65,16 +66,16 @@ export function ClaimProjectDialog({
   if (!claimStatus?.canClaim) {
     if (claimStatus?.needsAuth) {
       return (
-        <Button variant="default" size="sm" className="gap-2" asChild>
+        <Button variant="default" size="sm" className="gap-2 rounded-none" asChild>
           <Link href="/login" event="claim_project_dialog_connect_github_button_clicked">
             {provider === 'github' ? (
               <>
-                <Github className="h-4 w-4" />
+                <Icons.github className="h-4 w-4" />
                 Connect GitHub to Claim
               </>
             ) : (
               <>
-                <Gitlab className="h-4 w-4" />
+                <Icons.gitlab className="h-4 w-4" />
                 Connect GitLab to Claim
               </>
             )}
