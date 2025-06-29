@@ -1,7 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
+import { ShieldCheck, Briefcase } from 'lucide-react';
 import type { project } from '@workspace/db/schema';
 import { cn } from '@workspace/ui/lib/utils';
-import { ShieldCheck, Briefcase } from 'lucide-react';
 
 const SPLIT_DISTANCE = 10;
 const OVERLAP = 10;
@@ -10,6 +10,7 @@ const SIZE = 16;
 type Project = typeof project.$inferSelect;
 
 export default function ProjectTicks({ project }: { project: Project }) {
+  return null;
   const ticks = [
     {
       label: 'Verified',
@@ -45,10 +46,12 @@ export default function ProjectTicks({ project }: { project: Project }) {
                   className={cn(
                     'absolute transition-all duration-300 ease-in-out',
                     'group-hover/ticks:[transform:translateX(var(--split-distance))]',
+                    'bg-background p-1',
                   )}
                   style={
                     {
                       left: `${index * OVERLAP}px`,
+                      borderRadius: '100%',
                       zIndex: activeTicks.length - index,
                       '--split-distance': `${index * SPLIT_DISTANCE}px`,
                     } as React.CSSProperties

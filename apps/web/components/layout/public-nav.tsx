@@ -11,38 +11,28 @@ export default function PublicNav() {
     return pathname === path;
   };
 
+  const navItems = [
+    { href: '/projects', label: 'Projects' },
+    { href: '/launches', label: 'Launches' },
+    { href: '/roadmap', label: 'Roadmap' },
+    { href: '/about', label: 'About' },
+  ];
+
   return (
     <>
-      <Link
-        href="/roadmap"
-        event="roadmap_nav_click"
-        className={cn(
-          'text-muted-foreground p-2 hover:bg-neutral-900',
-          isActive('/roadmap') && 'text-primary bg-neutral-900',
-        )}
-      >
-        roadmap
-      </Link>
-      <Link
-        href="/projects"
-        event="projects_nav_click"
-        className={cn(
-          'text-muted-foreground p-2 hover:bg-neutral-900',
-          isActive('/projects') && 'text-primary bg-neutral-900',
-        )}
-      >
-        projects
-      </Link>
-      <Link
-        href="/about"
-        event="about_nav_click"
-        className={cn(
-          'text-muted-foreground p-2 hover:bg-neutral-900',
-          isActive('/about') && 'text-primary bg-neutral-900',
-        )}
-      >
-        about
-      </Link>
+      {navItems.map((item) => (
+        <Link
+          key={item.href}
+          href={item.href}
+          event={`${item.label.toLowerCase()}_nav_click`}
+          className={cn(
+            'text-muted-foreground p-2 hover:bg-neutral-900',
+            isActive(item.href) && 'text-primary bg-neutral-900',
+          )}
+        >
+          {item.label}
+        </Link>
+      ))}
     </>
   );
 }

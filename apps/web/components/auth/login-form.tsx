@@ -139,7 +139,7 @@ export function LoginForm({
           {isLoading.loading && isLoading.provider === 'github' ? (
             <LoadingSpinner className="h-4 w-4" />
           ) : (
-            <Icons.github className="h-4 w-4 fill-white" />
+            <Icons.github className="h-4 w-4" />
           )}
           Login with Github
         </Button>
@@ -154,7 +154,7 @@ export function LoginForm({
           {isLoading.loading && isLoading.provider === 'gitlab' ? (
             <LoadingSpinner className="h-4 w-4" />
           ) : (
-            <Icons.gitlab className="h-4 w-4 fill-white" />
+            <Icons.gitlab className="h-4 w-4" />
           )}
           Login with Gitlab
         </Button>
