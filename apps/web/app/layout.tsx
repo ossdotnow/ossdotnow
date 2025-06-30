@@ -55,7 +55,13 @@ export default function RootLayout({
         <Providers>
           {children}
           <Analytics />
-          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} trackErrors trackOutgoingLinks disabled={env.NODE_ENV === 'development'}/>
+          <Databuddy
+            clientId="kg5_9BY_IEWCCEbukXJPm"
+            enableBatching={true}
+            trackErrors
+            trackOutgoingLinks
+            disabled={env.VERCEL_ENV === 'development'}
+          />
           <Toaster />
         </Providers>
       </body>

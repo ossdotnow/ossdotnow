@@ -4,7 +4,7 @@ import Profile from '@/components/user/profile';
 import { env } from '@workspace/env/server';
 
 export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  if (env.NODE_ENV === 'production') {
+  if (env.VERCEL_ENV === 'production') {
     notFound();
   }
   const { id } = await params;

@@ -36,7 +36,7 @@ export function LoginForm({
   });
 
   const signInWithProvider = async (providerId: ProviderId) => {
-    if (env.NODE_ENV === 'production') {
+    if (env.VERCEL_ENV === 'production') {
       toast.error('This feature is not available in production');
       return;
     }

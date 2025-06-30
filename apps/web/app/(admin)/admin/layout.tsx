@@ -15,7 +15,7 @@ import { headers } from 'next/headers';
 import { Home } from 'lucide-react';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  if (env.NODE_ENV === 'production') {
+  if (env.VERCEL_ENV === 'production') {
     notFound();
   }
 

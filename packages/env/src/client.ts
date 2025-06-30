@@ -7,8 +7,8 @@ export const env = createEnv({
     NEXT_PUBLIC_VERCEL_URL: z.string().optional(),
   },
   runtimeEnv: {
-    NEXT_PUBLIC_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_ENV: process.env.VERCEL_ENV,
     NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
   },
-  skipValidation: process.env.NODE_ENV !== 'production',
+  skipValidation: process.env.VERCEL_ENV !== 'production',
 });
