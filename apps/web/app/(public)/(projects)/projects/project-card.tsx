@@ -7,6 +7,7 @@ import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
+import { ProjectReport } from '@/components/project/project-report';
 
 type Project = typeof projectSchema.$inferSelect;
 
@@ -31,6 +32,9 @@ export default function ProjectCard({ project }: { project: Project }) {
 
   return (
     <div className="group/project relative border border-neutral-800 bg-neutral-900/50 p-3 transition-all hover:border-neutral-700 md:p-4">
+      <div className="absolute right-2 top-2 z-10 opacity-0 transition-opacity group-hover/project:opacity-100">
+        <ProjectReport projectId={project.id} projectName={project.name} />
+      </div>
       <Link
         href={`/projects/${project.id}`}
         event="project_card_link_clicked"
