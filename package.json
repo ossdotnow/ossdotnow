@@ -13,7 +13,8 @@
     "db:generate": "turbo run db:generate",
     "db:migrate": "dotenv -- turbo run db:migrate",
     "db:push": "dotenv -- turbo run db:push",
-    "db:studio": "dotenv -- turbo run db:studio"
+    "db:studio": "dotenv -- turbo run db:studio",
+    "db:seed": "dotenv -- turbo run db:seed"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
