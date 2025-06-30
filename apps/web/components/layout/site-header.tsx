@@ -22,7 +22,7 @@ export async function SiteHeader() {
           <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
         </Link>
         <nav className="flex items-center gap-2">
-          {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
+          {env.VERCEL_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />
           ) : (

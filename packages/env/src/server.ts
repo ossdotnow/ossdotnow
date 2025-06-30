@@ -5,6 +5,7 @@ export const env = createEnv({
   server: {
     // Environment
     NODE_ENV: z.enum(['development', 'production', 'test']),
+    VERCEL_ENV: z.enum(['development', 'production', 'preview']),
     // Database
     DATABASE_URL: z.string().url().startsWith('postgresql://'),
     // Redis
