@@ -1,5 +1,5 @@
+import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from '../../schema';
 import { fixture } from '../create-fixture';
-import { categoryTags } from '../../schema';
 
 export const categoryTagsData = fixture(categoryTags).data([
   {
@@ -34,8 +34,6 @@ export const categoryTagsData = fixture(categoryTags).data([
   },
 ]);
 
-import { categoryProjectTypes } from '../../schema';
-
 export const categoryProjectTypesData = fixture(categoryProjectTypes).data([
   {
     name: 'fintech',
@@ -68,8 +66,6 @@ export const categoryProjectTypesData = fixture(categoryProjectTypes).data([
     sortOrder: 50,
   },
 ]);
-
-import { categoryProjectStatuses } from '../../schema';
 
 export const categoryProjectStatusesData = fixture(categoryProjectStatuses).data([
   {
