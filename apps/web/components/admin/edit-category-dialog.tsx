@@ -155,7 +155,9 @@ export function EditCategoryDialog({ isOpen, onClose, category, type }: EditCate
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit {categoryTypeLabels[type]}</DialogTitle>
-          <DialogDescription>Update the details for "{category.displayName}"</DialogDescription>
+          <DialogDescription>
+            Update the details for &quot;{category.displayName}&quot;
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

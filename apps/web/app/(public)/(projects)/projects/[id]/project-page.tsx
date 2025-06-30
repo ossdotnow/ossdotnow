@@ -9,14 +9,12 @@ import {
   DollarSign,
   ExternalLink,
   GitFork,
-  Github,
   GitMerge,
   GitPullRequest,
   Globe,
   Linkedin,
   Star,
   Tag,
-  Twitter,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -39,7 +37,6 @@ import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 
 // TODO: finish this file
-
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
 type GitHubPullRequest = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
 

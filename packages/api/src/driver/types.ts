@@ -1,5 +1,6 @@
-import { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
 import { project } from '@workspace/db/schema';
+
+type RestEndpointMethodTypes = any;
 
 export interface RepoData {
   id: string | number;

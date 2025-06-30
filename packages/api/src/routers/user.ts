@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 import { getActiveDriver } from '../driver/utils';
 import { user } from '@workspace/db/schema';
 import { eq } from 'drizzle-orm';

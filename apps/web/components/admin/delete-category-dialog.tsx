@@ -109,8 +109,8 @@ export function DeleteCategoryDialog({
         <DialogHeader>
           <DialogTitle>Delete {categoryTypeLabels[type]}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete the {categoryTypeLabels[type]} "{category.displayName}"
-            ({category.name})?
+            Are you sure you want to delete the {categoryTypeLabels[type]} &quot;
+            {category.displayName}&quot; ({category.name})?
             <br />
             <br />
             <span className="font-medium text-red-600">

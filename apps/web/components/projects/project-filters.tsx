@@ -12,9 +12,7 @@ import { Input } from '@workspace/ui/components/input';
 import { Filter, Search, X } from 'lucide-react';
 import React, { useState } from 'react';
 
-type Props = {};
-
-export default function ProjectFilters({}: Props) {
+export default function ProjectFilters() {
   const [searchQuery, setSearchQuery] = useState('');
   return (
     <div className="sticky top-[calc(32px+65px)] z-20 mb-8 flex items-center justify-between bg-[#262626]">
