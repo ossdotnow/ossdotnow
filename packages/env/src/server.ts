@@ -4,7 +4,6 @@ import { z } from 'zod/v4';
 export const env = createEnv({
   server: {
     // Environment
-    VERCEL_ENV: z.enum(['development', 'production', 'test']),
     VERCEL_ENV: z.enum(['development', 'production', 'preview']),
     // Database
     DATABASE_URL: z.string().url().startsWith('postgresql://'),
@@ -22,5 +21,5 @@ export const env = createEnv({
     GITLAB_TOKEN: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
-  skipValidation: process.env.VERCEL_ENV !== 'production',
+  skipValidation: process.env.NODE_ENV !== 'production',
 });
