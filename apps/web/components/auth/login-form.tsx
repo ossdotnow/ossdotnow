@@ -12,7 +12,7 @@ import Link from '@workspace/ui/components/link';
 import { ComponentProps, useState } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
-import { env } from '@workspace/env/server';
+import { env } from '@workspace/env/client';
 import { useForm } from 'react-hook-form';
 import { loginForm } from '@/forms/index';
 import { toast } from 'sonner';
@@ -36,7 +36,7 @@ export function LoginForm({
   });
 
   const signInWithProvider = async (providerId: ProviderId) => {
-    if (env.VERCEL_ENV === 'production') {
+    if (env.NEXT_PUBLIC_ENV === 'production') {
       toast.error('This feature is not available in production');
       return;
     }
