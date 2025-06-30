@@ -15,23 +15,26 @@ export async function SiteHeader() {
   });
 
   return (
-    <header className="bg-background sticky top-0 z-50 w-full">
-      <div className={cn('mx-auto flex h-20 items-center justify-between px-4 sm:px-8')}>
-        <Link href="/" className="flex items-center gap-4" event="home_nav_click">
-          <Icons.logo className="size-6 sm:size-8" />
-          <span className="text-lg font-medium sm:text-2xl">oss.now</span>
+    <header className="sticky top-8 z-50 mx-6 max-w-[1080px] border border-[#404040] bg-black md:mx-auto">
+      <div className={cn('mx-auto flex h-16 items-center justify-between px-4')}>
+        <Link href="/" className="flex items-center gap-2" event="home_nav_click">
+          <Icons.logo className="size-6 sm:size-7" />
+          <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
         </Link>
-        <nav className="flex items-center gap-1 sm:gap-2">
+        <nav className="flex items-center gap-2">
           {env.NODE_ENV === 'production' ? <TempNav /> : <PublicNav />}
           {session?.user.id ? (
             <UserNav />
-          ) : env.NODE_ENV !== 'production' ? (
-            <Button className="ml-2 rounded-none" asChild>
+          ) : (
+            <Button
+              className="ml-4 rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
+              asChild
+            >
               <Link href="/login" event="login_nav_click">
-                Login
+                login
               </Link>
             </Button>
-          ) : null}
+          )}
         </nav>
       </div>
     </header>

@@ -5,7 +5,7 @@ export default function LoadingSpinner({ className }: { className?: string }) {
     <div className={cn('flex items-center justify-center')}>
       <div
         className={cn(
-          'h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-500',
+          'h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-500/20',
           className,
         )}
       ></div>

@@ -5,10 +5,19 @@ import Link from '@workspace/ui/components/link';
 export function TempNav() {
   return (
     <>
-      <Link href="/roadmap" event="roadmap_nav_click" className="mr-2 hover:bg-neutral-900">
+      <Link
+        href="/roadmap"
+        event="roadmap_nav_click"
+        className="px-3 py-2 text-sm text-neutral-400 transition-colors hover:text-white"
+      >
         roadmap
       </Link>
-      <Button variant="ghost" size="icon" className="rounded-none" asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-none text-neutral-400 hover:text-white"
+        asChild
+      >
         <Link
           href="https://l.oss.now/gh/"
           target="_blank"
@@ -18,7 +27,12 @@ export function TempNav() {
           <Icons.github className="size-4 sm:size-5" />
         </Link>
       </Button>
-      <Button variant="ghost" size="icon" className="rounded-none" asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="rounded-none text-neutral-400 hover:text-white"
+        asChild
+      >
         <Link
           href="https://l.oss.now/x/"
           target="_blank"
