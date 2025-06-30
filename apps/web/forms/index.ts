@@ -22,13 +22,13 @@ export const earlySubmissionForm = createInsertSchema(project).extend({
     .min(1, 'Repository URL is required'),
   socialLinks: z
     .object({
-      twitter: z.string().url('Invalid URL format').optional().or(z.literal('')),
-      discord: z.string().url('Invalid URL format').optional().or(z.literal('')),
-      linkedin: z.string().url('Invalid URL format').optional().or(z.literal('')),
-      website: z.string().url('Invalid URL format').optional().or(z.literal('')),
+      twitter: z.url('Invalid URL format').optional().or(z.literal('')),
+      discord: z.url('Invalid URL format').optional().or(z.literal('')),
+      linkedin: z.url('Invalid URL format').optional().or(z.literal('')),
+      website: z.url('Invalid URL format').optional().or(z.literal('')),
     })
     .optional(),
-  status: z.string().min(1, 'Project status is required'),
-  type: z.string().min(1, 'Project type is required'),
-  tags: z.array(z.string()).default([]),
+  status: z.string().min(1, 'Project status is required').optional(),
+  type: z.string().min(1, 'Project type is required').optional(),
+  tags: z.array(z.string()).default([]).optional(),
 });

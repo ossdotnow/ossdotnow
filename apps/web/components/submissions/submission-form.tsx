@@ -122,8 +122,8 @@ export default function SubmissionForm() {
       logoUrl: '',
       gitRepoUrl: '',
       gitHost: 'github',
-      status: 'early-stage',
-      type: 'other',
+      status: '',
+      type: '',
       socialLinks: {
         twitter: '',
         discord: '',
@@ -851,7 +851,8 @@ export default function SubmissionForm() {
               </Button>
 
               {currentStep === steps.length - 1 ? (
-                <Button type="submit" className="rounded-none" disabled={isLoading || success}>
+                // add || success to disabled
+                <Button type="submit" className="rounded-none" disabled={isLoading}>
                   {isLoading ? 'Submitting...' : 'Submit Project'}
                 </Button>
               ) : (
