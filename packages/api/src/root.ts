@@ -12,6 +12,8 @@ import { usersRouter } from './routers/users';
 import { adminRouter } from './routers/admin';
 import { userRouter } from './routers/user';
 
+export * from './driver/types';
+
 export const appRouter = createTRPCRouter({
   earlyAccess: earlyAccessRouter,
   user: userRouter,
