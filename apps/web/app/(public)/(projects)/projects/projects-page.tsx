@@ -1,19 +1,12 @@
 'use client';
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@workspace/ui/components/select';
-import { Filter, Search, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import ProjectFilters from '@/components/projects/project-filters';
 import LoadingSpinner from '@/components/loading-spinner';
 import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useState, useMemo } from 'react';
 import ProjectCard from './project-card';
 import { useQueryState } from 'nuqs';
 
@@ -24,6 +17,16 @@ export default function ProjectsPage() {
     parse: (value) => value || '1',
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [showShadow, setShowShadow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowShadow(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const pageNumber = parseInt(page, 10);
   const pageSize = 20;
@@ -63,54 +66,15 @@ export default function ProjectsPage() {
   }, [featuredProjects?.data, searchQuery]);
 
   return (
-    <div className="container mx-auto">
-      <div className="py-8">
-        <div className="mb-8 flex items-center justify-between gap-2">
-          <div className="relative max-w-xl flex-1">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-500" />
-            <Input
-              type="text"
-              placeholder="Search projects..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-none border border-neutral-800 bg-neutral-900 py-2.5 pr-10 pl-10 text-sm text-white placeholder-neutral-500 focus:border-neutral-700 focus:outline-none"
-            />
-            {searchQuery.trim() && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-neutral-500 transition-colors hover:text-neutral-300"
-                title="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2 md:gap-4">
-            <Button
-              variant="outline"
-              className="flex items-center gap-2 rounded-none border border-neutral-800 bg-neutral-900 px-4 py-2.5 text-sm text-neutral-300 hover:border-neutral-700"
-            >
-              <Filter size={16} />
-              Filters
-            </Button>
-            <Select>
-              <SelectTrigger className="w-30 rounded-none border border-neutral-800 bg-neutral-900 px-4 py-2.5 text-sm text-neutral-300 focus:border-neutral-700 focus:outline-none">
-                <SelectValue placeholder="Order by" />
-              </SelectTrigger>
-              <SelectContent className="rounded-none">
-                <SelectItem className="rounded-none" value="stars">
-                  Stars
-                </SelectItem>
-                <SelectItem className="rounded-none" value="recent">
-                  Recent
-                </SelectItem>
-                <SelectItem className="rounded-none" value="forks">
-                  Forks
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+    <div className="mx-auto max-w-[1080px]">
+      <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
+      <div className="py-[31px]">
+        <ProjectFilters />
+        <div
+          className={`pointer-events-none sticky top-[calc(32px+65px+36px)] z-10 -mt-8 h-10 bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+            showShadow ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
 
         {!searchQuery.trim() && filteredFeaturedProjects.length > 0 && (
           <div className="mb-12">
@@ -126,7 +90,7 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        <div className="mb-6">
+        {/* <div className="mb-6">
           <h2 className="mb-2 text-2xl font-bold text-white">
             {!searchQuery.trim() && filteredFeaturedProjects.length > 0
               ? 'All Projects'
@@ -137,21 +101,21 @@ export default function ProjectsPage() {
               ? `Found ${filteredProjects.length} project${filteredProjects.length === 1 ? '' : 's'} matching "${searchQuery}"`
               : 'Discover amazing open source projects'}
           </p>
-        </div>
+        </div> */}
 
         {isLoading ? (
           <LoadingSpinner />
         ) : isError ? (
           <div className="text-center text-sm text-red-700">Error loading projects</div>
         ) : filteredProjects.length > 0 ? (
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {filteredProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>
         ) : searchQuery.trim() ? (
           <div className="text-center text-sm text-neutral-400">
-            No projects found matching "{searchQuery}".
+            No projects found matching &quot;{searchQuery}&quot;.
           </div>
         ) : (
           <div className="text-center text-sm">No projects found</div>

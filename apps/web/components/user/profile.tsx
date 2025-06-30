@@ -92,14 +92,12 @@ export default function ProfilePage({ id }: { id: string }) {
   // const featuredProjects = projectsWithGithubData?.filter((project) => project.featured);
   const featuredProjects = [] as any[];
 
-  console.log(profile);
-
   return (
-    <div className="min-h-[calc(100vh-80px)] px-6">
+    <div className="mx-auto min-h-[calc(100vh-80px)] max-w-[1080px] pt-10">
       <div className="relative z-10">
         <div className="container mx-auto py-8">
-          <div className="grid gap-4 lg:grid-cols-4">
-            <div className="lg:col-span-1">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-4">
               {isProfileLoading ? (
                 <ProfileSidebarSkeleton />
               ) : (
@@ -188,7 +186,7 @@ export default function ProfilePage({ id }: { id: string }) {
               {profile?.id && <RecentActivity userId={profile.id} />}
             </div>
 
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-8">
               <Tabs defaultValue="projects" className="w-full">
                 <TabsList className="grid w-full grid-cols-3 border-neutral-800 bg-neutral-900/50">
                   <TabsTrigger value="projects">Projects</TabsTrigger>

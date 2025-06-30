@@ -177,7 +177,7 @@ export default function AdminUsersDashboard() {
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <Select defaultValue={user.role}>
+                          <Select defaultValue={user.role!}>
                             <SelectTrigger className="w-32">
                               <SelectValue />
                             </SelectTrigger>

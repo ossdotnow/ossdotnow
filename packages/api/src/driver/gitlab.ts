@@ -348,18 +348,18 @@ export class GitlabManager implements GitManager {
         provider: 'gitlab',
         login: userDetails.username,
         id: userDetails.id,
-        avatarUrl: userDetails.avatar_url,
+        avatarUrl: userDetails.avatar_url as string,
         name: userDetails.name ?? undefined,
         company: (userDetails as any).organization ?? undefined,
-        blog: userDetails.website_url ?? undefined,
+        blog: (userDetails.website_url as string) ?? undefined,
         location: (userDetails as any).location ?? undefined,
         email: (userDetails as any).public_email ?? undefined,
         bio: (userDetails as any).bio ?? undefined,
         publicRepos: (userDetails as any).projects?.length || 0,
         followers: (userDetails as any).followers || 0,
         following: (userDetails as any).following || 0,
-        createdAt: userDetails.created_at,
-        htmlUrl: userDetails.web_url,
+        createdAt: userDetails.created_at as string,
+        htmlUrl: userDetails.web_url as string,
       };
     } catch (error: any) {
       if (error instanceof TRPCError) {

@@ -333,7 +333,11 @@ export default function SubmissionForm() {
   ];
 
   function handleProjectSubmission(formData: FormData) {
-    mutate(formData);
+    mutate({
+      ...formData,
+      status: formData.status || '',
+      type: formData.type || '',
+    });
   }
 
   const nextStep = async () => {

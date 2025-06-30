@@ -17,7 +17,7 @@ export function DebugGitHubPermissions({
   const trpc = useTRPC();
 
   const { data, isLoading, refetch, error } = useQuery({
-    ...trpc.projects.debugGitHubPermissions.queryOptions({ repoUrl, projectId }),
+    ...trpc.projects.debugRepositoryPermissions.queryOptions({ repoUrl, projectId }),
     enabled: showDebug,
   });
 

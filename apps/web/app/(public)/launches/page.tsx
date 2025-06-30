@@ -8,11 +8,11 @@ import {
   Share2,
   TrendingUp,
   Trophy,
-  X,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ProjectReport } from '@/components/project/project-report';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
@@ -20,9 +20,8 @@ import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { ProjectReport } from '@/components/project/project-report';
 
 export default function LaunchesPage() {
   const trpc = useTRPC();
@@ -262,10 +261,7 @@ export default function LaunchesPage() {
                       <Icons.twitter className="h-4 w-4" />
                     </Button>
 
-                    <ProjectReport
-                      projectId={project.id}
-                      projectName={project.name}
-                    />
+                    <ProjectReport projectId={project.id} projectName={project.name} />
                   </div>
 
                   {project.tags && project.tags.length > 0 && (
@@ -318,7 +314,7 @@ export default function LaunchesPage() {
         <TabsContent value="today" className="space-y-4">
           {todayLoading ? (
             <div className="py-12 text-center">
-              <p className="text-neutral-400">Loading today's launches...</p>
+              <p className="text-neutral-400">Loading today&apos;s launches...</p>
             </div>
           ) : todayLaunches && todayLaunches.length > 0 ? (
             <>
@@ -338,7 +334,7 @@ export default function LaunchesPage() {
         <TabsContent value="yesterday" className="space-y-4">
           {yesterdayLoading ? (
             <div className="py-12 text-center">
-              <p className="text-neutral-400">Loading yesterday's launches...</p>
+              <p className="text-neutral-400">Loading yesterday&apos;s launches...</p>
             </div>
           ) : yesterdayLaunches && yesterdayLaunches.length > 0 ? (
             <>

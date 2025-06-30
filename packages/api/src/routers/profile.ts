@@ -1,16 +1,16 @@
 import {
   account,
-  user,
   project,
-  projectComment,
-  projectVote,
-  projectLaunch,
   projectClaim,
+  projectComment,
+  projectLaunch,
+  projectVote,
+  user,
 } from '@workspace/db/schema';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { getActiveDriver, type Context } from '../driver/utils';
-import { and, eq, desc, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 type ActivityItem = {

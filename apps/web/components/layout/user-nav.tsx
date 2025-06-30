@@ -27,35 +27,42 @@ export default function NavUser() {
   const { data: user, isLoading } = useQuery(trpc.user.me.queryOptions());
 
   return isLoading ? (
-    <Skeleton className="h-8 w-8 rounded-none" />
+    <Skeleton className="ml-2 h-8 w-8 rounded-full" />
   ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="ml-2 h-8 w-8 rounded-none">
+        <Avatar className="ml-2 h-8 w-8 cursor-pointer rounded-full">
           <AvatarImage src={user?.image || ''} alt={user?.name} />
-          <AvatarFallback className="rounded-none">CN</AvatarFallback>
+          <AvatarFallback className="bg-neutral-900 text-xs text-neutral-400">
+            {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+          </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="min-w-56 rounded-none"
+        className="min-w-56 rounded-none border-neutral-800 bg-neutral-900"
         side="bottom"
         align="end"
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-none">
+            <Avatar className="h-8 w-8 rounded-full">
               <AvatarImage src={user?.image || ''} alt={user?.name} />
-              <AvatarFallback className="rounded-none">CN</AvatarFallback>
+              <AvatarFallback className="bg-neutral-800 text-neutral-400">
+                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user?.name}</span>
-              <span className="truncate text-xs">{user?.email}</span>
+              <span className="truncate font-medium text-white">{user?.name}</span>
+              <span className="truncate text-xs text-neutral-400">{user?.email}</span>
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuSeparator className="bg-neutral-800" />
+        <DropdownMenuItem
+          asChild
+          className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+        >
           <Link href="/profile/me">
             <User />
             Profile
@@ -63,16 +70,22 @@ export default function NavUser() {
         </DropdownMenuItem>
         {user?.role === 'admin' && (
           <>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem
+              asChild
+              className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+            >
               <Link href="/admin">
                 <LayoutDashboard />
                 Admin Dashboard
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-neutral-800" />
           </>
         )}
-        <DropdownMenuItem onClick={signOut}>
+        <DropdownMenuItem
+          onClick={signOut}
+          className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+        >
           <LogOut />
           Log out
         </DropdownMenuItem>
