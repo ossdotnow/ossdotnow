@@ -20,8 +20,9 @@ import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { ProjectReport } from '@/components/project/project-report';
 
 export default function LaunchesPage() {
   const trpc = useTRPC();
@@ -145,6 +146,7 @@ export default function LaunchesPage() {
                 >
                   <Icons.twitter className="h-4 w-4" />
                 </Button>
+                <ProjectReport projectId={project.id} projectName={project.name} />
                 <div className="ml-auto flex items-center gap-4">
                   <Button
                     variant={project.hasVoted ? 'default' : 'outline'}
@@ -259,6 +261,11 @@ export default function LaunchesPage() {
                     >
                       <Icons.twitter className="h-4 w-4" />
                     </Button>
+
+                    <ProjectReport
+                      projectId={project.id}
+                      projectName={project.name}
+                    />
                   </div>
 
                   {project.tags && project.tags.length > 0 && (

@@ -1,6 +1,6 @@
-import { project, projectLaunch, projectVote, projectComment, user } from '@workspace/db/schema';
+import { project, projectLaunch, projectVote, projectComment, projectReport, user } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
-import { eq, desc, and, sql, gte, lt } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lt, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
@@ -140,6 +140,10 @@ export const launchesRouter = createTRPCRouter({
         .offset(input.offset);
 
       if (ctx.session?.userId) {
+        if (launches.length === 0) {
+          return [];
+        }
+        const launchIds = launches.map((l) => l.id);
         const userVotes = await ctx.db
           .select({
             projectId: projectVote.projectId,
@@ -148,9 +152,7 @@ export const launchesRouter = createTRPCRouter({
           .where(
             and(
               eq(projectVote.userId, ctx.session.userId),
-              sql`${projectVote.projectId} in ${sql.raw(
-                `(${launches.map((l) => `'${l.id}'`).join(',')})`,
-              )}`,
+              inArray(projectVote.projectId, launchIds),
             ),
           );
 
@@ -228,6 +230,31 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
+      if (ctx.session?.userId) {
+        if (launches.length === 0) {
+          return [];
+        }
+        const launchIds = launches.map((l) => l.id);
+        const userVotes = await ctx.db
+          .select({
+            projectId: projectVote.projectId,
+          })
+          .from(projectVote)
+          .where(
+            and(
+              eq(projectVote.userId, ctx.session.userId),
+              inArray(projectVote.projectId, launchIds),
+            ),
+          );
+
+        const userVotesSet = new Set(userVotes.map((v) => v.projectId));
+
+        return launches.map((launch) => ({
+          ...launch,
+          hasVoted: userVotesSet.has(launch.id),
+        }));
+      }
+
       return launches.map((launch) => ({
         ...launch,
         hasVoted: false,
@@ -260,6 +287,36 @@ export const launchesRouter = createTRPCRouter({
           userId: ctx.session.userId!,
         });
         return { voted: true };
+      }
+    }),
+
+  reportProject: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { projectId } = input;
+      const existingReport = await ctx.db.query.projectReport.findFirst({
+        where: and(
+          eq(projectReport.projectId, projectId),
+          eq(projectReport.userId, ctx.session.userId!),
+        ),
+      });
+
+      if (existingReport) {
+        await ctx.db
+          .delete(projectReport)
+          .where(
+            and(
+              eq(projectReport.projectId, projectId),
+              eq(projectReport.userId, ctx.session.userId!),
+            ),
+          );
+        return { reported: false };
+      } else {
+          await ctx.db.insert(projectReport).values({
+            projectId: projectId,
+            userId: ctx.session.userId!,
+          });
+          return { reported: true };
       }
     }),
 
