@@ -1,9 +1,12 @@
 import ProjectsPage from './projects-page';
+import { Suspense } from 'react';
 
 export default function Page() {
   return (
     <main className="px-6">
-      <ProjectsPage />
+      <Suspense>
+        <ProjectsPage />
+      </Suspense>
     </main>
   );
 }
