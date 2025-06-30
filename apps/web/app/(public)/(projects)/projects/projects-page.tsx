@@ -65,13 +65,6 @@ export default function ProjectsPage() {
       .filter((project) => project.name.toLowerCase().includes(query));
   }, [featuredProjects?.data, searchQuery]);
 
-  const testProjects = [
-    ...filteredProjects,
-    ...filteredProjects,
-    ...filteredProjects,
-    ...filteredProjects,
-  ];
-
   return (
     <div className="mx-auto max-w-[1080px]">
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
@@ -116,7 +109,7 @@ export default function ProjectsPage() {
           <div className="text-center text-sm text-red-700">Error loading projects</div>
         ) : filteredProjects.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {testProjects.map((project) => (
+            {filteredProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>
