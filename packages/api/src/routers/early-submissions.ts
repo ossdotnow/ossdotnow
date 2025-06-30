@@ -91,6 +91,9 @@ export const earlySubmissionRouter = createTRPCRouter({
       ...input,
       ownerId: null,
       approvalStatus: APPROVAL_STATUS.PENDING,
+      status: input.status as any,
+      type: input.type as any,
+      tags: input.tags as any,
     });
 
     return {
