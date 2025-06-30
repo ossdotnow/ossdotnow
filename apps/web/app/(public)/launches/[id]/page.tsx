@@ -11,6 +11,8 @@ import {
   GitFork,
   Send,
   ChevronRight,
+  Flag,
+  Loader2,
 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@workspace/ui/components/form';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
@@ -92,12 +94,30 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
     }),
   );
 
+  const reportMutation = useMutation({
+    ...trpc.launches.reportProject.mutationOptions(),
+    onSuccess: () => {
+      toast.success('Project reported successfully.');
+    },
+    onError: () => {
+      toast.error('Failed to report project. Please try again.');
+    },
+  });
+
   const handleVote = async () => {
     if (!session?.user) {
       toast.error('Please login to vote');
       return;
     }
     voteMutation.mutate({ projectId });
+  };
+
+  const handleReport = async () => {
+    if (!session?.user) {
+      toast.error('Please login to report');
+      return;
+    }
+    reportMutation.mutate({ projectId });
   };
 
   const handleShare = async () => {
@@ -207,6 +227,15 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
           <Share2 className="h-4 w-4" />
           Share
         </Button>
+        <Button
+          variant="outline"
+          onClick={handleReport}
+          className="gap-2"
+          disabled={reportMutation.isPending}
+        >
+          <Flag className="h-4 w-4" />
+          Report
+        </Button>
       </div>
 
       {/* Tags */}
@@ -255,8 +284,8 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
                       <FormItem>
                         <FormControl>
                           <Textarea
-                            placeholder="Add a comment..."
-                            className="min-h-[80px]"
+                            placeholder="Add your comment..."
+                            className="resize-none rounded-none"
                             {...field}
                           />
                         </FormControl>
@@ -264,58 +293,59 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
                       </FormItem>
                     )}
                   />
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={commentMutation.isPending} className="gap-2">
+                  <Button type="submit" disabled={commentMutation.isPending} className="gap-2">
+                    {commentMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
                       <Send className="h-4 w-4" />
-                      Post Comment
-                    </Button>
-                  </div>
+                    )}
+                    Post Comment
+                  </Button>
                 </form>
               </Form>
             </div>
           )}
 
-          {/* Comments List */}
-          {commentsLoading ? (
-            <p className="text-center text-neutral-400">Loading comments...</p>
-          ) : comments && comments.length > 0 ? (
-            <div className="space-y-4">
-              {comments.map((comment) => (
+          {/* Comment List */}
+          <div className="space-y-4">
+            {commentsLoading ? (
+              <p>Loading comments...</p>
+            ) : comments && comments.length > 0 ? (
+              comments.map((comment: any) => (
                 <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={comment.user?.image} />
-                    <AvatarFallback>{comment.user?.name?.[0] || 'U'}</AvatarFallback>
+                    <AvatarImage src={comment.user.image} />
+                    <AvatarFallback>{comment.user.name?.[0] || 'U'}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <div className="mb-1 flex items-center gap-2">
-                      <span className="text-sm font-medium">{comment.user?.name || 'Unknown'}</span>
-                      <span className="text-xs text-neutral-400">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold">{comment.user.name}</p>
+                      <p className="text-xs text-neutral-400">
                         {formatDistanceToNow(new Date(comment.createdAt))} ago
-                      </span>
+                      </p>
                     </div>
-                    <p className="text-sm text-neutral-300">{comment.content}</p>
+                    <p className="text-neutral-300">{comment.content}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="py-8 text-center text-neutral-400">
-              No comments yet. Be the first to comment!
-            </p>
-          )}
+              ))
+            ) : (
+              <p className="text-sm text-neutral-400">No comments yet.</p>
+            )}
+          </div>
 
           {!session?.user && (
-            <div className="py-4 text-center">
-              <p className="text-sm text-neutral-400">
-                <Link href="/login" className="text-orange-500 hover:text-orange-400">
-                  Login
-                </Link>{' '}
-                to comment on this launch
-              </p>
-            </div>
+            <Card className="mt-6">
+              <CardContent className="flex items-center justify-between p-4">
+                <p>Login to join the conversation.</p>
+                <Button asChild>
+                  <Link href="/login">Login</Link>
+                </Button>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
