@@ -20,10 +20,8 @@ export async function seedDb() {
   process.exit(0);
 }
 
-seedDb()
-  .then(() => {})
-  .catch((error) => {
-    // catch any unhandled errors
-    console.error('❌ Unexpected error:', error);
-    process.exit(1);
-  });
+seedDb().catch((error) => {
+  // catch any unhandled errors
+  console.error('❌ Unexpected error:', error);
+  process.exit(1);
+});
