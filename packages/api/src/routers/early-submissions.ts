@@ -1,7 +1,7 @@
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
-import { project } from '@workspace/db/schema';
+import { project, user } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
@@ -87,9 +87,24 @@ export const earlySubmissionRouter = createTRPCRouter({
       });
     }
 
+    // Extract owner from gitRepoUrl
+    const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
+    const match = input.gitRepoUrl.match(githubUrlRegex);
+    let ownerId = null;
+    const owner: string | undefined = match ? match[1] : undefined;
+    if(typeof(owner) === 'string') {
+      const userResult = await ctx.db.query.user.findFirst({
+        where: eq(user.username, owner),
+        columns: { id: true },
+      });
+      if(userResult) {
+        ownerId = userResult.id;
+      }
+    }
+
     await ctx.db.insert(project).values({
       ...input,
-      ownerId: null,
+      ownerId,
       approvalStatus: APPROVAL_STATUS.PENDING,
       status: input.status as any,
       type: input.type as any,
