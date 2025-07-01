@@ -32,7 +32,7 @@ import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
 // import { UploadDropzone } from '@/lib/uploadthing';
-import { earlySubmissionForm } from '@/forms';
+import { earlySubmissionForm, submisionForm } from '@/forms';
 import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
@@ -83,7 +83,55 @@ function useEarlySubmission() {
   };
 }
 
-export default function SubmissionForm() {
+function useSubmission() {
+  const trpc = useTRPC();
+  const [isMounted, setIsMounted] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setSuccess(localStorage.getItem('submission-success') === 'true');
+  }, []);
+
+  const { mutate, isPending } = useMutation(
+    trpc.submission.addProject.mutationOptions({
+      onSuccess: () => {
+        setSuccess(true);
+        setError(null);
+
+        if (isMounted) {
+          localStorage.setItem('submission-success', 'true');
+        }
+        vercelTrack('submission_success');
+        databuddyTrack('submission_success');
+      },
+      onError: (err) => {
+        const errorMessage = err.message || 'Something went wrong. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        vercelTrack('submission_error', { error: errorMessage });
+        databuddyTrack('submission_error', { error: errorMessage });
+      },
+    }),
+  );
+
+  const clearError = () => setError(null);
+
+  return {
+    mutate,
+    success,
+    error,
+    isLoading: isPending,
+    clearError,
+  };
+}
+
+export default function SubmissionForm({
+  earlySubmission = false,
+}: {
+  earlySubmission?: boolean;
+} = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
@@ -96,8 +144,9 @@ export default function SubmissionForm() {
     isValid: null,
     message: null,
   });
-  const { mutate, success, error, isLoading, clearError } = useEarlySubmission();
+  const { mutate, success, error, isLoading, clearError } = earlySubmission ? useEarlySubmission() : useSubmission();
   const trpc = useTRPC();
+  const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 
   // Fetch categories from database
   const { data: projectTypes, isLoading: projectTypesLoading } = useQuery(
@@ -110,10 +159,10 @@ export default function SubmissionForm() {
     trpc.categories.getTags.queryOptions({ activeOnly: true }),
   );
 
-  type FormData = z.infer<typeof earlySubmissionForm>;
+  type FormData = z.infer<typeof formSchema>;
 
   const form = useForm<FormData>({
-    resolver: zodResolver(earlySubmissionForm),
+    resolver: zodResolver(formSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
@@ -223,7 +272,9 @@ export default function SubmissionForm() {
         if (result) {
           try {
             const duplicateCheck = await queryClient.fetchQuery(
-              trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+              earlySubmission ? trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                gitRepoUrl: repoUrl,
+              }) : trpc.submission.checkDuplicateRepo.queryOptions({
                 gitRepoUrl: repoUrl,
               }),
             );
@@ -235,6 +286,20 @@ export default function SubmissionForm() {
                 message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
               });
               return;
+            }
+
+            if (!earlySubmission) {
+              const ownerCheck = await queryClient.fetchQuery(
+                trpc.submission.checkUserOwnsProject.queryOptions({ gitRepoUrl: repoUrl })
+              );
+              if (!ownerCheck.isOwner) {
+                setRepoValidation({
+                  isValidating: false,
+                  isValid: false,
+                  message: ownerCheck.error || 'You are not the owner of this repository.',
+                });
+                return;
+              }
             }
 
             setRepoValidation({

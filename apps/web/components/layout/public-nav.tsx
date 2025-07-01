@@ -14,6 +14,7 @@ export default function PublicNav() {
   const navItems = [
     { href: '/projects', label: 'Projects' },
     { href: '/launches', label: 'Launches' },
+    { href: '/submit', label: 'Submit Your Project' },
     { href: '/roadmap', label: 'Roadmap' },
     { href: '/about', label: 'About' },
   ];
