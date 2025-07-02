@@ -4,7 +4,7 @@ import Link from '@workspace/ui/components/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@workspace/ui/lib/utils';
 
-export default function PublicNav() {
+export default function PublicNav({ className }: { className?: string }) {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
@@ -19,7 +19,7 @@ export default function PublicNav() {
   ];
 
   return (
-    <>
+    <div className={cn('flex items-center gap-2', className)}>
       {navItems.map((item) => (
         <Link
           key={item.href}
@@ -33,6 +33,6 @@ export default function PublicNav() {
           {item.label}
         </Link>
       ))}
-    </>
+    </div>
   );
 }
