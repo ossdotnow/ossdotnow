@@ -7,7 +7,7 @@ export default function Page() {
       <div className="z-10 flex w-full max-w-lg flex-col items-center gap-12">
         <h1 className="z-10 text-2xl font-medium tracking-[-0.04em]">Early Submission Page</h1>
         <Suspense>
-          <SubmissionForm />
+          <SubmissionForm earlySubmission={true} />
         </Suspense>
       </div>
     </div>

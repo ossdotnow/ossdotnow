@@ -11,6 +11,7 @@ import { profileRouter } from './routers/profile';
 import { usersRouter } from './routers/users';
 import { adminRouter } from './routers/admin';
 import { userRouter } from './routers/user';
+import { submissionRouter } from './routers/submissions';
 
 export type * from './driver/types';
 
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   projects: projectsRouter,
   categories: categoriesRouter,
   earlySubmission: earlySubmissionRouter,
+  submission: submissionRouter,
   repository: repositoryRouter,
   admin: adminRouter,
   profile: profileRouter,
