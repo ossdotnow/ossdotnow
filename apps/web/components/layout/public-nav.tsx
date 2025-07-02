@@ -3,6 +3,8 @@
 import Link from '@workspace/ui/components/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@workspace/ui/lib/utils';
+import SubmissionDialog from '../submissions/submission-dialog';
+import React from 'react';
 
 export default function PublicNav() {
   const pathname = usePathname();
@@ -14,25 +16,26 @@ export default function PublicNav() {
   const navItems = [
     { href: '/projects', label: 'Projects' },
     { href: '/launches', label: 'Launches' },
-    { href: '/submit', label: 'Submit Your Project' },
     { href: '/roadmap', label: 'Roadmap' },
     { href: '/about', label: 'About' },
   ];
 
   return (
     <>
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          event={`${item.label.toLowerCase()}_nav_click`}
-          className={cn(
-            'text-muted-foreground p-2 hover:bg-neutral-900',
-            isActive(item.href) && 'text-primary bg-neutral-900',
-          )}
-        >
-          {item.label}
-        </Link>
+      {navItems.map((item, idx) => (
+        <React.Fragment key={item.href}>
+          <Link
+            href={item.href}
+            event={`${item.label.toLowerCase()}_nav_click`}
+            className={cn(
+              'text-muted-foreground p-2 hover:bg-neutral-900',
+              isActive(item.href) && 'text-primary bg-neutral-900',
+            )}
+          >
+            {item.label}
+          </Link>
+          {idx === 1 && <SubmissionDialog />}
+        </React.Fragment>
       ))}
     </>
   );
