@@ -36,16 +36,16 @@ export default function ProjectDescription({
 
   return (
     <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
-      <div className="grid gap-4 md:grid-cols-2 md:gap-4 md:gap-y-1">
+      <div className="grid gap-4 md:grid-cols-4 md:gap-4 md:gap-y-1">
         {/* Top row: Avatar + Title + Tags (left) */}
-        <div className="flex items-center gap-3 md:col-start-1 md:row-start-1">
+        <div className="flex items-center gap-3 md:col-start-1 md:row-start-3">
           <ProjectAvatar
             avatarImage={avatarImage}
             projectName={project.name}
             repoOwnerName={repo?.owner.name}
             className="h-12 w-12 flex-shrink-0 rounded-full md:h-16 md:w-16"
           />
-          <div className="min-w-0 flex-1">
+          <div className="w-full flex-1">
             <ProjectTitleAndTicks
               project={project}
               className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
@@ -55,7 +55,7 @@ export default function ProjectDescription({
         </div>
 
         {/* Top row: Claim section (right) */}
-        <div className="order-last md:order-none md:col-start-2 md:row-start-1 md:self-center md:justify-self-end">
+        <div className="order-last md:order-none md:col-start-1 md:row-start-1 md:self-center md:justify-self-end">
           <ClaimProjectSection
             isUnclaimed={isUnclaimed}
             user={user}
@@ -107,7 +107,7 @@ function ProjectAvatar({
 
 function StatusBadges({ project }: { project: any }) {
   return (
-    <div className="mt-1 flex flex-wrap gap-1 md:mt-0 md:gap-2">
+    <div className="mt-1 flex w-full flex-row flex-wrap gap-1 md:mt-0 md:gap-2">
       <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
         {project?.status?.replace('-', ' ')}
       </span>
@@ -125,7 +125,7 @@ function StatusBadges({ project }: { project: any }) {
 
 function ProjectTitleAndTicks({ project, className }: { project: any; className: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 md:gap-3">
+    <div className="flex items-center gap-2 md:gap-3">
       <h1 className={className}>{project?.name}</h1>
       <ProjectTicks project={project} />
     </div>
