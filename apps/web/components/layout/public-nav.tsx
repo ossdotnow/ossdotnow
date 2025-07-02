@@ -6,7 +6,7 @@ import { cn } from '@workspace/ui/lib/utils';
 import SubmissionDialog from '../submissions/submission-dialog';
 import React from 'react';
 
-export default function PublicNav() {
+export default function PublicNav({ className }: { className?: string }) {
   const pathname = usePathname();
 
   const isActive = (path: string) => {
