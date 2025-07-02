@@ -4,7 +4,7 @@ import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
-import { env } from '@workspace/env/server';
+import { env } from '@workspace/env/client';
 import { MobileNav } from './mobile-nav';
 import PublicNav from './public-nav';
 import { TempNav } from './temp-nav';
@@ -48,7 +48,7 @@ export function NavInner({ session }: { session: any }) {
           </Link>
         </div>
         <nav className="flex items-center gap-2">
-          {env.VERCEL_ENV === 'production' ? (
+          {env.NEXT_PUBLIC_ENV === 'production' ? (
             <TempNav className="hidden md:block" />
           ) : (
             <PublicNav className="hidden md:block" />
