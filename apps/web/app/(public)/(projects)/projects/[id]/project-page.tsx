@@ -11,8 +11,6 @@ import {
   GitFork,
   GitMerge,
   GitPullRequest,
-  Globe,
-  Linkedin,
   Star,
   Tag,
   Users,
@@ -20,21 +18,16 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
-import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
-import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
+import ProjectDescription from './_components/project-description';
 import { Separator } from '@workspace/ui/components/separator';
-import ProjectTicks from '@/components/project/project-ticks';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
-import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
-import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-import Image from 'next/image';
 
 // TODO: finish this file
 type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
@@ -118,184 +111,18 @@ export default function ProjectPage({ id }: { id: string }) {
     );
   }
 
-  console.dir(contributors, { depth: null });
-
   return (
     <div className="mt-4 md:mt-8">
-      <div className="mx-auto max-w-6xl px-4 py-4">
+      <div className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid gap-4 lg:grid-cols-3">
-          <div className="flex flex-col gap-4 lg:col-span-2">
-            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-                {(repo && repo?.owner && repo?.owner?.avatar_url) ||
-                (repo?.namespace && repo?.namespace?.avatar_url) ? (
-                  <Image
-                    src={
-                      repo?.owner?.avatar_url ||
-                      `https://${project.gitHost}.com${repo?.namespace?.avatar_url}`
-                    }
-                    alt={project.name ?? 'Project Logo'}
-                    width={256}
-                    height={256}
-                    className="h-12 w-12 rounded-full sm:h-16 sm:w-16"
-                  />
-                ) : null}
-                <div className="flex-1">
-                  <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-xl font-bold text-white sm:text-2xl">{project?.name}</h1>
-                      <ProjectTicks project={project} />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isOwner && (
-                        <LaunchProjectDialog projectId={project.id} projectName={project.name} />
-                      )}
-                      <Link
-                        href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
-                        target="_blank"
-                        event="project_page_github_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                      >
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600 sm:w-auto"
-                        >
-                          {project.gitHost === 'github' ? (
-                            <>
-                              <Icons.github className="h-4 w-4" />
-                              View on GitHub
-                            </>
-                          ) : (
-                            <>
-                              <Icons.gitlab className="h-4 w-4" />
-                              View on GitLab
-                            </>
-                          )}
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                  <Link
-                    href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
-                    target="_blank"
-                    event="project_page_github_link_clicked"
-                    eventObject={{ projectId: project.id }}
-                  >
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600 sm:w-auto"
-                    >
-                      {project.gitHost === 'github' ? (
-                        <>
-                          <Icons.github className="h-4 w-4 fill-white" />
-                          View on GitHub
-                        </>
-                      ) : (
-                        <>
-                          <Icons.gitlab className="h-4 w-4 fill-white" />
-                          View on GitLab
-                        </>
-                      )}
-                    </Button>
-                  </Link>
-                </div>
-
-                <p className="mb-4 leading-relaxed text-neutral-400">{project?.description}</p>
-
-                {isUnclaimed && user && (
-                  <div className="mb-4 rounded-md border border-neutral-700 bg-neutral-800/30 p-3 md:p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-neutral-200">Project Ownership</p>
-                        <p className="text-xs text-neutral-400">
-                          This project hasn&apos;t been claimed yet
-                        </p>
-                      </div>
-                      <div className="sm:flex-shrink-0">
-                        <ClaimProjectDialog
-                          projectId={project.id}
-                          provider={
-                            project.gitHost as (typeof projectProviderEnum.enumValues)[number]
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
-                    {project?.status?.replace('-', ' ')}
-                  </span>
-                  <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
-                    {project?.type?.replace('-', ' ')}
-                  </span>
-                  {project?.hasBeenAcquired && (
-                    <span className="rounded-md bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400">
-                      Acquired
-                    </span>
-                  )}
-                </div>
-
-                {project?.socialLinks && (
-                  <div className="flex flex-wrap gap-3 md:gap-4">
-                    {project.socialLinks.website && (
-                      <Link
-                        href={project.socialLinks.website}
-                        target="_blank"
-                        event="project_page_website_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Globe className="h-4 w-4" />
-                        <span className="text-sm">Website</span>
-                      </Link>
-                    )}
-                    {project.socialLinks.discord && (
-                      <Link
-                        href={project.socialLinks.discord}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_discord_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Icons.discord className="h-4 w-4" />
-                        <span className="text-sm">Discord</span>
-                      </Link>
-                    )}
-                    {project.socialLinks.twitter && (
-                      <Link
-                        href={project.socialLinks.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_twitter_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Icons.twitter className="h-4 w-4" />
-                        <span className="text-sm">Twitter</span>
-                      </Link>
-                    )}
-                    {project.socialLinks.linkedin && (
-                      <Link
-                        href={project.socialLinks.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        event="project_page_linkedin_link_clicked"
-                        eventObject={{ projectId: project.id }}
-                        className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
-                      >
-                        <Linkedin className="h-4 w-4" />
-                        <span className="text-sm">LinkedIn</span>
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+          <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">
+            <ProjectDescription
+              isOwner={isOwner}
+              isUnclaimed={isUnclaimed}
+              project={project}
+              repo={repo}
+              user={user}
+            />
           </div>
 
           {(project?.isLookingForContributors ||
