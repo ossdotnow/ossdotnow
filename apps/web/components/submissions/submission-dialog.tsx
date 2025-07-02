@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Dialog,
@@ -8,24 +8,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
+import { track as trackVercel } from '@vercel/analytics/react';
+import { Button } from '@workspace/ui/components/button';
+import { track as trackDatabuddy } from '@databuddy/sdk';
 import SubmissionForm from './submission-form';
-import { useState } from 'react';
 
 export default function SubmissionDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button
-          className="text-muted-foreground p-2 hover:bg-neutral-900 cursor-pointer"
-          type="button"
+        <Button
+          onClick={() => {
+            trackDatabuddy('submit_project_nav_click');
+            trackVercel('submit_project_nav_click');
+          }}
+          className="ml-2 cursor-pointer rounded-none p-2 text-sm"
         >
           Submit Project
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto rounded-none">
         <DialogHeader>
-          <DialogTitle>Submit A Project</DialogTitle>
-          <DialogDescription>Submit an open source project for review and listing.</DialogDescription>
+          <DialogTitle>Submit Project</DialogTitle>
+          <DialogDescription>Submit an open source project.</DialogDescription>
         </DialogHeader>
         <SubmissionForm />
       </DialogContent>

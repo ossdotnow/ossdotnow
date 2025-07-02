@@ -1,10 +1,12 @@
 'use client';
 
+import SubmissionDialog from '../submissions/submission-dialog';
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { env } from '@workspace/env/client';
+import { navItems } from '@/lib/nav-items';
 import { MobileNav } from './mobile-nav';
 import PublicNav from './public-nav';
 import { TempNav } from './temp-nav';
@@ -32,16 +34,7 @@ export function NavInner({ session }: { session: any }) {
         )}
       >
         <div className="flex items-center gap-2">
-          <MobileNav
-            items={[
-              { href: '/', label: 'Home' },
-              { href: '/roadmap', label: 'Roadmap' },
-              { href: '/login', label: 'Login' },
-            ]}
-            className="md:hidden"
-            open={open}
-            setOpen={setOpen}
-          />
+          <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
           <Link href="/" className="flex items-center gap-2" event="home_nav_click">
             <Icons.logo className="size-6 sm:size-7" />
             <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
@@ -53,11 +46,13 @@ export function NavInner({ session }: { session: any }) {
           ) : (
             <PublicNav className="hidden md:block" />
           )}
+
+          <SubmissionDialog />
           {session?.user.id ? (
             <UserNav />
           ) : (
             <Button
-              className="ml-4 rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
+              className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
               asChild
             >
               <Link href="/login" event="login_nav_click">
