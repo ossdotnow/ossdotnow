@@ -288,20 +288,6 @@ export default function SubmissionForm({
               return;
             }
 
-            if (!earlySubmission) {
-              const ownerCheck = await queryClient.fetchQuery(
-                trpc.submission.checkUserOwnsProject.queryOptions({ gitRepoUrl: repoUrl })
-              );
-              if (!ownerCheck.isOwner) {
-                setRepoValidation({
-                  isValidating: false,
-                  isValid: false,
-                  message: ownerCheck.error || 'You are not the owner of this repository.',
-                });
-                return;
-              }
-            }
-
             setRepoValidation({
               isValidating: false,
               isValid: true,

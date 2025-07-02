@@ -70,24 +70,17 @@ async function checkUserOwnsProject(ctx: any, gitRepoUrl: string) {
       columns: { id: true, username: true },
     });
     if (userResult) {
-      if (!ctx.user?.id || ctx.user.id !== userResult.id) {
-        return {
-          isOwner: false,
-          error: `You must be the owner (${owner}) of the repository to submit this project.`,
-        };
-      }
       ownerId = userResult.id;
       return { isOwner: true, ownerId };
     } else {
       return {
         isOwner: false,
-        error: `No user found with username "${owner}". Please sign up from this GitHub/GitLab account first.`,
       };
     }
   } else {
     return {
       isOwner: false,
-      error: 'Could not get repository owner.',
+      error: 'Invalid format. Use: username/repository',
     };
   }
 }
@@ -128,10 +121,10 @@ export const submissionRouter = createTRPCRouter({
     }
 
     const ownerCheck = await checkUserOwnsProject(ctx, input.gitRepoUrl);
-    if (!ownerCheck.isOwner) {
+    if (ownerCheck.error) {
       throw new TRPCError({
         code: 'FORBIDDEN',
-        message: ownerCheck.error || 'You are not the owner of this repository.',
+        message: ownerCheck.error,
       });
     }
     const ownerId = ownerCheck.ownerId;
