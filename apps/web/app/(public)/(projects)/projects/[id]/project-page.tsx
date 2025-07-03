@@ -112,7 +112,7 @@ export default function ProjectPage({ id }: { id: string }) {
   }
 
   return (
-    <div className="mt-4 md:mt-8">
+    <div className="mt-4 px-6 md:mt-8">
       <div className="mx-auto max-w-[1080px] py-8">
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">

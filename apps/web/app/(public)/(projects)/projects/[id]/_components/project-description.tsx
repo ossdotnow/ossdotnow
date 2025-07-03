@@ -36,31 +36,29 @@ export default function ProjectDescription({
 
   return (
     <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
-      <div className="grid gap-4 md:grid-cols-4 md:gap-4 md:gap-y-1">
+      <div className="flex flex-col gap-4">
         {/* Top row: Avatar + Title + Tags (left) */}
-        <div className="flex items-center gap-3 md:col-start-1 md:row-start-3">
-          <ProjectAvatar
-            avatarImage={avatarImage}
-            projectName={project.name}
-            repoOwnerName={repo?.owner.name}
-            className="h-12 w-12 flex-shrink-0 rounded-full md:h-16 md:w-16"
-          />
-          <div className="w-full flex-1">
-            <ProjectTitleAndTicks
-              project={project}
-              className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
+        <div className="flex flex-col justify-between md:flex-row">
+          <div className="flex items-center gap-3">
+            <ProjectAvatar
+              avatarImage={avatarImage}
+              projectName={project.name}
+              repoOwnerName={repo?.owner.name}
+              className="h-12 w-12 flex-shrink-0 rounded-full md:h-16 md:w-16"
             />
-            <StatusBadges project={project} />
+            <div className="w-full flex-1">
+              <ProjectTitleAndTicks
+                project={project}
+                className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
+              />
+              <StatusBadges project={project} />
+            </div>
           </div>
-        </div>
-
-        {/* Top row: Claim section (right) */}
-        <div className="order-last md:order-none md:col-start-1 md:row-start-1 md:self-center md:justify-self-end">
           <ClaimProjectSection
             isUnclaimed={isUnclaimed}
             user={user}
             project={project}
-            className="rounded-sm border border-neutral-700 bg-neutral-800/30 p-2"
+            className="mt-4 w-full rounded-none border border-neutral-700 bg-neutral-800/30 p-2 md:mt-0 md:w-1/4"
           />
         </div>
 
@@ -69,16 +67,15 @@ export default function ProjectDescription({
           <SocialLinks project={project} />
           <ProjectDescriptionText project={project} />
         </div>
-
-        {/* Action buttons (full width) */}
-        <div className="w-full md:col-start-2 md:row-start-3 md:w-auto md:justify-self-end">
-          <ActionButtons
-            isOwner={isOwner}
-            project={project}
-            repo={repo}
-            className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center md:w-auto"
-          />
-        </div>
+      </div>
+      {/* Action buttons (full width) */}
+      <div className="flex w-full justify-end">
+        <ActionButtons
+          isOwner={isOwner}
+          project={project}
+          repo={repo}
+          className="flex flex-row items-stretch gap-2"
+        />
       </div>
     </div>
   );
@@ -107,7 +104,7 @@ function ProjectAvatar({
 
 function StatusBadges({ project }: { project: any }) {
   return (
-    <div className="mt-1 flex w-full flex-row flex-wrap gap-1 md:mt-0 md:gap-2">
+    <div className="mt-2 flex w-full flex-row flex-wrap gap-1 md:gap-2">
       <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
         {project?.status?.replace('-', ' ')}
       </span>
@@ -195,7 +192,7 @@ function SocialLinks({ project }: { project: any }) {
 function ProjectDescriptionText({ project }: { project: any }) {
   // TODO; Handle long descriptions properly, either by not allowing them or truncating with a "read more" option
   return (
-    <p className="line-clamp-3 leading-relaxed break-words text-neutral-400 md:mb-6">
+    <p className="line-clamp-3 text-sm leading-relaxed break-words text-neutral-400 md:mb-6 md:text-base">
       {project?.description}
     </p>
   );
