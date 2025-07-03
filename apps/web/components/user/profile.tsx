@@ -188,10 +188,16 @@ export default function ProfilePage({ id }: { id: string }) {
 
             <div className="lg:col-span-8">
               <Tabs defaultValue="projects" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 border-neutral-800 bg-neutral-900/50">
-                  <TabsTrigger value="projects">Projects</TabsTrigger>
-                  <TabsTrigger value="contributions">Contributions</TabsTrigger>
-                  <TabsTrigger value="collections">Collections</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 rounded-none border-neutral-800 bg-neutral-900/50">
+                  <TabsTrigger value="projects" className="rounded-none">
+                    Projects
+                  </TabsTrigger>
+                  <TabsTrigger value="contributions" className="rounded-none">
+                    Contributions
+                  </TabsTrigger>
+                  <TabsTrigger value="collections" className="rounded-none">
+                    Collections
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="projects" className="mt-6">

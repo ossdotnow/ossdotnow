@@ -291,16 +291,9 @@ export default function LaunchesPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold">Product Launches</h1>
-        <p className="text-neutral-400">
-          Discover and support the latest open source projects launching on OSS Now
-        </p>
-      </div>
-
+    <div className="mx-6 max-w-[1080px] py-8 md:mx-auto">
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="mb-6 grid w-full grid-cols-2">
+        <TabsList className="mb-6 grid w-full grid-cols-2 rounded-none border border-t-0 border-[#404040] bg-[#262626]">
           <TabsTrigger value="today" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Today
@@ -324,7 +317,7 @@ export default function LaunchesPage() {
               ))}
             </>
           ) : (
-            <Card className="p-12 text-center">
+            <Card className="rounded-none p-12 text-center">
               <p className="text-neutral-400">No launches today yet.</p>
               <p className="mt-2 text-sm text-neutral-500">Be the first to launch your project!</p>
             </Card>
@@ -344,7 +337,7 @@ export default function LaunchesPage() {
               ))}
             </>
           ) : (
-            <Card className="p-12 text-center">
+            <Card className="rounded-none p-12 text-center">
               <p className="text-neutral-400">No launches yesterday.</p>
             </Card>
           )}
