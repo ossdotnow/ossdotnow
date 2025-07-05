@@ -14,6 +14,8 @@ export const projectApprovalStatusEnum = pgEnum('project_approval_status', [
 export const projectStatusEnum = pgEnum('project_status', [
   'active',
   'inactive',
+  'archived',
+  'featured',
   'early-stage',
   'beta',
   'production-ready',
