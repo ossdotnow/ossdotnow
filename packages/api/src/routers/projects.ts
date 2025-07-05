@@ -11,6 +11,14 @@ import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project);
 
+const updateProjectInput = createInsertSchema(project)
+  .extend({
+    // Override enum validations to accept string values for updates
+    status: z.string().min(1, 'Project status is required'),
+    type: z.string().min(1, 'Project type is required'),
+    tags: z.array(z.string()).default([]),
+  });
+
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 interface VerifyGitHubOwnershipContext {
@@ -153,13 +161,18 @@ export const projectsRouter = createTRPCRouter({
       })
       .returning();
   }),
-  updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
+  updateProject: protectedProcedure.input(updateProjectInput).mutation(async ({ ctx, input }) => {
     if (!input.id) throw new Error('Project ID is required for update');
     if (!ctx.session.userId) throw new Error('User not authenticated');
 
     return ctx.db
       .update(project)
-      .set(input)
+      .set({
+        ...input,
+        status: input.status as any,
+        type: input.type as any,
+        tags: input.tags as any,
+      })
       .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
       .returning();
   }),

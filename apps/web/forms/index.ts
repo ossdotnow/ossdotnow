@@ -54,3 +54,21 @@ export const submisionForm = createInsertSchema(project).extend({
   type: z.string().min(1, 'Project type is required').optional(),
   tags: z.array(z.string()).default([]).optional(),
 });
+
+export const editProjectForm = createInsertSchema(project).extend({
+  name: z.string().min(1, 'Project name is required'),
+  description: z.string().min(1, 'Project description is required'),
+  gitRepoUrl: z.string().min(1, 'Repository URL is required'),
+  gitHost: z.string().optional(), // Optional since it shouldn't be editable
+  socialLinks: z
+    .object({
+      twitter: z.url('Invalid URL format').optional().or(z.literal('')),
+      discord: z.url('Invalid URL format').optional().or(z.literal('')),
+      linkedin: z.url('Invalid URL format').optional().or(z.literal('')),
+      website: z.url('Invalid URL format').optional().or(z.literal('')),
+    })
+    .optional(),
+  status: z.string().min(1, 'Project status is required').optional(),
+  type: z.string().min(1, 'Project type is required').optional(),
+  tags: z.array(z.string()).default([]).optional(),
+});

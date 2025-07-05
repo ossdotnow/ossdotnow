@@ -24,6 +24,7 @@ import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import Image from 'next/image';
+import EditProjectButton from '@/components/project/edit-project-button';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
@@ -298,14 +299,17 @@ export default function ProfilePage({ id }: { id: string }) {
                                       <span>{project.forks.toLocaleString()}</span>
                                     </div>
                                   </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                    className="transition-colors duration-150 hover:text-neutral-200"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex items-center space-x-2">
+                                    <EditProjectButton project={project} />
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => window.open(project.gitRepoUrl, '_blank')}
+                                      className="transition-colors duration-150 hover:text-neutral-200"
+                                    >
+                                      <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </CardContent>
                             </Card>
@@ -393,6 +397,7 @@ export default function ProfilePage({ id }: { id: string }) {
                                     >
                                       <Heart className="h-4 w-4" />
                                     </Button>
+                                    <EditProjectButton project={project} />
                                     <Button
                                       variant="ghost"
                                       size="sm"

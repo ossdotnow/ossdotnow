@@ -8,6 +8,7 @@ import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { Globe, Linkedin } from 'lucide-react';
 import Image from 'next/image';
+import EditProjectButton from '@/components/project/edit-project-button';
 
 export default function ProjectDescription({
   repo,
@@ -241,6 +242,7 @@ function ActionButtons({
   return (
     <div className={className}>
       {isOwner && <LaunchProjectDialog projectId={project.id} projectName={project.name} />}
+      {isOwner && <EditProjectButton project={project} />}
       <Link
         href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
         target="_blank"
