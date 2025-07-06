@@ -41,13 +41,20 @@ const updateProjectStatusSchema = insertProjectStatusSchema
 export const categoriesRouter = createTRPCRouter({
   // Tags CRUD
   getTags: publicProcedure
-    .input(z.object({ activeOnly: z.boolean().default(false) }).optional())
+    .input(
+      z
+        .object({
+          activeOnly: z.boolean().default(true),
+        })
+        .optional()
+        .default({ activeOnly: true }),
+    )
     .query(async ({ ctx, input }) => {
       const whereClause = input?.activeOnly ? eq(categoryTags.isActive, true) : undefined;
 
       return ctx.db.query.categoryTags.findMany({
         where: whereClause,
-        orderBy: [asc(categoryTags.sortOrder), asc(categoryTags.name)],
+        orderBy: [asc(categoryTags.sortOrder), asc(categoryTags.displayName)],
       });
     }),
 
@@ -88,13 +95,20 @@ export const categoriesRouter = createTRPCRouter({
 
   // Project Types CRUD
   getProjectTypes: publicProcedure
-    .input(z.object({ activeOnly: z.boolean().default(false) }).optional())
+    .input(
+      z
+        .object({
+          activeOnly: z.boolean().default(true),
+        })
+        .optional()
+        .default({ activeOnly: true }),
+    )
     .query(async ({ ctx, input }) => {
       const whereClause = input?.activeOnly ? eq(categoryProjectTypes.isActive, true) : undefined;
 
       return ctx.db.query.categoryProjectTypes.findMany({
         where: whereClause,
-        orderBy: [asc(categoryProjectTypes.sortOrder), asc(categoryProjectTypes.name)],
+        orderBy: [asc(categoryProjectTypes.sortOrder), asc(categoryProjectTypes.displayName)],
       });
     }),
 
@@ -146,7 +160,14 @@ export const categoriesRouter = createTRPCRouter({
 
   // Project Statuses CRUD
   getProjectStatuses: publicProcedure
-    .input(z.object({ activeOnly: z.boolean().default(false) }).optional())
+    .input(
+      z
+        .object({
+          activeOnly: z.boolean().default(true),
+        })
+        .optional()
+        .default({ activeOnly: true }),
+    )
     .query(async ({ ctx, input }) => {
       const whereClause = input?.activeOnly
         ? eq(categoryProjectStatuses.isActive, true)
@@ -154,7 +175,7 @@ export const categoriesRouter = createTRPCRouter({
 
       return ctx.db.query.categoryProjectStatuses.findMany({
         where: whereClause,
-        orderBy: [asc(categoryProjectStatuses.sortOrder), asc(categoryProjectStatuses.name)],
+        orderBy: [asc(categoryProjectStatuses.sortOrder), asc(categoryProjectStatuses.displayName)],
       });
     }),
 
@@ -240,4 +261,26 @@ export const categoriesRouter = createTRPCRouter({
       await Promise.all(updates);
       return { success: true };
     }),
+
+  getProjectStatus: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.query.categoryProjectStatuses.findFirst({
+        where: eq(categoryProjectStatuses.id, input.id),
+      });
+    }),
+
+  getProjectType: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.db.query.categoryProjectTypes.findFirst({
+        where: eq(categoryProjectTypes.id, input.id),
+      });
+    }),
+
+  getTag: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    return ctx.db.query.categoryTags.findFirst({
+      where: eq(categoryTags.id, input.id),
+    });
+  }),
 });

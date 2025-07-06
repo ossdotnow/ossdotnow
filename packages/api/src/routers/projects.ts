@@ -1,15 +1,26 @@
+import { categoryProjectTypes, categoryProjectStatuses, categoryTags } from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { account, project, projectProviderEnum } from '@workspace/db/schema';
+import { account, project, projectTagRelations } from '@workspace/db/schema';
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
 import { getActiveDriver } from '../driver/utils';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { createInsertSchema } from 'drizzle-zod';
 import type { createTRPCContext } from '../trpc';
 import type { Context } from '../driver/utils';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
 
-const createProjectInput = createInsertSchema(project);
+const createProjectInput = createInsertSchema(project)
+  .omit({
+    statusId: true,
+    typeId: true,
+  })
+  .extend({
+    status: z.string().min(1, 'Project status is required'),
+    type: z.string().min(1, 'Project type is required'),
+    tags: z.array(z.string()).default([]),
+  });
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
@@ -41,6 +52,56 @@ export interface DebugPermissionsResult {
   orgMembershipError?: string;
 }
 
+// Helper functions for resolving names to IDs
+async function resolveStatusId(db: any, statusName: string) {
+  const status = await db.query.categoryProjectStatuses.findFirst({
+    where: eq(categoryProjectStatuses.name, statusName),
+    columns: { id: true },
+  });
+  if (!status) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid status: ${statusName}`,
+    });
+  }
+  return status.id;
+}
+
+async function resolveTypeId(db: any, typeName: string) {
+  const type = await db.query.categoryProjectTypes.findFirst({
+    where: eq(categoryProjectTypes.name, typeName),
+    columns: { id: true },
+  });
+  if (!type) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid type: ${typeName}`,
+    });
+  }
+  return type.id;
+}
+
+async function resolveTagIds(db: any, tagNames: string[]) {
+  if (tagNames.length === 0) return [];
+
+  const tags = await db.query.categoryTags.findMany({
+    where: inArray(categoryTags.name, tagNames),
+    columns: { id: true, name: true },
+  });
+
+  const foundTagNames = tags.map((tag: any) => tag.name);
+  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
+
+  if (invalidTags.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid tags: ${invalidTags.join(', ')}`,
+    });
+  }
+
+  return tags.map((tag: any) => tag.id);
+}
+
 export const projectsRouter = createTRPCRouter({
   getProjects: publicProcedure
     .input(
@@ -67,12 +128,21 @@ export const projectsRouter = createTRPCRouter({
         .where(whereClause)
         .limit(1);
 
-      // Get paginated results
+      // Get paginated results with relations
       const projects = await ctx.db.query.project.findMany({
         where: whereClause,
         orderBy: [desc(project.isPinned), asc(project.name)],
         limit: pageSize,
         offset,
+        with: {
+          status: true,
+          type: true,
+          tagRelations: {
+            with: {
+              tag: true,
+            },
+          },
+        },
       });
 
       const totalCount = totalCountResult?.totalCount ?? 0;
@@ -119,6 +189,15 @@ export const projectsRouter = createTRPCRouter({
         orderBy: [asc(project.name)],
         limit: pageSize,
         offset,
+        with: {
+          status: true,
+          type: true,
+          tagRelations: {
+            with: {
+              tag: true,
+            },
+          },
+        },
       });
 
       const totalCount = totalCountResult?.totalCount ?? 0;
@@ -142,26 +221,81 @@ export const projectsRouter = createTRPCRouter({
   getProject: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
     return ctx.db.query.project.findFirst({
       where: eq(project.id, input.id),
+      with: {
+        status: true,
+        type: true,
+        tagRelations: {
+          with: {
+            tag: true,
+          },
+        },
+      },
     });
   }),
   addProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    return ctx.db
+    // Resolve string values to database IDs
+    const statusId = await resolveStatusId(ctx.db, input.status);
+    const typeId = await resolveTypeId(ctx.db, input.type);
+    const tagIds = await resolveTagIds(ctx.db, input.tags);
+
+    // Create the project
+    const [newProject] = await ctx.db
       .insert(project)
       .values({
         ...input,
         ownerId: ctx.session.userId,
+        statusId,
+        typeId,
       })
       .returning();
+
+    // Create tag relationships
+    if (tagIds.length > 0 && newProject) {
+      await ctx.db.insert(projectTagRelations).values(
+        tagIds.map((tagId: any) => ({
+          projectId: newProject.id,
+          tagId,
+        })),
+      );
+    }
+
+    return newProject;
   }),
   updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
     if (!input.id) throw new Error('Project ID is required for update');
     if (!ctx.session.userId) throw new Error('User not authenticated');
 
-    return ctx.db
+    // Resolve string values to database IDs
+    const statusId = await resolveStatusId(ctx.db, input.status);
+    const typeId = await resolveTypeId(ctx.db, input.type);
+    const tagIds = await resolveTagIds(ctx.db, input.tags);
+
+    // Update the project
+    const [updatedProject] = await ctx.db
       .update(project)
-      .set(input)
+      .set({
+        ...input,
+        statusId,
+        typeId,
+      })
       .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
       .returning();
+
+    // Update tag relationships
+    // First, delete existing relationships
+    await ctx.db.delete(projectTagRelations).where(eq(projectTagRelations.projectId, input.id));
+
+    // Then, create new relationships
+    if (tagIds.length > 0) {
+      await ctx.db.insert(projectTagRelations).values(
+        tagIds.map((tagId: any) => ({
+          projectId: input.id,
+          tagId,
+        })),
+      );
+    }
+
+    return updatedProject;
   }),
   acceptProject: adminProcedure
     .input(z.object({ projectId: z.string() }))

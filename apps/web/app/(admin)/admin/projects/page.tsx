@@ -1,14 +1,6 @@
 'use client';
 
 import {
-  project,
-  projectApprovalStatusEnum,
-  projectProviderEnum,
-  projectStatusEnum,
-  projectTypeEnum,
-  tagsEnum,
-} from '@workspace/db/schema';
-import {
   Table,
   TableBody,
   TableCell,
@@ -30,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card';
+import { project, projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Edit, Eye, Pin, PinOff, XCircle } from 'lucide-react';
@@ -42,7 +35,13 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 
-type Project = typeof project.$inferSelect;
+type Project = typeof project.$inferSelect & {
+  status: { id: string; name: string; displayName: string } | null;
+  type: { id: string; name: string; displayName: string } | null;
+  tagRelations: Array<{
+    tag: { id: string; name: string; displayName: string } | null;
+  }>;
+};
 
 export default function AdminProjectsDashboard() {
   const trpc = useTRPC();
@@ -62,12 +61,21 @@ export default function AdminProjectsDashboard() {
     isError,
   } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus: 'all' }));
 
+  // Fetch categories for filters
+  const { data: projectStatuses } = useQuery(
+    trpc.categories.getProjectStatuses.queryOptions({ activeOnly: true }),
+  );
+  const { data: projectTypes } = useQuery(
+    trpc.categories.getProjectTypes.queryOptions({ activeOnly: true }),
+  );
+  const { data: tags } = useQuery(trpc.categories.getTags.queryOptions({ activeOnly: true }));
+
   const { mutate: acceptProject } = useMutation({
     ...trpc.projects.acceptProject.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+          approvalStatus: approvalStatus as any,
         }),
       });
     },
@@ -78,7 +86,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+          approvalStatus: approvalStatus as any,
         }),
       });
     },
@@ -89,7 +97,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+          approvalStatus: approvalStatus as any,
         }),
       });
     },
@@ -100,7 +108,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as Project['approvalStatus'] | 'all',
+          approvalStatus: approvalStatus as any,
         }),
       });
     },
@@ -149,10 +157,14 @@ export default function AdminProjectsDashboard() {
         (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
       );
     })
-    .filter((project) => statusFilter === 'all' || project.status === statusFilter)
-    .filter((project) => typeFilter === 'all' || project.type === typeFilter)
+    .filter((project: Project) => statusFilter === 'all' || project.status?.name === statusFilter)
+    .filter((project: Project) => typeFilter === 'all' || project.type?.name === typeFilter)
     .filter((project) => providerFilter === 'all' || project.gitHost === providerFilter)
-    .filter((project) => tagFilter === 'all' || project.tags?.includes(tagFilter as any));
+    .filter(
+      (project: Project) =>
+        tagFilter === 'all' ||
+        project.tagRelations.some((relation) => relation.tag?.name === tagFilter),
+    );
 
   return (
     <div className="space-y-6">
@@ -207,9 +219,9 @@ export default function AdminProjectsDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Statuses</SelectItem>
-                        {projectStatusEnum.enumValues.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
+                        {projectStatuses?.map((status) => (
+                          <SelectItem key={status.id} value={status.name}>
+                            {status.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -233,9 +245,9 @@ export default function AdminProjectsDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Types</SelectItem>
-                        {projectTypeEnum.enumValues.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
+                        {projectTypes?.map((type) => (
+                          <SelectItem key={type.id} value={type.name}>
+                            {type.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -246,9 +258,9 @@ export default function AdminProjectsDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Tags</SelectItem>
-                        {tagsEnum.enumValues.map((tag) => (
-                          <SelectItem key={tag} value={tag}>
-                            {tag}
+                        {tags?.map((tag) => (
+                          <SelectItem key={tag.id} value={tag.name}>
+                            {tag.displayName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -276,9 +288,7 @@ export default function AdminProjectsDashboard() {
 
                 <ProjectsTable
                   projects={filteredProjects.filter(
-                    (project) =>
-                      project.approvalStatus === (tab as Project['approvalStatus']) ||
-                      tab === 'all',
+                    (project) => project.approvalStatus === (tab as any) || tab === 'all',
                   )}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
@@ -318,6 +328,7 @@ function ProjectsTable({
           <TableHead>Status</TableHead>
           <TableHead>Approval</TableHead>
           <TableHead>Type</TableHead>
+          <TableHead>Tags</TableHead>
           <TableHead>Pinned</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -332,7 +343,7 @@ function ProjectsTable({
             <TableCell>{project.gitRepoUrl || 'N/A'}</TableCell>
             <TableCell>{project.gitHost || 'N/A'}</TableCell>
             <TableCell>
-              <p>{project.status}</p>
+              <p>{project.status?.displayName || 'N/A'}</p>
             </TableCell>
             <TableCell>
               <Badge
@@ -343,77 +354,64 @@ function ProjectsTable({
                       ? 'destructive'
                       : 'outline'
                 }
-                className={
-                  project.approvalStatus === 'approved'
-                    ? 'bg-green-500'
-                    : project.approvalStatus === 'pending'
-                      ? 'bg-orange-500'
-                      : ''
-                }
               >
                 {project.approvalStatus}
               </Badge>
             </TableCell>
-            <TableCell>{project.type}</TableCell>
             <TableCell>
-              <Badge variant={project.isPinned ? 'default' : 'outline'}>
-                {project.isPinned ? 'Pinned' : 'Not Pinned'}
-              </Badge>
+              <p>{project.type?.displayName || 'N/A'}</p>
+            </TableCell>
+            <TableCell>
+              <div className="flex flex-wrap gap-1">
+                {project.tagRelations.slice(0, 3).map((relation, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {relation.tag?.displayName}
+                  </Badge>
+                ))}
+                {project.tagRelations.length > 3 && (
+                  <Badge variant="outline" className="text-xs">
+                    +{project.tagRelations.length - 3} more
+                  </Badge>
+                )}
+              </div>
+            </TableCell>
+            <TableCell>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (project.isPinned) {
+                    handleUnpin(project.id);
+                  } else {
+                    handlePin(project.id);
+                  }
+                }}
+              >
+                {project.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+              </Button>
             </TableCell>
             <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                {project.isPinned ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-orange-600"
-                    onClick={() => handleUnpin(project.id)}
-                    title="Unpin project"
-                  >
-                    <PinOff className="h-4 w-4" />
+              <div className="flex items-center justify-end space-x-2">
+                <Link href={`/projects/${project.id}`}>
+                  <Button size="sm" variant="ghost">
+                    <Eye className="h-4 w-4" />
                   </Button>
-                ) : (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-blue-600"
-                    onClick={() => handlePin(project.id)}
-                    title="Pin project"
-                  >
-                    <Pin className="h-4 w-4" />
+                </Link>
+                <Link href={`/admin/projects/${project.id}/edit`}>
+                  <Button size="sm" variant="ghost">
+                    <Edit className="h-4 w-4" />
                   </Button>
-                )}
+                </Link>
                 {project.approvalStatus === 'pending' && (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-green-600"
-                      onClick={() => handleAccept(project.id)}
-                    >
-                      <CheckCircle className="h-4 w-4" />
+                    <Button size="sm" variant="ghost" onClick={() => handleAccept(project.id)}>
+                      <CheckCircle className="h-4 w-4 text-green-600" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600"
-                      onClick={() => handleReject(project.id)}
-                    >
-                      <XCircle className="h-4 w-4" />
+                    <Button size="sm" variant="ghost" onClick={() => handleReject(project.id)}>
+                      <XCircle className="h-4 w-4 text-red-600" />
                     </Button>
                   </>
                 )}
-                {project.approvalStatus === 'approved' && (
-                  <Button variant="secondary" size="sm" asChild>
-                    <Link target="_blank" href={`/projects/${project.id}`}>
-                      <Eye className="mr-1 h-4 w-4" />
-                      View
-                    </Link>
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4" />
-                </Button>
               </div>
             </TableCell>
           </TableRow>

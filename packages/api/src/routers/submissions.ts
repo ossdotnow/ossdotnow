@@ -1,17 +1,20 @@
+import { categoryProjectTypes, categoryProjectStatuses, categoryTags } from '@workspace/db/schema';
+import { project, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
-import { project } from '@workspace/db/schema';
+import { count, eq, inArray } from 'drizzle-orm';
+import { user } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
-import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
-import { user } from '@workspace/db/schema';
 
 const createProjectInput = createInsertSchema(project)
   .omit({
     id: true,
     ownerId: true,
+    statusId: true,
+    typeId: true,
     createdAt: true,
     updatedAt: true,
     deletedAt: true,
@@ -28,6 +31,56 @@ const APPROVAL_STATUS = {
   PENDING: 'pending',
   REJECTED: 'rejected',
 } as const;
+
+// Helper functions for resolving names to IDs
+async function resolveStatusId(db: any, statusName: string) {
+  const status = await db.query.categoryProjectStatuses.findFirst({
+    where: eq(categoryProjectStatuses.name, statusName),
+    columns: { id: true },
+  });
+  if (!status) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid status: ${statusName}`,
+    });
+  }
+  return status.id;
+}
+
+async function resolveTypeId(db: any, typeName: string) {
+  const type = await db.query.categoryProjectTypes.findFirst({
+    where: eq(categoryProjectTypes.name, typeName),
+    columns: { id: true },
+  });
+  if (!type) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid type: ${typeName}`,
+    });
+  }
+  return type.id;
+}
+
+async function resolveTagIds(db: any, tagNames: string[]) {
+  if (tagNames.length === 0) return [];
+
+  const tags = await db.query.categoryTags.findMany({
+    where: inArray(categoryTags.name, tagNames),
+    columns: { id: true, name: true },
+  });
+
+  const foundTagNames = tags.map((tag: any) => tag.name);
+  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
+
+  if (invalidTags.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid tags: ${invalidTags.join(', ')}`,
+    });
+  }
+
+  return tags.map((tag: any) => tag.id);
+}
 
 async function checkProjectDuplicate(db: any, gitRepoUrl: string) {
   const existingProject = await db.query.project.findFirst({
@@ -129,14 +182,32 @@ export const submissionRouter = createTRPCRouter({
     }
     const ownerId = ownerCheck.ownerId;
 
-    await ctx.db.insert(project).values({
-      ...input,
-      ownerId,
-      approvalStatus: APPROVAL_STATUS.PENDING,
-      status: input.status as any,
-      type: input.type as any,
-      tags: input.tags as any,
-    });
+    // Resolve string values to database IDs
+    const statusId = await resolveStatusId(ctx.db, input.status);
+    const typeId = await resolveTypeId(ctx.db, input.type);
+    const tagIds = await resolveTagIds(ctx.db, input.tags);
+
+    // Create the project
+    const [newProject] = await ctx.db
+      .insert(project)
+      .values({
+        ...input,
+        ownerId,
+        approvalStatus: APPROVAL_STATUS.PENDING,
+        statusId,
+        typeId,
+      })
+      .returning();
+
+    // Create tag relationships
+    if (tagIds.length > 0 && newProject) {
+      await ctx.db.insert(projectTagRelations).values(
+        tagIds.map((tagId: any) => ({
+          projectId: newProject.id,
+          tagId,
+        })),
+      );
+    }
 
     return {
       count: count(),

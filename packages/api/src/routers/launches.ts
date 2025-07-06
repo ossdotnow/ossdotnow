@@ -1,4 +1,17 @@
-import { project, projectLaunch, projectVote, projectComment, projectReport, user } from '@workspace/db/schema';
+import {
+  categoryProjectTypes,
+  categoryProjectStatuses,
+  categoryTags,
+  projectTagRelations,
+} from '@workspace/db/schema';
+import {
+  project,
+  projectLaunch,
+  projectVote,
+  projectComment,
+  projectReport,
+  user,
+} from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
 import { eq, desc, and, sql, gte, lt, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
@@ -18,8 +31,7 @@ export const launchesRouter = createTRPCRouter({
           description: project.description,
           logoUrl: project.logoUrl,
           gitRepoUrl: project.gitRepoUrl,
-          type: project.type,
-          tags: project.tags,
+          type: categoryProjectTypes.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -33,6 +45,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
@@ -44,6 +57,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.detailedDescription,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectTypes.displayName,
           user.id,
           user.name,
           user.username,
@@ -59,6 +73,16 @@ export const launchesRouter = createTRPCRouter({
 
       const launchData = launch[0];
 
+      // Get tags separately since it's a many-to-many relationship
+      const tags = await ctx.db
+        .select({
+          name: categoryTags.name,
+          displayName: categoryTags.displayName,
+        })
+        .from(projectTagRelations)
+        .innerJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+        .where(eq(projectTagRelations.projectId, input.projectId));
+
       if (ctx.session?.userId) {
         const userVote = await ctx.db.query.projectVote.findFirst({
           where: and(
@@ -69,12 +93,14 @@ export const launchesRouter = createTRPCRouter({
 
         return {
           ...launchData,
+          tags: tags.map((tag) => tag.displayName || tag.name),
           hasVoted: !!userVote,
         };
       }
 
       return {
         ...launchData,
+        tags: tags.map((tag) => tag.displayName || tag.name),
         hasVoted: false,
       };
     }),
@@ -99,8 +125,7 @@ export const launchesRouter = createTRPCRouter({
           description: project.description,
           logoUrl: project.logoUrl,
           gitRepoUrl: project.gitRepoUrl,
-          type: project.type,
-          tags: project.tags,
+          type: categoryProjectTypes.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -114,6 +139,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
@@ -130,6 +156,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectTypes.displayName,
           user.id,
           user.name,
           user.username,
@@ -139,11 +166,37 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
+      // Get tags for all launches
+      const launchIds = launches.map((l) => l.id);
+      let tagsMap: Record<string, string[]> = {};
+
+      if (launchIds.length > 0) {
+        const allTags = await ctx.db
+          .select({
+            projectId: projectTagRelations.projectId,
+            tagName: categoryTags.displayName,
+            tagNameFallback: categoryTags.name,
+          })
+          .from(projectTagRelations)
+          .innerJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+          .where(inArray(projectTagRelations.projectId, launchIds));
+
+        tagsMap = allTags.reduce(
+          (acc, tag) => {
+            const projectId = tag.projectId;
+            if (!acc[projectId]) acc[projectId] = [];
+            acc[projectId].push(tag.tagName || tag.tagNameFallback);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
+      }
+
       if (ctx.session?.userId) {
         if (launches.length === 0) {
           return [];
         }
-        const launchIds = launches.map((l) => l.id);
+
         const userVotes = await ctx.db
           .select({
             projectId: projectVote.projectId,
@@ -160,12 +213,14 @@ export const launchesRouter = createTRPCRouter({
 
         return launches.map((launch) => ({
           ...launch,
+          tags: tagsMap[launch.id] || [],
           hasVoted: userVotesSet.has(launch.id),
         }));
       }
 
       return launches.map((launch) => ({
         ...launch,
+        tags: tagsMap[launch.id] || [],
         hasVoted: false,
       }));
     }),
@@ -190,8 +245,7 @@ export const launchesRouter = createTRPCRouter({
           description: project.description,
           logoUrl: project.logoUrl,
           gitRepoUrl: project.gitRepoUrl,
-          type: project.type,
-          tags: project.tags,
+          type: categoryProjectTypes.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -205,6 +259,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
@@ -221,6 +276,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectTypes.displayName,
           user.id,
           user.name,
           user.username,
@@ -230,11 +286,37 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
+      // Get tags for all launches
+      const launchIds = launches.map((l) => l.id);
+      let tagsMap: Record<string, string[]> = {};
+
+      if (launchIds.length > 0) {
+        const allTags = await ctx.db
+          .select({
+            projectId: projectTagRelations.projectId,
+            tagName: categoryTags.displayName,
+            tagNameFallback: categoryTags.name,
+          })
+          .from(projectTagRelations)
+          .innerJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+          .where(inArray(projectTagRelations.projectId, launchIds));
+
+        tagsMap = allTags.reduce(
+          (acc, tag) => {
+            const projectId = tag.projectId;
+            if (!acc[projectId]) acc[projectId] = [];
+            acc[projectId].push(tag.tagName || tag.tagNameFallback);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
+      }
+
       if (ctx.session?.userId) {
         if (launches.length === 0) {
           return [];
         }
-        const launchIds = launches.map((l) => l.id);
+
         const userVotes = await ctx.db
           .select({
             projectId: projectVote.projectId,
@@ -251,12 +333,14 @@ export const launchesRouter = createTRPCRouter({
 
         return launches.map((launch) => ({
           ...launch,
+          tags: tagsMap[launch.id] || [],
           hasVoted: userVotesSet.has(launch.id),
         }));
       }
 
       return launches.map((launch) => ({
         ...launch,
+        tags: tagsMap[launch.id] || [],
         hasVoted: false,
       }));
     }),
@@ -312,11 +396,11 @@ export const launchesRouter = createTRPCRouter({
           );
         return { reported: false };
       } else {
-          await ctx.db.insert(projectReport).values({
-            projectId: projectId,
-            userId: ctx.session.userId!,
-          });
-          return { reported: true };
+        await ctx.db.insert(projectReport).values({
+          projectId: projectId,
+          userId: ctx.session.userId!,
+        });
+        return { reported: true };
       }
     }),
 

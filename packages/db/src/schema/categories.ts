@@ -40,7 +40,18 @@ export const categoryProjectStatuses = pgTable('category_project_statuses', {
     .notNull(),
 });
 
-// Relations (optional - for future use if needed)
-export const categoryTagsRelations = relations(categoryTags, () => ({}));
-export const categoryProjectTypesRelations = relations(categoryProjectTypes, () => ({}));
-export const categoryProjectStatusesRelations = relations(categoryProjectStatuses, () => ({}));
+// Relations
+export const categoryTagsRelations = relations(categoryTags, ({ many }) => ({
+  projectTagRelations: many(projectTagRelations),
+}));
+
+export const categoryProjectTypesRelations = relations(categoryProjectTypes, ({ many }) => ({
+  projects: many(project),
+}));
+
+export const categoryProjectStatusesRelations = relations(categoryProjectStatuses, ({ many }) => ({
+  projects: many(project),
+}));
+
+// Note: Import these at the end to avoid circular dependency
+import { project, projectTagRelations } from './projects';

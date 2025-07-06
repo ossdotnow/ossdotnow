@@ -24,6 +24,8 @@ import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
+// import { UploadDropzone } from '@/lib/uploadthing';
+import { earlySubmissionForm, submisionForm } from '@/forms';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
@@ -31,8 +33,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-// import { UploadDropzone } from '@/lib/uploadthing';
-import { earlySubmissionForm, submisionForm } from '@/forms';
 import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
@@ -144,7 +144,9 @@ export default function SubmissionForm({
     isValid: null,
     message: null,
   });
-  const { mutate, success, error, isLoading, clearError } = earlySubmission ? useEarlySubmission() : useSubmission();
+  const { mutate, success, error, isLoading, clearError } = earlySubmission
+    ? useEarlySubmission()
+    : useSubmission();
   const trpc = useTRPC();
   const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 
@@ -272,11 +274,13 @@ export default function SubmissionForm({
         if (result) {
           try {
             const duplicateCheck = await queryClient.fetchQuery(
-              earlySubmission ? trpc.earlySubmission.checkDuplicateRepo.queryOptions({
-                gitRepoUrl: repoUrl,
-              }) : trpc.submission.checkDuplicateRepo.queryOptions({
-                gitRepoUrl: repoUrl,
-              }),
+              earlySubmission
+                ? trpc.earlySubmission.checkDuplicateRepo.queryOptions({
+                    gitRepoUrl: repoUrl,
+                  })
+                : trpc.submission.checkDuplicateRepo.queryOptions({
+                    gitRepoUrl: repoUrl,
+                  }),
             );
 
             if (duplicateCheck.exists) {
@@ -449,8 +453,8 @@ export default function SubmissionForm({
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-
-  return success && env.NEXT_PUBLIC_ENV === 'production' ? (
+  // return success && env.NEXT_PUBLIC_ENV === 'production' ? (
+  return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>
