@@ -1,5 +1,5 @@
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { account, project, projectProviderEnum } from '@workspace/db/schema';
+import { account, project, projectProviderEnum, projectStatusEnum, projectTypeEnum, tagsEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
 import { getActiveDriver } from '../driver/utils';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
@@ -13,10 +13,10 @@ const createProjectInput = createInsertSchema(project);
 
 const updateProjectInput = createInsertSchema(project)
   .extend({
-    // Override enum validations to accept string values for updates
-    status: z.string().min(1, 'Project status is required'),
-    type: z.string().min(1, 'Project type is required'),
-    tags: z.array(z.string()).default([]),
+    // Use proper enum types for updates
+    status: z.enum(projectStatusEnum.enumValues),
+    type: z.enum(projectTypeEnum.enumValues),
+    tags: z.array(z.enum(tagsEnum.enumValues)).default([]),
   });
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
@@ -169,9 +169,9 @@ export const projectsRouter = createTRPCRouter({
       .update(project)
       .set({
         ...input,
-        status: input.status as any,
-        type: input.type as any,
-        tags: input.tags as any,
+        status: input.status,
+        type: input.type,
+        tags: input.tags,
       })
       .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
       .returning();
