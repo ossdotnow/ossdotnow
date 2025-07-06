@@ -5,6 +5,7 @@ import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
 import { count, eq, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { type DB } from '@workspace/db';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
 
@@ -32,7 +33,7 @@ const APPROVAL_STATUS = {
 } as const;
 
 // Helper functions for resolving names to IDs
-async function resolveStatusId(db: any, statusName: string) {
+async function resolveStatusId(db: DB, statusName: string) {
   const status = await db.query.categoryProjectStatuses.findFirst({
     where: eq(categoryProjectStatuses.name, statusName),
     columns: { id: true },
@@ -46,7 +47,7 @@ async function resolveStatusId(db: any, statusName: string) {
   return status.id;
 }
 
-async function resolveTypeId(db: any, typeName: string) {
+async function resolveTypeId(db: DB, typeName: string) {
   const type = await db.query.categoryProjectTypes.findFirst({
     where: eq(categoryProjectTypes.name, typeName),
     columns: { id: true },
@@ -60,7 +61,7 @@ async function resolveTypeId(db: any, typeName: string) {
   return type.id;
 }
 
-async function resolveTagIds(db: any, tagNames: string[]) {
+async function resolveTagIds(db: DB, tagNames: string[]) {
   if (tagNames.length === 0) return [];
 
   const tags = await db.query.categoryTags.findMany({
@@ -68,7 +69,7 @@ async function resolveTagIds(db: any, tagNames: string[]) {
     columns: { id: true, name: true },
   });
 
-  const foundTagNames = tags.map((tag: any) => tag.name);
+  const foundTagNames = tags.map((tag) => tag.name);
   const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
 
   if (invalidTags.length > 0) {
@@ -78,10 +79,10 @@ async function resolveTagIds(db: any, tagNames: string[]) {
     });
   }
 
-  return tags.map((tag: any) => tag.id);
+  return tags.map((tag) => tag.id);
 }
 
-async function checkProjectDuplicate(db: any, gitRepoUrl: string) {
+async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
   const existingProject = await db.query.project.findFirst({
     where: eq(project.gitRepoUrl, gitRepoUrl),
     columns: {
@@ -158,13 +159,12 @@ export const earlySubmissionRouter = createTRPCRouter({
       .returning();
 
     // Create tag relationships
-    if (tagIds.length > 0 && newProject) {
-      await ctx.db.insert(projectTagRelations).values(
-        tagIds.map((tagId: any) => ({
-          projectId: newProject.id,
-          tagId,
-        })),
-      );
+    if (tagIds.length > 0 && newProject?.id) {
+      const tagRelations = tagIds.map((tagId: string) => ({
+        projectId: newProject.id as string,
+        tagId: tagId as string,
+      }));
+      await ctx.db.insert(projectTagRelations).values(tagRelations);
     }
 
     return {

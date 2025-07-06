@@ -43,6 +43,8 @@ type Project = typeof project.$inferSelect & {
   }>;
 };
 
+type ApprovalStatusFilter = Project['approvalStatus'] | 'all';
+
 export default function AdminProjectsDashboard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -75,7 +77,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as any,
+          approvalStatus: approvalStatus as ApprovalStatusFilter,
         }),
       });
     },
@@ -86,7 +88,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as any,
+          approvalStatus: approvalStatus as ApprovalStatusFilter,
         }),
       });
     },
@@ -97,7 +99,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as any,
+          approvalStatus: approvalStatus as ApprovalStatusFilter,
         }),
       });
     },
@@ -108,7 +110,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as any,
+          approvalStatus: approvalStatus as ApprovalStatusFilter,
         }),
       });
     },
@@ -288,7 +290,8 @@ export default function AdminProjectsDashboard() {
 
                 <ProjectsTable
                   projects={filteredProjects.filter(
-                    (project) => project.approvalStatus === (tab as any) || tab === 'all',
+                    (project) =>
+                      project.approvalStatus === (tab as ApprovalStatusFilter) || tab === 'all',
                   )}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
@@ -379,13 +382,7 @@ function ProjectsTable({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => {
-                  if (project.isPinned) {
-                    handleUnpin(project.id);
-                  } else {
-                    handlePin(project.id);
-                  }
-                }}
+                onClick={() => (project.isPinned ? handleUnpin(project.id) : handlePin(project.id))}
               >
                 {project.isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
               </Button>

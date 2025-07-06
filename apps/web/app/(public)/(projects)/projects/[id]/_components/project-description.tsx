@@ -106,10 +106,10 @@ function StatusBadges({ project }: { project: any }) {
   return (
     <div className="mt-2 flex w-full flex-row flex-wrap gap-1 md:gap-2">
       <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
-        {project?.status?.replace('-', ' ')}
+        {project?.status?.displayName || project?.status?.name || 'Unknown Status'}
       </span>
       <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
-        {project?.type?.replace('-', ' ')}
+        {project?.type?.displayName || project?.type?.name || 'Unknown Type'}
       </span>
       {project?.hasBeenAcquired && (
         <span className="rounded-md bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400">

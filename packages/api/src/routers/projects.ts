@@ -9,6 +9,7 @@ import { createInsertSchema } from 'drizzle-zod';
 import type { createTRPCContext } from '../trpc';
 import type { Context } from '../driver/utils';
 import { TRPCError } from '@trpc/server';
+import { type DB } from '@workspace/db';
 import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project)
@@ -53,7 +54,7 @@ export interface DebugPermissionsResult {
 }
 
 // Helper functions for resolving names to IDs
-async function resolveStatusId(db: any, statusName: string) {
+async function resolveStatusId(db: DB, statusName: string) {
   const status = await db.query.categoryProjectStatuses.findFirst({
     where: eq(categoryProjectStatuses.name, statusName),
     columns: { id: true },
@@ -67,7 +68,7 @@ async function resolveStatusId(db: any, statusName: string) {
   return status.id;
 }
 
-async function resolveTypeId(db: any, typeName: string) {
+async function resolveTypeId(db: DB, typeName: string) {
   const type = await db.query.categoryProjectTypes.findFirst({
     where: eq(categoryProjectTypes.name, typeName),
     columns: { id: true },
@@ -81,7 +82,7 @@ async function resolveTypeId(db: any, typeName: string) {
   return type.id;
 }
 
-async function resolveTagIds(db: any, tagNames: string[]) {
+async function resolveTagIds(db: DB, tagNames: string[]) {
   if (tagNames.length === 0) return [];
 
   const tags = await db.query.categoryTags.findMany({
@@ -89,7 +90,7 @@ async function resolveTagIds(db: any, tagNames: string[]) {
     columns: { id: true, name: true },
   });
 
-  const foundTagNames = tags.map((tag: any) => tag.name);
+  const foundTagNames = tags.map((tag) => tag.name);
   const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
 
   if (invalidTags.length > 0) {
@@ -99,7 +100,7 @@ async function resolveTagIds(db: any, tagNames: string[]) {
     });
   }
 
-  return tags.map((tag: any) => tag.id);
+  return tags.map((tag) => tag.id);
 }
 
 export const projectsRouter = createTRPCRouter({
@@ -250,13 +251,12 @@ export const projectsRouter = createTRPCRouter({
       .returning();
 
     // Create tag relationships
-    if (tagIds.length > 0 && newProject) {
-      await ctx.db.insert(projectTagRelations).values(
-        tagIds.map((tagId: any) => ({
-          projectId: newProject.id,
-          tagId,
-        })),
-      );
+    if (tagIds.length > 0 && newProject?.id) {
+      const tagRelations = tagIds.map((tagId: string) => ({
+        projectId: newProject.id as string,
+        tagId: tagId as string,
+      }));
+      await ctx.db.insert(projectTagRelations).values(tagRelations);
     }
 
     return newProject;
@@ -286,13 +286,12 @@ export const projectsRouter = createTRPCRouter({
     await ctx.db.delete(projectTagRelations).where(eq(projectTagRelations.projectId, input.id));
 
     // Then, create new relationships
-    if (tagIds.length > 0) {
-      await ctx.db.insert(projectTagRelations).values(
-        tagIds.map((tagId: any) => ({
-          projectId: input.id,
-          tagId,
-        })),
-      );
+    if (tagIds.length > 0 && input.id) {
+      const tagRelations = tagIds.map((tagId: string) => ({
+        projectId: input.id as string,
+        tagId: tagId as string,
+      }));
+      await ctx.db.insert(projectTagRelations).values(tagRelations);
     }
 
     return updatedProject;

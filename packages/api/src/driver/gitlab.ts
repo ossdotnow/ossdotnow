@@ -11,6 +11,7 @@ import {
 import { project } from '@workspace/db/schema';
 import { Gitlab } from '@gitbeaker/rest';
 import { TRPCError } from '@trpc/server';
+import { type Context } from './utils';
 import { eq } from 'drizzle-orm';
 
 export class GitlabManager implements GitManager {
@@ -189,7 +190,7 @@ export class GitlabManager implements GitManager {
 
   async verifyOwnership(
     identifier: string,
-    ctx: any,
+    ctx: Context,
     projectId: string,
   ): Promise<{
     success: boolean;
@@ -361,13 +362,13 @@ export class GitlabManager implements GitManager {
         createdAt: userDetails.created_at as string,
         htmlUrl: userDetails.web_url as string,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof TRPCError) {
         throw error;
       }
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitLab user details: ${error.message}`,
+        message: `Failed to fetch GitLab user details: ${(error as Error).message}`,
       });
     }
   }
