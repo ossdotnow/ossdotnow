@@ -9,10 +9,10 @@ import {
   UserData,
 } from './types';
 import { project } from '@workspace/db/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 import { Gitlab } from '@gitbeaker/rest';
 import { TRPCError } from '@trpc/server';
 import { type Context } from './utils';
-import { eq } from 'drizzle-orm';
 
 export class GitlabManager implements GitManager {
   private gitlab: InstanceType<typeof Gitlab>;
@@ -268,13 +268,13 @@ export class GitlabManager implements GitManager {
         ownerId: ctx.session?.userId ?? null,
         updatedAt: new Date(),
       })
-      .where(eq(project.id, projectId))
+      .where(and(eq(project.id, projectId), isNull(project.ownerId)))
       .returning();
 
     if (!updatedProject[0]) {
       throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to update project ownership',
+        code: 'CONFLICT',
+        message: 'Project has already been claimed by another user',
       });
     }
 

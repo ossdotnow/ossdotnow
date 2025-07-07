@@ -13,10 +13,10 @@ import {
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
 import { project } from '@workspace/db/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
 import { type Context } from './utils';
-import { eq } from 'drizzle-orm';
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 
 export class GithubManager implements GitManager {
@@ -216,7 +216,7 @@ export class GithubManager implements GitManager {
       } catch (error) {
         console.log(
           'User does not have collaborator access to the repository:',
-          (error instanceof Error ? error.message : String(error)),
+          error instanceof Error ? error.message : String(error),
         );
 
         try {
@@ -251,13 +251,13 @@ export class GithubManager implements GitManager {
         ownerId: ctx.session?.userId ?? null,
         updatedAt: new Date(),
       })
-      .where(eq(project.id, projectId))
+      .where(and(eq(project.id, projectId), isNull(project.ownerId)))
       .returning();
 
     if (!updatedProject[0]) {
       throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to update project ownership',
+        code: 'CONFLICT',
+        message: 'Project has already been claimed by another user',
       });
     }
 

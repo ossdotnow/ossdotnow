@@ -1,15 +1,14 @@
-import { categoryProjectTypes, categoryProjectStatuses, categoryTags } from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectTagRelations } from '@workspace/db/schema';
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm';
+import { APPROVAL_STATUS, resolveAllIds } from '../utils/project-helpers';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { getActiveDriver } from '../driver/utils';
 import { createInsertSchema } from 'drizzle-zod';
 import type { createTRPCContext } from '../trpc';
 import type { Context } from '../driver/utils';
 import { TRPCError } from '@trpc/server';
-import { type DB } from '@workspace/db';
 import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project)
@@ -24,9 +23,6 @@ const createProjectInput = createInsertSchema(project)
   });
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
-
-// Type for transaction context
-type TransactionDB = Parameters<Parameters<DB['transaction']>[0]>[0];
 
 interface VerifyGitHubOwnershipContext {
   db: TRPCContext['db'];
@@ -54,106 +50,6 @@ export interface DebugPermissionsResult {
       }
     | string;
   orgMembershipError?: string;
-}
-
-// Helper functions for resolving names to IDs (regular DB)
-async function resolveStatusId(db: DB, statusName: string) {
-  const status = await db.query.categoryProjectStatuses.findFirst({
-    where: eq(categoryProjectStatuses.name, statusName),
-    columns: { id: true },
-  });
-  if (!status) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid status: ${statusName}`,
-    });
-  }
-  return status.id;
-}
-
-async function resolveTypeId(db: DB, typeName: string) {
-  const type = await db.query.categoryProjectTypes.findFirst({
-    where: eq(categoryProjectTypes.name, typeName),
-    columns: { id: true },
-  });
-  if (!type) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid type: ${typeName}`,
-    });
-  }
-  return type.id;
-}
-
-async function resolveTagIds(db: DB, tagNames: string[]) {
-  if (tagNames.length === 0) return [];
-
-  const tags = await db.query.categoryTags.findMany({
-    where: inArray(categoryTags.name, tagNames),
-    columns: { id: true, name: true },
-  });
-
-  const foundTagNames = tags.map((tag) => tag.name);
-  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
-
-  if (invalidTags.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid tags: ${invalidTags.join(', ')}`,
-    });
-  }
-
-  return tags.map((tag) => tag.id);
-}
-
-// Transaction-compatible helper functions
-async function resolveStatusIdTx(tx: TransactionDB, statusName: string) {
-  const status = await tx.query.categoryProjectStatuses.findFirst({
-    where: eq(categoryProjectStatuses.name, statusName),
-    columns: { id: true },
-  });
-  if (!status) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid status: ${statusName}`,
-    });
-  }
-  return status.id;
-}
-
-async function resolveTypeIdTx(tx: TransactionDB, typeName: string) {
-  const type = await tx.query.categoryProjectTypes.findFirst({
-    where: eq(categoryProjectTypes.name, typeName),
-    columns: { id: true },
-  });
-  if (!type) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid type: ${typeName}`,
-    });
-  }
-  return type.id;
-}
-
-async function resolveTagIdsTx(tx: TransactionDB, tagNames: string[]) {
-  if (tagNames.length === 0) return [];
-
-  const tags = await tx.query.categoryTags.findMany({
-    where: inArray(categoryTags.name, tagNames),
-    columns: { id: true, name: true },
-  });
-
-  const foundTagNames = tags.map((tag) => tag.name);
-  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
-
-  if (invalidTags.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid tags: ${invalidTags.join(', ')}`,
-    });
-  }
-
-  return tags.map((tag) => tag.id);
 }
 
 export const projectsRouter = createTRPCRouter({
@@ -287,12 +183,14 @@ export const projectsRouter = createTRPCRouter({
     });
   }),
   addProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    return await ctx.db.transaction(async (tx) => {
-      // Resolve string values to database IDs
-      const statusId = await resolveStatusIdTx(tx, input.status);
-      const typeId = await resolveTypeIdTx(tx, input.type);
-      const tagIds = await resolveTagIdsTx(tx, input.tags);
+    // Resolve string values to database IDs outside transaction since they're just lookups
+    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+      status: input.status,
+      type: input.type,
+      tags: input.tags,
+    });
 
+    return await ctx.db.transaction(async (tx) => {
       // Create the project
       const [newProject] = await tx
         .insert(project)
@@ -304,7 +202,6 @@ export const projectsRouter = createTRPCRouter({
         })
         .returning();
 
-      // Create tag relationships atomically
       if (tagIds.length > 0 && newProject?.id) {
         const tagRelations = tagIds.map((tagId: string) => ({
           projectId: newProject.id as string,
@@ -324,12 +221,14 @@ export const projectsRouter = createTRPCRouter({
     const projectId = input.id;
     const userId = ctx.session.userId;
 
-    return await ctx.db.transaction(async (tx) => {
-      // Resolve string values to database IDs using transaction-compatible functions
-      const statusId = await resolveStatusIdTx(tx, input.status);
-      const typeId = await resolveTypeIdTx(tx, input.type);
-      const tagIds = await resolveTagIdsTx(tx, input.tags);
+    // Resolve string values to database IDs outside transaction since they're just lookups
+    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+      status: input.status,
+      type: input.type,
+      tags: input.tags,
+    });
 
+    return await ctx.db.transaction(async (tx) => {
       // Update the project
       const [updatedProject] = await tx
         .update(project)
@@ -376,7 +275,7 @@ export const projectsRouter = createTRPCRouter({
       // });
       const [updatedProject] = await ctx.db
         .update(project)
-        .set({ approvalStatus: 'approved' })
+        .set({ approvalStatus: APPROVAL_STATUS.APPROVED })
         .where(eq(project.id, input.projectId))
         .returning();
 
@@ -401,7 +300,7 @@ export const projectsRouter = createTRPCRouter({
       // });
       const [updatedProject] = await ctx.db
         .update(project)
-        .set({ approvalStatus: 'rejected' })
+        .set({ approvalStatus: APPROVAL_STATUS.REJECTED })
         .where(eq(project.id, input.projectId))
         .returning();
 
@@ -680,7 +579,7 @@ export const projectsRouter = createTRPCRouter({
           result.repoPermissionDetails = repoPermissions;
         } catch (e) {
           result.repoPermission = 'none';
-          result.repoPermissionError = (e instanceof Error ? e.message : String(e));
+          result.repoPermissionError = e instanceof Error ? e.message : String(e);
         }
 
         if (repoData.owner.type === 'Organization') {
@@ -695,7 +594,7 @@ export const projectsRouter = createTRPCRouter({
             };
           } catch (e) {
             result.orgMembership = 'not a member';
-            result.orgMembershipError = (e instanceof Error ? e.message : String(e));
+            result.orgMembershipError = e instanceof Error ? e.message : String(e);
           }
         }
 

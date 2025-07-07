@@ -1,13 +1,12 @@
-import { categoryProjectTypes, categoryProjectStatuses, categoryTags } from '@workspace/db/schema';
+import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/project-helpers';
 import { project, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
-import { count, eq, inArray } from 'drizzle-orm';
 import { type Context } from '../driver/utils';
 import { user } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
-import { type DB } from '@workspace/db';
+import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
 
@@ -27,144 +26,6 @@ const createProjectInput = createInsertSchema(project)
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
   });
-
-const APPROVAL_STATUS = {
-  APPROVED: 'approved',
-  PENDING: 'pending',
-  REJECTED: 'rejected',
-} as const;
-
-// Type for transaction context
-type TransactionDB = Parameters<Parameters<DB['transaction']>[0]>[0];
-
-// Helper functions for resolving names to IDs (regular DB)
-async function resolveStatusId(db: DB, statusName: string) {
-  const status = await db.query.categoryProjectStatuses.findFirst({
-    where: eq(categoryProjectStatuses.name, statusName),
-    columns: { id: true },
-  });
-  if (!status) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid status: ${statusName}`,
-    });
-  }
-  return status.id;
-}
-
-async function resolveTypeId(db: DB, typeName: string) {
-  const type = await db.query.categoryProjectTypes.findFirst({
-    where: eq(categoryProjectTypes.name, typeName),
-    columns: { id: true },
-  });
-  if (!type) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid type: ${typeName}`,
-    });
-  }
-  return type.id;
-}
-
-async function resolveTagIds(db: DB, tagNames: string[]) {
-  if (tagNames.length === 0) return [];
-
-  const tags = await db.query.categoryTags.findMany({
-    where: inArray(categoryTags.name, tagNames),
-    columns: { id: true, name: true },
-  });
-
-  const foundTagNames = tags.map((tag) => tag.name);
-  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
-
-  if (invalidTags.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid tags: ${invalidTags.join(', ')}`,
-    });
-  }
-
-  return tags.map((tag) => tag.id);
-}
-
-// Transaction-compatible helper functions
-async function resolveStatusIdTx(tx: TransactionDB, statusName: string) {
-  const status = await tx.query.categoryProjectStatuses.findFirst({
-    where: eq(categoryProjectStatuses.name, statusName),
-    columns: { id: true },
-  });
-  if (!status) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid status: ${statusName}`,
-    });
-  }
-  return status.id;
-}
-
-async function resolveTypeIdTx(tx: TransactionDB, typeName: string) {
-  const type = await tx.query.categoryProjectTypes.findFirst({
-    where: eq(categoryProjectTypes.name, typeName),
-    columns: { id: true },
-  });
-  if (!type) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid type: ${typeName}`,
-    });
-  }
-  return type.id;
-}
-
-async function resolveTagIdsTx(tx: TransactionDB, tagNames: string[]) {
-  if (tagNames.length === 0) return [];
-
-  const tags = await tx.query.categoryTags.findMany({
-    where: inArray(categoryTags.name, tagNames),
-    columns: { id: true, name: true },
-  });
-
-  const foundTagNames = tags.map((tag) => tag.name);
-  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
-
-  if (invalidTags.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid tags: ${invalidTags.join(', ')}`,
-    });
-  }
-
-  return tags.map((tag) => tag.id);
-}
-
-async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
-  const existingProject = await db.query.project.findFirst({
-    where: eq(project.gitRepoUrl, gitRepoUrl),
-    columns: {
-      id: true,
-      name: true,
-      approvalStatus: true,
-    },
-  });
-
-  if (!existingProject) {
-    return { exists: false };
-  }
-
-  const statusMessage =
-    existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
-      ? 'approved and is already listed'
-      : existingProject.approvalStatus === APPROVAL_STATUS.PENDING
-        ? 'pending review'
-        : 'been submitted but was rejected';
-
-  return {
-    exists: true,
-    projectName: existingProject.name,
-    statusMessage,
-    approvalStatus: existingProject.approvalStatus,
-  };
-}
 
 async function checkUserOwnsProject(ctx: Context, gitRepoUrl: string) {
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
@@ -219,15 +80,6 @@ export const submissionRouter = createTRPCRouter({
       }
     }
 
-    const duplicateCheck = await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
-
-    if (duplicateCheck.exists) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}. If you think this is an error, please contact support.`,
-      });
-    }
-
     const ownerCheck = await checkUserOwnsProject(ctx, input.gitRepoUrl);
     if (ownerCheck.error) {
       throw new TRPCError({
@@ -237,14 +89,15 @@ export const submissionRouter = createTRPCRouter({
     }
     const ownerId = ownerCheck.ownerId;
 
-    // Wrap all database operations in a transaction
-    return await ctx.db.transaction(async (tx) => {
-      // Resolve string values to database IDs using transaction-compatible functions
-      const statusId = await resolveStatusIdTx(tx, input.status);
-      const typeId = await resolveTypeIdTx(tx, input.type);
-      const tagIds = await resolveTagIdsTx(tx, input.tags);
+    // Resolve string values to database IDs outside transaction since they're just lookups
+    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+      status: input.status,
+      type: input.type,
+      tags: input.tags,
+    });
 
-      // Create the project
+    // Wrap only the atomic database operations in a transaction
+    return await ctx.db.transaction(async (tx) => {
       const [newProject] = await tx
         .insert(project)
         .values({
@@ -254,7 +107,31 @@ export const submissionRouter = createTRPCRouter({
           statusId,
           typeId,
         })
+        .onConflictDoNothing({ target: project.gitRepoUrl })
         .returning();
+
+      if (!newProject) {
+        const existing = await tx
+          .select({
+            name: project.name,
+            approvalStatus: project.approvalStatus,
+          })
+          .from(project)
+          .where(eq(project.gitRepoUrl, input.gitRepoUrl))
+          .limit(1);
+
+        const statusMsg =
+          existing[0]?.approvalStatus === 'approved'
+            ? 'approved and is already listed'
+            : existing[0]?.approvalStatus === 'pending'
+              ? 'pending review'
+              : 'been submitted but was rejected';
+
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `This repository has already been submitted! The project "${existing[0]?.name}" has ${statusMsg}. If you think this is an error, please contact support.`,
+        });
+      }
 
       // Create tag relationships atomically
       if (tagIds.length > 0 && newProject?.id) {
@@ -265,8 +142,10 @@ export const submissionRouter = createTRPCRouter({
         await tx.insert(projectTagRelations).values(tagRelations);
       }
 
+      // Get the actual count instead of returning count function
+      const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
-        count: count(),
+        count: totalCount?.count ?? 0,
       };
     });
   }),
