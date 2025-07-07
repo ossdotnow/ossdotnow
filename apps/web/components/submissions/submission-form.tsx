@@ -453,8 +453,8 @@ export default function SubmissionForm({
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
-  // return success && env.NEXT_PUBLIC_ENV === 'production' ? (
-  return success ? (
+  return success && env.NEXT_PUBLIC_ENV === 'production' ? (
+  // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>

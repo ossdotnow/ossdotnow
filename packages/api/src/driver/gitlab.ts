@@ -244,10 +244,10 @@ export class GitlabManager implements GitManager {
             console.log('User is not a member of the group or group check failed:', orgError);
           }
         }
-      } catch (error: unknown) {
+      } catch (error) {
         console.log(
           'User does not have collaborator access to the repository:',
-          (error as Error).message,
+          error instanceof Error ? error.message : String(error),
         );
       }
     }
@@ -265,7 +265,7 @@ export class GitlabManager implements GitManager {
     const updatedProject = await ctx.db
       .update(project)
       .set({
-        ownerId: ctx.session.userId,
+        ownerId: ctx.session?.userId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(project.id, projectId))
@@ -362,13 +362,13 @@ export class GitlabManager implements GitManager {
         createdAt: userDetails.created_at as string,
         htmlUrl: userDetails.web_url as string,
       };
-    } catch (error: unknown) {
+    } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
       }
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitLab user details: ${(error as Error).message}`,
+        message: `Failed to fetch GitLab user details: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }

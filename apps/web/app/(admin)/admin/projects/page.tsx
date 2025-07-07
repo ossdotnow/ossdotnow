@@ -22,7 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card';
-import { project, projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
+import { categoryProjectStatuses, categoryProjectTypes, categoryTags, project, projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle, Edit, Eye, Pin, PinOff, XCircle } from 'lucide-react';
@@ -36,10 +36,10 @@ import { useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 type Project = typeof project.$inferSelect & {
-  status: { id: string; name: string; displayName: string } | null;
-  type: { id: string; name: string; displayName: string } | null;
+  status: typeof categoryProjectStatuses.$inferSelect | null;
+  type: typeof categoryProjectTypes.$inferSelect | null;
   tagRelations: Array<{
-    tag: { id: string; name: string; displayName: string } | null;
+    tag: typeof categoryTags.$inferSelect | null;
   }>;
 };
 
@@ -159,11 +159,11 @@ export default function AdminProjectsDashboard() {
         (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
       );
     })
-    .filter((project: Project) => statusFilter === 'all' || project.status?.name === statusFilter)
-    .filter((project: Project) => typeFilter === 'all' || project.type?.name === typeFilter)
+    .filter((project) => statusFilter === 'all' || project.status?.name === statusFilter)
+    .filter((project) => typeFilter === 'all' || project.type?.name === typeFilter)
     .filter((project) => providerFilter === 'all' || project.gitHost === providerFilter)
     .filter(
-      (project: Project) =>
+      (project) =>
         tagFilter === 'all' ||
         project.tagRelations.some((relation) => relation.tag?.name === tagFilter),
     );

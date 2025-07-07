@@ -2,6 +2,7 @@ import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from '@wo
 import { createTRPCRouter, adminProcedure, publicProcedure } from '../trpc';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { and, asc, eq } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
 
 // Utility function to slugify category names
@@ -74,23 +75,57 @@ export const categoriesRouter = createTRPCRouter({
     if (updateData.name) {
       updateData.name = slugifyName(updateData.name);
     }
-    return ctx.db.update(categoryTags).set(updateData).where(eq(categoryTags.id, id)).returning();
+    const [updatedTag] = await ctx.db
+      .update(categoryTags)
+      .set(updateData)
+      .where(eq(categoryTags.id, id))
+      .returning();
+
+    if (!updatedTag) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Tag not found',
+      });
+    }
+
+    return updatedTag;
   }),
 
   deleteTag: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db.delete(categoryTags).where(eq(categoryTags.id, input.id)).returning();
+      const [deletedTag] = await ctx.db
+        .delete(categoryTags)
+        .where(eq(categoryTags.id, input.id))
+        .returning();
+
+      if (!deletedTag) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Tag not found',
+        });
+      }
+
+      return deletedTag;
     }),
 
   toggleTagStatus: adminProcedure
     .input(z.object({ id: z.string().uuid(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [updatedTag] = await ctx.db
         .update(categoryTags)
         .set({ isActive: input.isActive })
         .where(eq(categoryTags.id, input.id))
         .returning();
+
+      if (!updatedTag) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Tag not found',
+        });
+      }
+
+      return updatedTag;
     }),
 
   // Project Types CRUD
@@ -132,30 +167,57 @@ export const categoriesRouter = createTRPCRouter({
       if (updateData.name) {
         updateData.name = slugifyName(updateData.name);
       }
-      return ctx.db
+      const [updatedProjectType] = await ctx.db
         .update(categoryProjectTypes)
         .set(updateData)
         .where(eq(categoryProjectTypes.id, id))
         .returning();
+
+      if (!updatedProjectType) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project type not found',
+        });
+      }
+
+      return updatedProjectType;
     }),
 
   deleteProjectType: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [deletedProjectType] = await ctx.db
         .delete(categoryProjectTypes)
         .where(eq(categoryProjectTypes.id, input.id))
         .returning();
+
+      if (!deletedProjectType) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project type not found',
+        });
+      }
+
+      return deletedProjectType;
     }),
 
   toggleProjectTypeStatus: adminProcedure
     .input(z.object({ id: z.string().uuid(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [updatedProjectType] = await ctx.db
         .update(categoryProjectTypes)
         .set({ isActive: input.isActive })
         .where(eq(categoryProjectTypes.id, input.id))
         .returning();
+
+      if (!updatedProjectType) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project type not found',
+        });
+      }
+
+      return updatedProjectType;
     }),
 
   // Project Statuses CRUD
@@ -199,67 +261,97 @@ export const categoriesRouter = createTRPCRouter({
       if (updateData.name) {
         updateData.name = slugifyName(updateData.name);
       }
-      return ctx.db
+      const [updatedProjectStatus] = await ctx.db
         .update(categoryProjectStatuses)
         .set(updateData)
         .where(eq(categoryProjectStatuses.id, id))
         .returning();
+
+      if (!updatedProjectStatus) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project status not found',
+        });
+      }
+
+      return updatedProjectStatus;
     }),
 
   deleteProjectStatus: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [deletedProjectStatus] = await ctx.db
         .delete(categoryProjectStatuses)
         .where(eq(categoryProjectStatuses.id, input.id))
         .returning();
+
+      if (!deletedProjectStatus) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project status not found',
+        });
+      }
+
+      return deletedProjectStatus;
     }),
 
   toggleProjectStatusStatus: adminProcedure
     .input(z.object({ id: z.string().uuid(), isActive: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [updatedProjectStatus] = await ctx.db
         .update(categoryProjectStatuses)
         .set({ isActive: input.isActive })
         .where(eq(categoryProjectStatuses.id, input.id))
         .returning();
+
+      if (!updatedProjectStatus) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project status not found',
+        });
+      }
+
+      return updatedProjectStatus;
     }),
 
   // Bulk operations for reordering
   reorderTags: adminProcedure
     .input(z.array(z.object({ id: z.string().uuid(), sortOrder: z.number() })))
     .mutation(async ({ ctx, input }) => {
-      const updates = input.map(({ id, sortOrder }) =>
-        ctx.db.update(categoryTags).set({ sortOrder }).where(eq(categoryTags.id, id)),
-      );
-      await Promise.all(updates);
-      return { success: true };
+      return await ctx.db.transaction(async (tx) => {
+        for (const { id, sortOrder } of input) {
+          await tx.update(categoryTags).set({ sortOrder }).where(eq(categoryTags.id, id));
+        }
+        return { success: true };
+      });
     }),
 
   reorderProjectTypes: adminProcedure
     .input(z.array(z.object({ id: z.string().uuid(), sortOrder: z.number() })))
     .mutation(async ({ ctx, input }) => {
-      const updates = input.map(({ id, sortOrder }) =>
-        ctx.db
-          .update(categoryProjectTypes)
-          .set({ sortOrder })
-          .where(eq(categoryProjectTypes.id, id)),
-      );
-      await Promise.all(updates);
-      return { success: true };
+      return await ctx.db.transaction(async (tx) => {
+        for (const { id, sortOrder } of input) {
+          await tx
+            .update(categoryProjectTypes)
+            .set({ sortOrder })
+            .where(eq(categoryProjectTypes.id, id));
+        }
+        return { success: true };
+      });
     }),
 
   reorderProjectStatuses: adminProcedure
     .input(z.array(z.object({ id: z.string().uuid(), sortOrder: z.number() })))
     .mutation(async ({ ctx, input }) => {
-      const updates = input.map(({ id, sortOrder }) =>
-        ctx.db
-          .update(categoryProjectStatuses)
-          .set({ sortOrder })
-          .where(eq(categoryProjectStatuses.id, id)),
-      );
-      await Promise.all(updates);
-      return { success: true };
+      return await ctx.db.transaction(async (tx) => {
+        for (const { id, sortOrder } of input) {
+          await tx
+            .update(categoryProjectStatuses)
+            .set({ sortOrder })
+            .where(eq(categoryProjectStatuses.id, id));
+        }
+        return { success: true };
+      });
     }),
 
   getProjectStatus: publicProcedure

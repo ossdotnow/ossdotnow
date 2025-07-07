@@ -25,6 +25,9 @@ const createProjectInput = createInsertSchema(project)
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
+// Type for transaction context
+type TransactionDB = Parameters<Parameters<DB['transaction']>[0]>[0];
+
 interface VerifyGitHubOwnershipContext {
   db: TRPCContext['db'];
   session: {
@@ -53,7 +56,7 @@ export interface DebugPermissionsResult {
   orgMembershipError?: string;
 }
 
-// Helper functions for resolving names to IDs
+// Helper functions for resolving names to IDs (regular DB)
 async function resolveStatusId(db: DB, statusName: string) {
   const status = await db.query.categoryProjectStatuses.findFirst({
     where: eq(categoryProjectStatuses.name, statusName),
@@ -86,6 +89,56 @@ async function resolveTagIds(db: DB, tagNames: string[]) {
   if (tagNames.length === 0) return [];
 
   const tags = await db.query.categoryTags.findMany({
+    where: inArray(categoryTags.name, tagNames),
+    columns: { id: true, name: true },
+  });
+
+  const foundTagNames = tags.map((tag) => tag.name);
+  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
+
+  if (invalidTags.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid tags: ${invalidTags.join(', ')}`,
+    });
+  }
+
+  return tags.map((tag) => tag.id);
+}
+
+// Transaction-compatible helper functions
+async function resolveStatusIdTx(tx: TransactionDB, statusName: string) {
+  const status = await tx.query.categoryProjectStatuses.findFirst({
+    where: eq(categoryProjectStatuses.name, statusName),
+    columns: { id: true },
+  });
+  if (!status) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid status: ${statusName}`,
+    });
+  }
+  return status.id;
+}
+
+async function resolveTypeIdTx(tx: TransactionDB, typeName: string) {
+  const type = await tx.query.categoryProjectTypes.findFirst({
+    where: eq(categoryProjectTypes.name, typeName),
+    columns: { id: true },
+  });
+  if (!type) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid type: ${typeName}`,
+    });
+  }
+  return type.id;
+}
+
+async function resolveTagIdsTx(tx: TransactionDB, tagNames: string[]) {
+  if (tagNames.length === 0) return [];
+
+  const tags = await tx.query.categoryTags.findMany({
     where: inArray(categoryTags.name, tagNames),
     columns: { id: true, name: true },
   });
@@ -234,67 +287,82 @@ export const projectsRouter = createTRPCRouter({
     });
   }),
   addProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    // Resolve string values to database IDs
-    const statusId = await resolveStatusId(ctx.db, input.status);
-    const typeId = await resolveTypeId(ctx.db, input.type);
-    const tagIds = await resolveTagIds(ctx.db, input.tags);
+    return await ctx.db.transaction(async (tx) => {
+      // Resolve string values to database IDs
+      const statusId = await resolveStatusIdTx(tx, input.status);
+      const typeId = await resolveTypeIdTx(tx, input.type);
+      const tagIds = await resolveTagIdsTx(tx, input.tags);
 
-    // Create the project
-    const [newProject] = await ctx.db
-      .insert(project)
-      .values({
-        ...input,
-        ownerId: ctx.session.userId,
-        statusId,
-        typeId,
-      })
-      .returning();
+      // Create the project
+      const [newProject] = await tx
+        .insert(project)
+        .values({
+          ...input,
+          ownerId: ctx.session.userId,
+          statusId,
+          typeId,
+        })
+        .returning();
 
-    // Create tag relationships
-    if (tagIds.length > 0 && newProject?.id) {
-      const tagRelations = tagIds.map((tagId: string) => ({
-        projectId: newProject.id as string,
-        tagId: tagId as string,
-      }));
-      await ctx.db.insert(projectTagRelations).values(tagRelations);
-    }
+      // Create tag relationships atomically
+      if (tagIds.length > 0 && newProject?.id) {
+        const tagRelations = tagIds.map((tagId: string) => ({
+          projectId: newProject.id as string,
+          tagId: tagId as string,
+        }));
+        await tx.insert(projectTagRelations).values(tagRelations);
+      }
 
-    return newProject;
+      return newProject;
+    });
   }),
   updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
     if (!input.id) throw new Error('Project ID is required for update');
     if (!ctx.session.userId) throw new Error('User not authenticated');
 
-    // Resolve string values to database IDs
-    const statusId = await resolveStatusId(ctx.db, input.status);
-    const typeId = await resolveTypeId(ctx.db, input.type);
-    const tagIds = await resolveTagIds(ctx.db, input.tags);
+    // Ensure id and userId are defined for type safety
+    const projectId = input.id;
+    const userId = ctx.session.userId;
 
-    // Update the project
-    const [updatedProject] = await ctx.db
-      .update(project)
-      .set({
-        ...input,
-        statusId,
-        typeId,
-      })
-      .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
-      .returning();
+    return await ctx.db.transaction(async (tx) => {
+      // Resolve string values to database IDs using transaction-compatible functions
+      const statusId = await resolveStatusIdTx(tx, input.status);
+      const typeId = await resolveTypeIdTx(tx, input.type);
+      const tagIds = await resolveTagIdsTx(tx, input.tags);
 
-    // Update tag relationships
-    // First, delete existing relationships
-    await ctx.db.delete(projectTagRelations).where(eq(projectTagRelations.projectId, input.id));
+      // Update the project
+      const [updatedProject] = await tx
+        .update(project)
+        .set({
+          ...input,
+          statusId,
+          typeId,
+        })
+        .where(and(eq(project.id, projectId), eq(project.ownerId, userId)))
+        .returning();
 
-    // Then, create new relationships
-    if (tagIds.length > 0 && input.id) {
-      const tagRelations = tagIds.map((tagId: string) => ({
-        projectId: input.id as string,
-        tagId: tagId as string,
-      }));
-      await ctx.db.insert(projectTagRelations).values(tagRelations);
-    }
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found or not owned by you',
+        });
+      }
 
-    return updatedProject;
+      // Update tag relationships atomically
+      // First, delete existing relationships
+      await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
+
+      // Then, create new relationships
+      if (tagIds.length > 0) {
+        const tagRelations = tagIds.map((tagId: string) => ({
+          projectId: projectId,
+          tagId: tagId as string,
+        }));
+        await tx.insert(projectTagRelations).values(tagRelations);
+      }
+
+      return updatedProject;
+    });
   }),
   acceptProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
@@ -306,11 +374,20 @@ export const projectsRouter = createTRPCRouter({
       //   adminId: ctx.user.id,
       //   timestamp: new Date()
       // });
-      return ctx.db
+      const [updatedProject] = await ctx.db
         .update(project)
         .set({ approvalStatus: 'approved' })
         .where(eq(project.id, input.projectId))
         .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      return updatedProject;
     }),
   rejectProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
@@ -322,40 +399,76 @@ export const projectsRouter = createTRPCRouter({
       //   adminId: ctx.user.id,a
       //   timestamp: new Date()
       // });
-      return ctx.db
+      const [updatedProject] = await ctx.db
         .update(project)
         .set({ approvalStatus: 'rejected' })
         .where(eq(project.id, input.projectId))
         .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      return updatedProject;
     }),
   pinProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [updatedProject] = await ctx.db
         .update(project)
         .set({ isPinned: true })
         .where(eq(project.id, input.projectId))
         .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      return updatedProject;
     }),
   unpinProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return ctx.db
+      const [updatedProject] = await ctx.db
         .update(project)
         .set({ isPinned: false })
         .where(eq(project.id, input.projectId))
         .returning();
+
+      if (!updatedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      return updatedProject;
     }),
   deleteProject: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (!ctx.session.userId) throw new Error('User not authenticated');
 
-      return ctx.db
+      const [deletedProject] = await ctx.db
         .update(project)
         .set({ deletedAt: new Date() })
         .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
         .returning();
+
+      if (!deletedProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found or not owned by you',
+        });
+      }
+
+      return deletedProject;
     }),
   claimProject: protectedProcedure
     .input(
@@ -565,7 +678,7 @@ export const projectsRouter = createTRPCRouter({
 
           result.repoPermission = repoPermissions.permission;
           result.repoPermissionDetails = repoPermissions;
-        } catch (e: unknown) {
+        } catch (e) {
           result.repoPermission = 'none';
           result.repoPermissionError = (e as Error).message;
         }
@@ -580,14 +693,14 @@ export const projectsRouter = createTRPCRouter({
               role: membership.role,
               state: membership.state,
             };
-          } catch (e: unknown) {
+          } catch (e) {
             result.orgMembership = 'not a member';
             result.orgMembershipError = (e as Error).message;
           }
         }
 
         return result;
-      } catch (error: unknown) {
+      } catch (error) {
         return { error: (error as Error).message };
       }
     }),

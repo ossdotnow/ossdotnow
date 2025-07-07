@@ -34,7 +34,10 @@ const APPROVAL_STATUS = {
   REJECTED: 'rejected',
 } as const;
 
-// Helper functions for resolving names to IDs
+// Type for transaction context
+type TransactionDB = Parameters<Parameters<DB['transaction']>[0]>[0];
+
+// Helper functions for resolving names to IDs (regular DB)
 async function resolveStatusId(db: DB, statusName: string) {
   const status = await db.query.categoryProjectStatuses.findFirst({
     where: eq(categoryProjectStatuses.name, statusName),
@@ -67,6 +70,56 @@ async function resolveTagIds(db: DB, tagNames: string[]) {
   if (tagNames.length === 0) return [];
 
   const tags = await db.query.categoryTags.findMany({
+    where: inArray(categoryTags.name, tagNames),
+    columns: { id: true, name: true },
+  });
+
+  const foundTagNames = tags.map((tag) => tag.name);
+  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
+
+  if (invalidTags.length > 0) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid tags: ${invalidTags.join(', ')}`,
+    });
+  }
+
+  return tags.map((tag) => tag.id);
+}
+
+// Transaction-compatible helper functions
+async function resolveStatusIdTx(tx: TransactionDB, statusName: string) {
+  const status = await tx.query.categoryProjectStatuses.findFirst({
+    where: eq(categoryProjectStatuses.name, statusName),
+    columns: { id: true },
+  });
+  if (!status) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid status: ${statusName}`,
+    });
+  }
+  return status.id;
+}
+
+async function resolveTypeIdTx(tx: TransactionDB, typeName: string) {
+  const type = await tx.query.categoryProjectTypes.findFirst({
+    where: eq(categoryProjectTypes.name, typeName),
+    columns: { id: true },
+  });
+  if (!type) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: `Invalid type: ${typeName}`,
+    });
+  }
+  return type.id;
+}
+
+async function resolveTagIdsTx(tx: TransactionDB, tagNames: string[]) {
+  if (tagNames.length === 0) return [];
+
+  const tags = await tx.query.categoryTags.findMany({
     where: inArray(categoryTags.name, tagNames),
     columns: { id: true, name: true },
   });
@@ -184,35 +237,38 @@ export const submissionRouter = createTRPCRouter({
     }
     const ownerId = ownerCheck.ownerId;
 
-    // Resolve string values to database IDs
-    const statusId = await resolveStatusId(ctx.db, input.status);
-    const typeId = await resolveTypeId(ctx.db, input.type);
-    const tagIds = await resolveTagIds(ctx.db, input.tags);
+    // Wrap all database operations in a transaction
+    return await ctx.db.transaction(async (tx) => {
+      // Resolve string values to database IDs using transaction-compatible functions
+      const statusId = await resolveStatusIdTx(tx, input.status);
+      const typeId = await resolveTypeIdTx(tx, input.type);
+      const tagIds = await resolveTagIdsTx(tx, input.tags);
 
-    // Create the project
-    const [newProject] = await ctx.db
-      .insert(project)
-      .values({
-        ...input,
-        ownerId,
-        approvalStatus: APPROVAL_STATUS.PENDING,
-        statusId,
-        typeId,
-      })
-      .returning();
+      // Create the project
+      const [newProject] = await tx
+        .insert(project)
+        .values({
+          ...input,
+          ownerId,
+          approvalStatus: APPROVAL_STATUS.PENDING,
+          statusId,
+          typeId,
+        })
+        .returning();
 
-    // Create tag relationships
-    if (tagIds.length > 0 && newProject?.id) {
-      const tagRelations = tagIds.map((tagId: string) => ({
-        projectId: newProject.id as string,
-        tagId: tagId as string,
-      }));
-      await ctx.db.insert(projectTagRelations).values(tagRelations);
-    }
+      // Create tag relationships atomically
+      if (tagIds.length > 0 && newProject?.id) {
+        const tagRelations = tagIds.map((tagId: string) => ({
+          projectId: newProject.id as string,
+          tagId: tagId as string,
+        }));
+        await tx.insert(projectTagRelations).values(tagRelations);
+      }
 
-    return {
-      count: count(),
-    };
+      return {
+        count: count(),
+      };
+    });
   }),
   getSubmissionsCount: publicProcedure.query(async ({ ctx }) => {
     const submissionsCount = await ctx.db.select({ count: count() }).from(project);

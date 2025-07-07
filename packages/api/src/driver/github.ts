@@ -15,8 +15,8 @@ import {
 import { project } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
+import { type Context } from './utils';
 import { eq } from 'drizzle-orm';
-
 const MyOctokit = Octokit.plugin(restEndpointMethods);
 
 export class GithubManager implements GitManager {
@@ -155,7 +155,7 @@ export class GithubManager implements GitManager {
 
   async verifyOwnership(
     identifier: string,
-    ctx: any,
+    ctx: Context,
     projectId: string,
   ): Promise<{
     success: boolean;
@@ -213,7 +213,7 @@ export class GithubManager implements GitManager {
             ownershipType = 'repository admin';
           }
         }
-      } catch (error: unknown) {
+      } catch (error) {
         console.log(
           'User does not have collaborator access to the repository:',
           (error as Error).message,
@@ -248,7 +248,7 @@ export class GithubManager implements GitManager {
     const updatedProject = await ctx.db
       .update(project)
       .set({
-        ownerId: ctx.session.userId,
+        ownerId: ctx.session?.userId ?? null,
         updatedAt: new Date(),
       })
       .where(eq(project.id, projectId))
@@ -308,8 +308,8 @@ export class GithubManager implements GitManager {
         updatedAt: data.updated_at,
         htmlUrl: data.html_url,
       };
-    } catch (error: any) {
-      if (error.status === 404) {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: `GitHub user '${username}' not found`,
@@ -317,7 +317,7 @@ export class GithubManager implements GitManager {
       }
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitHub user details: ${error.message}`,
+        message: `Failed to fetch GitHub user details: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
