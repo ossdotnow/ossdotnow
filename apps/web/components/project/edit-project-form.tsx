@@ -38,6 +38,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
+import { projectStatusEnum, projectTypeEnum, tagsEnum, gitHostEnum } from "@workspace/db/schema"
 
 interface EditProjectFormProps {
   projectId: string;
@@ -149,7 +150,7 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
       isLookingForContributors: project?.isLookingForContributors || false,
       isLookingForInvestors: project?.isLookingForInvestors || false,
       isHiring: project?.isHiring || false,
-      isPublic: project?.isPublic ?? true,
+      isPublic: project.isPublic ?? true,
       hasBeenAcquired: project?.hasBeenAcquired || false,
     },
   });
@@ -270,21 +271,54 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
           }),
         );
 
-        console.log('result', result);
-
         if (result) {
-          setRepoValidation({
-            isValidating: false,
-            isValid: true,
-            message: 'Repository found!',
-          });
+          try {
+            const duplicateCheck = await queryClient.fetchQuery(
+              trpc.submission.checkDuplicateRepo.queryOptions({
+                gitRepoUrl: repoUrl,
+              }),
+            );
 
-          if (result.name) {
-            form.setValue('name', result.name, { shouldValidate: true });
-          }
+            // Allow the current project's repo (editing itself)
+            if (
+              duplicateCheck.exists &&
+              repoUrl !== project?.gitRepoUrl // Only error if it's a different project
+            ) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: false,
+                message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
+              });
+              return;
+            }
 
-          if (result.description) {
-            form.setValue('description', result.description, { shouldValidate: true });
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found and available!',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
+          } catch (duplicateError) {
+            setRepoValidation({
+              isValidating: false,
+              isValid: true,
+              message: 'Repository found! (could not verify if already submitted, awkward..)',
+            });
+
+            if (result.name) {
+              form.setValue('name', result.name, { shouldValidate: true });
+            }
+
+            if (result.description) {
+              form.setValue('description', result.description, { shouldValidate: true });
+            }
           }
         }
       } catch (error) {
@@ -295,7 +329,7 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
         });
       }
     },
-    [queryClient, trpc, form],
+    [queryClient, trpc, form, project],
   );
 
   const debouncedValidateRepo = useDebouncedCallback((repoUrl: string, gitHost: string) => {
@@ -313,10 +347,16 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
 
   const steps = [
     {
+      id: 'repository-information',
+      title: 'Repository Information',
+      description: 'Where is your code hosted?',
+      fields: ['gitHost', 'gitRepoUrl'] as (keyof FormData)[],
+    },
+    {
       id: 'basic-information',
       title: 'Basic Information',
       description: 'Tell us about your project',
-      fields: ['description', 'logoUrl'] as (keyof FormData)[],
+      fields: ['name', 'description', 'logoUrl'] as (keyof FormData)[],
     },
     {
       id: 'project-details',
@@ -350,9 +390,10 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
   function handleProjectSubmission(formData: FormData) {
     mutate({
       ...formData,
-      status: formData.status || '',
-      type: formData.type || '',
-      gitHost: formData.gitHost as 'github' | 'gitlab' | null | undefined,
+      status: formData.status as (typeof projectStatusEnum.enumValues)[number],
+      type: formData.type as (typeof projectTypeEnum.enumValues)[number],
+      tags: formData.tags as (typeof tagsEnum.enumValues),
+      gitHost: formData.gitHost as (typeof gitHostEnum.enumValues)[number],
     });
   }
 
@@ -446,6 +487,138 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
         >
           {currentStep === 0 && (
             <div className="space-y-4">
+              {/* Step 0: gitRepoUrl and gitHost only */}
+              <FormField
+                control={form.control}
+                name="gitHost"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Git Hosting Platform</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        const gitRepoUrl = form.getValues('gitRepoUrl');
+                        if (gitRepoUrl && gitRepoUrl.trim() !== '') {
+                          debouncedValidateRepo(gitRepoUrl, value);
+                        }
+                      }}
+                      value={field.value || 'github'}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
+                          <SelectValue placeholder="Select git host" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="rounded-none">
+                        <SelectItem className="rounded-none" value="github">
+                          GitHub
+                        </SelectItem>
+                        <SelectItem className="rounded-none" value="gitlab">
+                          GitLab
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Git hosting platform for your project.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="gitRepoUrl"
+                render={({ field }) => {
+                  // Split the repo into owner and repo name
+                  const [owner, repo] = (field.value ?? '').split('/');
+                  const ownerValue = owner || (project?.gitRepoUrl?.split('/')[0] || '');
+                  const repoValue = repo || '';
+                  return (
+                    <FormItem>
+                      <FormLabel>Repository Name</FormLabel>
+                      <FormControl>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 w-1/3 text-base placeholder:text-[#9f9f9f]"
+                            value={ownerValue}
+                            disabled
+                          />
+                          <span className="text-lg font-bold">/</span>
+                          <div className="relative w-2/3">
+                            <Input
+                              className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 pr-10 text-base placeholder:text-[#9f9f9f]"
+                              placeholder="repository"
+                              value={repoValue}
+                              onChange={(e) => {
+                                const newRepo = e.target.value.replace(/\//g, '');
+                                const combined = ownerValue + '/' + newRepo;
+                                field.onChange(combined);
+                                const gitHost = form.getValues('gitHost') || 'github';
+                                debouncedValidateRepo(combined, gitHost);
+                              }}
+                              onPaste={async (e) => {
+                                let pastedText = '';
+                                try {
+                                  if (navigator.clipboard && navigator.clipboard.readText) {
+                                    e.preventDefault();
+                                    pastedText = await navigator.clipboard.readText();
+                                  } else {
+                                    e.preventDefault();
+                                    pastedText = e.clipboardData.getData('text');
+                                  }
+                                } catch (error) {
+                                  setTimeout(() => {
+                                    const inputValue = (e.target as HTMLInputElement).value;
+                                    const newRepo = inputValue.replace(/\//g, '');
+                                    const combined = ownerValue + '/' + newRepo;
+                                    field.onChange(combined);
+                                    const gitHost = form.getValues('gitHost') || 'github';
+                                    debouncedValidateRepo(combined, gitHost);
+                                  }, 0);
+                                  return;
+                                }
+                                if (pastedText) {
+                                  const parsed = parseRepositoryUrl(pastedText);
+                                  let newRepo = pastedText;
+                                  if (parsed) {
+                                    newRepo = parsed.repo.split('/')[1] || '';
+                                  }
+                                  const combined = ownerValue + '/' + newRepo.replace(/\//g, '');
+                                  field.onChange(combined);
+                                  const gitHost = form.getValues('gitHost') || 'github';
+                                  debouncedValidateRepo(combined, gitHost);
+                                }
+                              }}
+                            />
+                            <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                              {repoValidation.isValidating && (
+                                <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
+                              )}
+                              {!repoValidation.isValidating && repoValidation.isValid === true && (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              )}
+                              {!repoValidation.isValidating && repoValidation.isValid === false && (
+                                <AlertCircle className="text-destructive h-4 w-4" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        {repoValidation.message ||
+                          'Enter your repository name. Owner cannot be changed.'}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+          )}
+
+          {currentStep === 1 && (
+            <div className="space-y-4">
+              {/* Step 1: name, description, logoUrl only */}
               <FormField
                 control={form.control}
                 name="name"
@@ -466,62 +639,6 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="gitRepoUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Repository Name</FormLabel>
-                    <FormControl>
-                      <Input
-                        className="border-border z-10 rounded-none border !bg-[#1D1D1D]/100 text-base placeholder:text-[#9f9f9f]"
-                        placeholder="username/repository"
-                        {...field}
-                        disabled
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Repository name cannot be changed after creation.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gitHost"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Git Hosting Platform</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || 'github'}
-                      disabled
-                    >
-                      <FormControl>
-                        <SelectTrigger className="border-border z-10 w-full rounded-none border !bg-[#1D1D1D]/100 text-base">
-                          <SelectValue placeholder="Select git host" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="rounded-none">
-                        <SelectItem className="rounded-none" value="github">
-                          GitHub
-                        </SelectItem>
-                        <SelectItem className="rounded-none" value="gitlab">
-                          GitLab
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Git hosting platform cannot be changed after creation.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="description"
@@ -537,34 +654,18 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                       />
                     </FormControl>
                     <FormDescription>
-                      Provide a clear, concise description of what your project does and its main
-                      features.
+                      Provide a clear, concise description of what your project does and its main features.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
-              {/* <div className="flex flex-col gap-2">
-                      <FormLabel>Logo</FormLabel>
-                      <UploadDropzone
-                        endpoint="project-logos"
-                        onClientUploadComplete={(res) => {
-                          const [file] = res ?? [];
-                          if (file?.url) {
-                            form.setValue('logoUrl', file.url, { shouldValidate: true });
-                          }
-                        }}
-                        onUploadError={(error: Error) => {
-                          console.error(`ERROR! ${error.message}`);
-                        }}
-                      />
-                    </div> */}
             </div>
           )}
 
-          {currentStep === 1 && (
+          {currentStep === 2 && (
             <div className="space-y-4">
+              {/* Step 2: status, type, tags only */}
               <FormField
                 control={form.control}
                 name="status"
@@ -596,14 +697,12 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Indicate the current development stage of your project. This helps set
-                      appropriate expectations.
+                      Indicate the current development stage of your project. This helps set appropriate expectations.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="type"
@@ -631,14 +730,12 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select the category that best describes your project&apos;s primary focus
-                      area.
+                      Select the category that best describes your project's primary focus area.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="tags"
@@ -667,7 +764,7 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
             </div>
           )}
 
-          {currentStep === 2 && (
+          {currentStep === 3 && (
             <>
               <div className="space-y-4">
                 <h3 className="text-sm font-medium">Social Links</h3>
@@ -703,12 +800,9 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                                 />
                               </FormControl>
                               <FormDescription>
-                                {platform.value === 'website' &&
-                                  "Your project's official website or documentation"}
-                                {platform.value === 'twitter' &&
-                                  'Twitter/X profile for project updates and announcements'}
-                                {platform.value === 'linkedin' &&
-                                  'LinkedIn profile for professional networking'}
+                                {platform.value === 'website' && "Your project's official website or documentation"}
+                                {platform.value === 'twitter' && 'Twitter/X profile for project updates and announcements'}
+                                {platform.value === 'linkedin' && 'LinkedIn profile for professional networking'}
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -736,8 +830,7 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                       <div className="space-y-1 leading-none">
                         <FormLabel>Looking for Contributors</FormLabel>
                         <FormDescription>
-                          Enable this if you&apos;re actively seeking developers to contribute code,
-                          documentation, or other improvements to your project.
+                          Enable this if you're actively seeking developers to contribute code, documentation, or other improvements to your project.
                         </FormDescription>
                       </div>
                     </FormItem>
@@ -755,8 +848,7 @@ export default function EditProjectForm({ projectId, initialData }: EditProjectF
                       <div className="space-y-1 leading-none">
                         <FormLabel>Currently Hiring</FormLabel>
                         <FormDescription>
-                          Enable this if your project or organization has open positions and
-                          you&apos;re looking to hire team members.
+                          Enable this if your project or organization has open positions and you're looking to hire team members.
                         </FormDescription>
                       </div>
                     </FormItem>

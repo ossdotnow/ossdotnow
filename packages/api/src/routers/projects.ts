@@ -166,12 +166,7 @@ export const projectsRouter = createTRPCRouter({
 
     return ctx.db
       .update(project)
-      .set({
-        ...input,
-        status: input.status,
-        type: input.type,
-        tags: input.tags,
-      })
+      .set(input)
       .where(and(eq(project.id, input.id), eq(project.ownerId, ctx.session.userId)))
       .returning();
   }),

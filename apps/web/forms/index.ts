@@ -68,7 +68,7 @@ export const editProjectForm = createInsertSchema(project).extend({
       website: z.url('Invalid URL format').optional().or(z.literal('')),
     })
     .optional(),
-  status: z.string().min(1, 'Project status is required').optional(),
-  type: z.string().min(1, 'Project type is required').optional(),
+  status: z.string().min(1, 'Project status is required'),
+  type: z.string().min(1, 'Project type is required'),
   tags: z.array(z.string()).default([]).optional(),
 });
