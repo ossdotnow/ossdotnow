@@ -13,7 +13,6 @@ const createProjectInput = createInsertSchema(project);
 
 const updateProjectInput = createInsertSchema(project)
   .extend({
-    // Use proper enum types for updates
     status: z.enum(projectStatusEnum.enumValues),
     type: z.enum(projectTypeEnum.enumValues),
     tags: z.array(z.enum(tagsEnum.enumValues)).default([]),

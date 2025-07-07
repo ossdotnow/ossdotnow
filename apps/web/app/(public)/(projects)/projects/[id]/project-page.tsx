@@ -97,8 +97,6 @@ export default function ProjectPage({ id }: { id: string }) {
 
   const isUnclaimed = !project.ownerId;
   const isOwner = user?.id === project.ownerId;
-  console.log("User:", user?.id);
-  console.log("Project: ", project.ownerId);
 
   const repo = repoData[0].data;
   const contributors = repoData[1].data;
