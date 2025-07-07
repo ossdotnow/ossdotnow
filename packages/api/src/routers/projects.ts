@@ -680,7 +680,7 @@ export const projectsRouter = createTRPCRouter({
           result.repoPermissionDetails = repoPermissions;
         } catch (e) {
           result.repoPermission = 'none';
-          result.repoPermissionError = (e as Error).message;
+          result.repoPermissionError = (e instanceof Error ? e.message : String(e));
         }
 
         if (repoData.owner.type === 'Organization') {
@@ -695,13 +695,13 @@ export const projectsRouter = createTRPCRouter({
             };
           } catch (e) {
             result.orgMembership = 'not a member';
-            result.orgMembershipError = (e as Error).message;
+            result.orgMembershipError = (e instanceof Error ? e.message : String(e));
           }
         }
 
         return result;
       } catch (error) {
-        return { error: (error as Error).message };
+        return { error: error instanceof Error ? error.message : String(error) } as const;
       }
     }),
 });

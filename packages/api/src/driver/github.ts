@@ -216,7 +216,7 @@ export class GithubManager implements GitManager {
       } catch (error) {
         console.log(
           'User does not have collaborator access to the repository:',
-          (error as Error).message,
+          (error instanceof Error ? error.message : String(error)),
         );
 
         try {
