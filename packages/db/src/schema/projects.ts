@@ -34,7 +34,6 @@ export const project = pgTable(
 
     approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
 
-    // Replace enum columns with foreign keys
     statusId: uuid('status_id')
       .references(() => categoryProjectStatuses.id, { onDelete: 'restrict' })
       .notNull(),
@@ -63,7 +62,6 @@ export const project = pgTable(
   }),
 );
 
-// Many-to-many relationship table for project tags
 export const projectTagRelations = pgTable(
   'project_tag_relations',
   {
@@ -83,7 +81,6 @@ export const projectTagRelations = pgTable(
   }),
 );
 
-// Update relations
 export const projectRelations = relations(project, ({ one, many }) => ({
   owner: one(user, {
     fields: [project.ownerId],

@@ -21,7 +21,6 @@ const createProjectInput = createInsertSchema(project)
     deletedAt: true,
   })
   .extend({
-    // Override enum validations to accept database values
     status: z.string().min(1, 'Project status is required'),
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
@@ -88,8 +87,6 @@ export const submissionRouter = createTRPCRouter({
       });
     }
     const ownerId = ownerCheck.ownerId;
-
-    // Resolve string values to database IDs outside transaction since they're just lookups
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,
@@ -132,8 +129,6 @@ export const submissionRouter = createTRPCRouter({
           message: `This repository has already been submitted! The project "${existing[0]?.name}" has ${statusMsg}. If you think this is an error, please contact support.`,
         });
       }
-
-      // Create tag relationships atomically
       if (tagIds.length > 0 && newProject?.id) {
         const tagRelations = tagIds.map((tagId: string) => ({
           projectId: newProject.id as string,
@@ -141,8 +136,6 @@ export const submissionRouter = createTRPCRouter({
         }));
         await tx.insert(projectTagRelations).values(tagRelations);
       }
-
-      // Get the actual count instead of returning count function
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,

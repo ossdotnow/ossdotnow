@@ -72,8 +72,6 @@ export const launchesRouter = createTRPCRouter({
       }
 
       const launchData = launch[0];
-
-      // Get tags separately since it's a many-to-many relationship
       const tags = await ctx.db
         .select({
           name: categoryTags.name,
@@ -166,7 +164,6 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
-      // Get tags for all launches
       const launchIds = launches.map((l) => l.id);
       let tagsMap: Record<string, string[]> = {};
 
@@ -286,7 +283,6 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
-      // Get tags for all launches
       const launchIds = launches.map((l) => l.id);
       let tagsMap: Record<string, string[]> = {};
 

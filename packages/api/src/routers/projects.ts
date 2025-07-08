@@ -65,20 +65,17 @@ export const projectsRouter = createTRPCRouter({
       const { page, pageSize, approvalStatus } = input;
       const offset = (page - 1) * pageSize;
 
-      // Build where clause based on approval status
       const whereClause =
         approvalStatus === 'all' || !approvalStatus
           ? undefined
           : eq(project.approvalStatus, approvalStatus);
 
-      // Get total count
       const [totalCountResult] = await ctx.db
         .select({ totalCount: count() })
         .from(project)
         .where(whereClause)
         .limit(1);
 
-      // Get paginated results with relations
       const projects = await ctx.db.query.project.findMany({
         where: whereClause,
         orderBy: [desc(project.isPinned), asc(project.name)],
@@ -97,7 +94,6 @@ export const projectsRouter = createTRPCRouter({
 
       const totalCount = totalCountResult?.totalCount ?? 0;
 
-      // Calculate pagination metadata
       const totalPages = Math.ceil(totalCount / pageSize);
       const hasNextPage = page < totalPages;
       const hasPreviousPage = page > 1;
@@ -183,7 +179,6 @@ export const projectsRouter = createTRPCRouter({
     });
   }),
   addProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    // Resolve string values to database IDs outside transaction since they're just lookups
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,
@@ -191,7 +186,6 @@ export const projectsRouter = createTRPCRouter({
     });
 
     return await ctx.db.transaction(async (tx) => {
-      // Create the project
       const [newProject] = await tx
         .insert(project)
         .values({
@@ -217,11 +211,9 @@ export const projectsRouter = createTRPCRouter({
     if (!input.id) throw new Error('Project ID is required for update');
     if (!ctx.session.userId) throw new Error('User not authenticated');
 
-    // Ensure id and userId are defined for type safety
     const projectId = input.id;
     const userId = ctx.session.userId;
 
-    // Resolve string values to database IDs outside transaction since they're just lookups
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,
@@ -229,7 +221,6 @@ export const projectsRouter = createTRPCRouter({
     });
 
     return await ctx.db.transaction(async (tx) => {
-      // Update the project
       const [updatedProject] = await tx
         .update(project)
         .set({
@@ -247,11 +238,8 @@ export const projectsRouter = createTRPCRouter({
         });
       }
 
-      // Update tag relationships atomically
-      // First, delete existing relationships
       await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
 
-      // Then, create new relationships
       if (tagIds.length > 0) {
         const tagRelations = tagIds.map((tagId: string) => ({
           projectId: projectId,
@@ -376,7 +364,6 @@ export const projectsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      // 1. Get the project details
       const projectToClaim = await ctx.db.query.project.findFirst({
         where: eq(project.id, input.projectId),
       });
