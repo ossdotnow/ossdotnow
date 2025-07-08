@@ -32,7 +32,7 @@ import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
 import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useQueryState } from 'nuqs';
+import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 type Project = typeof project.$inferSelect & {
@@ -43,14 +43,13 @@ type Project = typeof project.$inferSelect & {
   }>;
 };
 
-type ApprovalStatusFilter = Project['approvalStatus'] | 'all';
+const approvalStatusTabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
+const approvalStatusParser = parseAsStringEnum([...approvalStatusTabs]).withDefault('all');
 
 export default function AdminProjectsDashboard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [approvalStatus, setApprovalStatus] = useQueryState('approvalStatus', {
-    defaultValue: 'all',
-  });
+  const [approvalStatus, setApprovalStatus] = useQueryState('approvalStatus', approvalStatusParser);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
@@ -77,7 +76,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as ApprovalStatusFilter,
+          approvalStatus,
         }),
       });
     },
@@ -88,7 +87,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as ApprovalStatusFilter,
+          approvalStatus,
         }),
       });
     },
@@ -99,7 +98,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as ApprovalStatusFilter,
+          approvalStatus,
         }),
       });
     },
@@ -110,7 +109,7 @@ export default function AdminProjectsDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
-          approvalStatus: approvalStatus as ApprovalStatusFilter,
+          approvalStatus,
         }),
       });
     },
@@ -290,8 +289,7 @@ export default function AdminProjectsDashboard() {
 
                 <ProjectsTable
                   projects={filteredProjects.filter(
-                    (project) =>
-                      project.approvalStatus === (tab as ApprovalStatusFilter) || tab === 'all',
+                    (project) => project.approvalStatus === tab || tab === 'all',
                   )}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
