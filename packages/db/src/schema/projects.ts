@@ -1,6 +1,7 @@
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
+import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from './categories';
 import { projectCompetitors } from './project-competitors';
-import { gitHostEnum, tagsEnum } from './shared-enums';
+import { gitHostEnum } from './shared-enums';
 import { competitor } from './competitors';
 import { relations } from 'drizzle-orm';
 import { user } from './auth';
@@ -11,75 +12,92 @@ export const projectApprovalStatusEnum = pgEnum('project_approval_status', [
   'approved',
   'rejected',
 ]);
-export const projectStatusEnum = pgEnum('project_status', [
-  'active',
-  'inactive',
-  'early-stage',
-  'beta',
-  'production-ready',
-  'experimental',
-  'cancelled',
-  'paused',
-]);
-export const projectTypeEnum = pgEnum('project_type', [
-  'fintech',
-  'healthtech',
-  'edtech',
-  'ecommerce',
-  'productivity',
-  'social',
-  'entertainment',
-  'developer-tools',
-  'content-management',
-  'analytics',
-  'other',
-]);
 
-export const project = pgTable('project', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
+export const project = pgTable(
+  'project',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: text('owner_id').references(() => user.id, { onDelete: 'set null' }),
 
-  logoUrl: text('logo_url'),
-  gitRepoUrl: text('git_repo_url').unique().notNull(),
-  gitHost: gitHostEnum('git_host'),
-  name: text('name').notNull(),
-  description: text('description'),
-  socialLinks: jsonb('social_links').$type<{
-    twitter?: string;
-    discord?: string;
-    linkedin?: string;
-    website?: string;
-    [key: string]: string | undefined;
-  }>(),
+    logoUrl: text('logo_url'),
+    gitRepoUrl: text('git_repo_url').unique().notNull(),
+    gitHost: gitHostEnum('git_host'),
+    name: text('name').notNull(),
+    description: text('description'),
+    socialLinks: jsonb('social_links').$type<{
+      twitter?: string;
+      discord?: string;
+      linkedin?: string;
+      website?: string;
+      [key: string]: string | undefined;
+    }>(),
 
-  tags: tagsEnum('tags').array().default([]),
+    approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
 
-  approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
+    // Replace enum columns with foreign keys
+    statusId: uuid('status_id')
+      .references(() => categoryProjectStatuses.id, { onDelete: 'restrict' })
+      .notNull(),
+    typeId: uuid('type_id')
+      .references(() => categoryProjectTypes.id, { onDelete: 'restrict' })
+      .notNull(),
 
-  status: projectStatusEnum('status').notNull(),
-  type: projectTypeEnum('type').notNull(),
+    isLookingForContributors: boolean('is_looking_for_contributors').notNull().default(false),
+    isLookingForInvestors: boolean('is_looking_for_investors').notNull().default(false),
+    isHiring: boolean('is_hiring').notNull().default(false),
+    isPublic: boolean('is_public').notNull().default(false),
+    hasBeenAcquired: boolean('has_been_acquired').notNull().default(false),
+    isPinned: boolean('is_pinned').notNull().default(false),
+    acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
 
-  isLookingForContributors: boolean('is_looking_for_contributors').notNull().default(false),
-  isLookingForInvestors: boolean('is_looking_for_investors').notNull().default(false),
-  isHiring: boolean('is_hiring').notNull().default(false),
-  isPublic: boolean('is_public').notNull().default(false),
-  hasBeenAcquired: boolean('has_been_acquired').notNull().default(false),
-  isPinned: boolean('is_pinned').notNull().default(false),
-  acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
+    deletedAt: timestamp('deleted_at', { mode: 'date' }),
+    createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => ({
+    statusIdIdx: index('project_status_id_idx').on(table.statusId),
+    typeIdIdx: index('project_type_id_idx').on(table.typeId),
+  }),
+);
 
-  deletedAt: timestamp('deleted_at', { mode: 'date' }),
-  createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { mode: 'date', withTimezone: true })
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+// Many-to-many relationship table for project tags
+export const projectTagRelations = pgTable(
+  'project_tag_relations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id')
+      .references(() => project.id, { onDelete: 'cascade' })
+      .notNull(),
+    tagId: uuid('tag_id')
+      .references(() => categoryTags.id, { onDelete: 'cascade' })
+      .notNull(),
+    createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index('project_tag_relations_project_id_idx').on(table.projectId),
+    tagIdIdx: index('project_tag_relations_tag_id_idx').on(table.tagId),
+    uniqueProjectTag: index('unique_project_tag').on(table.projectId, table.tagId),
+  }),
+);
 
+// Update relations
 export const projectRelations = relations(project, ({ one, many }) => ({
   owner: one(user, {
     fields: [project.ownerId],
     references: [user.id],
   }),
+  status: one(categoryProjectStatuses, {
+    fields: [project.statusId],
+    references: [categoryProjectStatuses.id],
+  }),
+  type: one(categoryProjectTypes, {
+    fields: [project.typeId],
+    references: [categoryProjectTypes.id],
+  }),
+  tagRelations: many(projectTagRelations),
   competitors: many(projectCompetitors, { relationName: 'competitors' }),
   acquiringCompetitor: one(competitor, {
     fields: [project.acquiredBy],
@@ -88,4 +106,15 @@ export const projectRelations = relations(project, ({ one, many }) => ({
   }),
   alternativeProjects: many(projectCompetitors, { relationName: 'alternative_projects' }),
   alternativeCompetitors: many(projectCompetitors, { relationName: 'alternative_competitors' }),
+}));
+
+export const projectTagRelationsRelations = relations(projectTagRelations, ({ one }) => ({
+  project: one(project, {
+    fields: [projectTagRelations.projectId],
+    references: [project.id],
+  }),
+  tag: one(categoryTags, {
+    fields: [projectTagRelations.tagId],
+    references: [categoryTags.id],
+  }),
 }));

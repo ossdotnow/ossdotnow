@@ -1,17 +1,21 @@
+import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/project-helpers';
+import { project, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
-import { project } from '@workspace/db/schema';
+import { type Context } from '../driver/utils';
+import { user } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
-import { user } from '@workspace/db/schema';
 
 const createProjectInput = createInsertSchema(project)
   .omit({
     id: true,
     ownerId: true,
+    statusId: true,
+    typeId: true,
     createdAt: true,
     updatedAt: true,
     deletedAt: true,
@@ -23,42 +27,7 @@ const createProjectInput = createInsertSchema(project)
     tags: z.array(z.string()).default([]),
   });
 
-const APPROVAL_STATUS = {
-  APPROVED: 'approved',
-  PENDING: 'pending',
-  REJECTED: 'rejected',
-} as const;
-
-async function checkProjectDuplicate(db: any, gitRepoUrl: string) {
-  const existingProject = await db.query.project.findFirst({
-    where: eq(project.gitRepoUrl, gitRepoUrl),
-    columns: {
-      id: true,
-      name: true,
-      approvalStatus: true,
-    },
-  });
-
-  if (!existingProject) {
-    return { exists: false };
-  }
-
-  const statusMessage =
-    existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
-      ? 'approved and is already listed'
-      : existingProject.approvalStatus === APPROVAL_STATUS.PENDING
-        ? 'pending review'
-        : 'been submitted but was rejected';
-
-  return {
-    exists: true,
-    projectName: existingProject.name,
-    statusMessage,
-    approvalStatus: existingProject.approvalStatus,
-  };
-}
-
-async function checkUserOwnsProject(ctx: any, gitRepoUrl: string) {
+async function checkUserOwnsProject(ctx: Context, gitRepoUrl: string) {
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
   const match = gitRepoUrl.match(githubUrlRegex);
   let ownerId = null;
@@ -111,15 +80,6 @@ export const submissionRouter = createTRPCRouter({
       }
     }
 
-    const duplicateCheck = await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
-
-    if (duplicateCheck.exists) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}. If you think this is an error, please contact support.`,
-      });
-    }
-
     const ownerCheck = await checkUserOwnsProject(ctx, input.gitRepoUrl);
     if (ownerCheck.error) {
       throw new TRPCError({
@@ -129,18 +89,65 @@ export const submissionRouter = createTRPCRouter({
     }
     const ownerId = ownerCheck.ownerId;
 
-    await ctx.db.insert(project).values({
-      ...input,
-      ownerId,
-      approvalStatus: APPROVAL_STATUS.PENDING,
-      status: input.status as any,
-      type: input.type as any,
-      tags: input.tags as any,
+    // Resolve string values to database IDs outside transaction since they're just lookups
+    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+      status: input.status,
+      type: input.type,
+      tags: input.tags,
     });
 
-    return {
-      count: count(),
-    };
+    // Wrap only the atomic database operations in a transaction
+    return await ctx.db.transaction(async (tx) => {
+      const [newProject] = await tx
+        .insert(project)
+        .values({
+          ...input,
+          ownerId,
+          approvalStatus: APPROVAL_STATUS.PENDING,
+          statusId,
+          typeId,
+        })
+        .onConflictDoNothing({ target: project.gitRepoUrl })
+        .returning();
+
+      if (!newProject) {
+        const existing = await tx
+          .select({
+            name: project.name,
+            approvalStatus: project.approvalStatus,
+          })
+          .from(project)
+          .where(eq(project.gitRepoUrl, input.gitRepoUrl))
+          .limit(1);
+
+        const statusMsg =
+          existing[0]?.approvalStatus === 'approved'
+            ? 'approved and is already listed'
+            : existing[0]?.approvalStatus === 'pending'
+              ? 'pending review'
+              : 'been submitted but was rejected';
+
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `This repository has already been submitted! The project "${existing[0]?.name}" has ${statusMsg}. If you think this is an error, please contact support.`,
+        });
+      }
+
+      // Create tag relationships atomically
+      if (tagIds.length > 0 && newProject?.id) {
+        const tagRelations = tagIds.map((tagId: string) => ({
+          projectId: newProject.id as string,
+          tagId: tagId as string,
+        }));
+        await tx.insert(projectTagRelations).values(tagRelations);
+      }
+
+      // Get the actual count instead of returning count function
+      const [totalCount] = await tx.select({ count: count() }).from(project);
+      return {
+        count: totalCount?.count ?? 0,
+      };
+    });
   }),
   getSubmissionsCount: publicProcedure.query(async ({ ctx }) => {
     const submissionsCount = await ctx.db.select({ count: count() }).from(project);

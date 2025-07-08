@@ -435,12 +435,12 @@ export default function ProjectPage({ id }: { id: string }) {
                 Tags
               </h2>
               <div className="flex flex-wrap gap-1.5 md:gap-2">
-                {project?.tags?.map((tag: string, index: number) => (
+                {project?.tagRelations?.map((relation, index: number) => (
                   <span
                     key={index}
                     className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 md:px-3 md:text-sm"
                   >
-                    #{tag}
+                    #{relation.tag?.displayName || relation.tag?.name}
                   </span>
                 ))}
               </div>

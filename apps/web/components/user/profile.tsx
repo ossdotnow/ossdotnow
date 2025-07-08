@@ -357,9 +357,9 @@ export default function ProfilePage({ id }: { id: string }) {
                                 </p>
 
                                 <div className="mb-3 flex flex-wrap gap-2">
-                                  {project.tags?.map((tag) => (
-                                    <Badge key={tag} variant="outline" className="text-xs">
-                                      {tag}
+                                  {project.tagRelations?.map((relation, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {relation.tag?.displayName || relation.tag?.name}
                                     </Badge>
                                   ))}
                                 </div>

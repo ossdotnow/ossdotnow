@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, index, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { project } from './projects';
 import { user } from './auth';
@@ -13,7 +13,7 @@ export const projectComment = pgTable(
     userId: text('user_id')
       .references(() => user.id, { onDelete: 'cascade' })
       .notNull(),
-    parentId: uuid('parent_id').references((): any => projectComment.id, {
+    parentId: uuid('parent_id').references((): AnyPgColumn => projectComment.id, {
       onDelete: 'cascade',
     }),
     content: text('content').notNull(),

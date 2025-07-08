@@ -1,7 +1,8 @@
+import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/project-helpers';
+import { project, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
-import { project } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
@@ -11,51 +12,17 @@ const createProjectInput = createInsertSchema(project)
   .omit({
     id: true,
     ownerId: true,
+    statusId: true,
+    typeId: true,
     createdAt: true,
     updatedAt: true,
     deletedAt: true,
   })
   .extend({
-    // Override enum validations to accept database values
     status: z.string().min(1, 'Project status is required'),
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
   });
-
-const APPROVAL_STATUS = {
-  APPROVED: 'approved',
-  PENDING: 'pending',
-  REJECTED: 'rejected',
-} as const;
-
-async function checkProjectDuplicate(db: any, gitRepoUrl: string) {
-  const existingProject = await db.query.project.findFirst({
-    where: eq(project.gitRepoUrl, gitRepoUrl),
-    columns: {
-      id: true,
-      name: true,
-      approvalStatus: true,
-    },
-  });
-
-  if (!existingProject) {
-    return { exists: false };
-  }
-
-  const statusMessage =
-    existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
-      ? 'approved and is already listed'
-      : existingProject.approvalStatus === APPROVAL_STATUS.PENDING
-        ? 'pending review'
-        : 'been submitted but was rejected';
-
-  return {
-    exists: true,
-    projectName: existingProject.name,
-    statusMessage,
-    approvalStatus: existingProject.approvalStatus,
-  };
-}
 
 export const earlySubmissionRouter = createTRPCRouter({
   checkDuplicateRepo: publicProcedure
@@ -78,27 +45,65 @@ export const earlySubmissionRouter = createTRPCRouter({
       }
     }
 
-    const duplicateCheck = await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
-
-    if (duplicateCheck.exists) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}. If you think this is an error, please contact support.`,
-      });
-    }
-
-    await ctx.db.insert(project).values({
-      ...input,
-      ownerId: null,
-      approvalStatus: APPROVAL_STATUS.PENDING,
-      status: input.status as any,
-      type: input.type as any,
-      tags: input.tags as any,
+    // Resolve string values to database IDs outside transaction since they're just lookups
+    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+      status: input.status,
+      type: input.type,
+      tags: input.tags,
     });
 
-    return {
-      count: count(),
-    };
+    return await ctx.db.transaction(async (tx) => {
+      const [newProject] = await tx
+        .insert(project)
+        .values({
+          ...input,
+          ownerId: null,
+          approvalStatus: APPROVAL_STATUS.PENDING,
+          statusId,
+          typeId,
+        })
+        .onConflictDoNothing({ target: project.gitRepoUrl })
+        .returning();
+
+      if (!newProject) {
+        const existing = await tx
+          .select({
+            name: project.name,
+            approvalStatus: project.approvalStatus,
+          })
+          .from(project)
+          .where(eq(project.gitRepoUrl, input.gitRepoUrl))
+          .limit(1);
+
+        const statusMsg =
+          existing[0]?.approvalStatus === 'approved'
+            ? 'approved and is already listed'
+            : existing[0]?.approvalStatus === 'pending'
+              ? 'pending review'
+              : 'been submitted but was rejected';
+
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: `This repository has already been submitted! The project "${existing[0]?.name}" has ${statusMsg}. If you think this is an error, please contact support.`,
+        });
+      }
+
+      if (tagIds.length > 0 && newProject?.id) {
+        const tagRelations = tagIds.map((tagId: string) => ({
+          projectId: newProject.id as string,
+          tagId: tagId as string,
+        }));
+        await tx.insert(projectTagRelations).values(tagRelations);
+      }
+
+      // Get the current total count of projects after insertion
+      const [totalCount] = await tx.select({ count: count() }).from(project);
+
+      return {
+        project: newProject,
+        totalCount: totalCount?.count ?? 0,
+      };
+    });
   }),
   getEarlySubmissionsCount: publicProcedure.query(async ({ ctx }) => {
     const earlySubmissionsCount = await ctx.db.select({ count: count() }).from(project);
