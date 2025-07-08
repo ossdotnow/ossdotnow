@@ -3,10 +3,6 @@ import { eq, inArray } from 'drizzle-orm';
 import { project } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { type DB } from '@workspace/db';
-
-
-type TransactionDB = Parameters<Parameters<DB['transaction']>[0]>[0];
-
 export const APPROVAL_STATUS = {
   APPROVED: 'approved',
   PENDING: 'pending',
@@ -61,56 +57,6 @@ export async function resolveTagIds(db: DB, tagNames: string[]) {
 
   return tags.map((tag) => tag.id);
 }
-
-export async function resolveStatusIdTx(tx: TransactionDB, statusName: string) {
-  const status = await tx.query.categoryProjectStatuses.findFirst({
-    where: eq(categoryProjectStatuses.name, statusName),
-    columns: { id: true },
-  });
-  if (!status) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid status: ${statusName}`,
-    });
-  }
-  return status.id;
-}
-
-export async function resolveTypeIdTx(tx: TransactionDB, typeName: string) {
-  const type = await tx.query.categoryProjectTypes.findFirst({
-    where: eq(categoryProjectTypes.name, typeName),
-    columns: { id: true },
-  });
-  if (!type) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid type: ${typeName}`,
-    });
-  }
-  return type.id;
-}
-
-export async function resolveTagIdsTx(tx: TransactionDB, tagNames: string[]) {
-  if (tagNames.length === 0) return [];
-
-  const tags = await tx.query.categoryTags.findMany({
-    where: inArray(categoryTags.name, tagNames),
-    columns: { id: true, name: true },
-  });
-
-  const foundTagNames = tags.map((tag) => tag.name);
-  const invalidTags = tagNames.filter((name) => !foundTagNames.includes(name));
-
-  if (invalidTags.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid tags: ${invalidTags.join(', ')}`,
-    });
-  }
-
-  return tags.map((tag) => tag.id);
-}
-
 export async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
   const existingProject = await db.query.project.findFirst({
     where: eq(project.gitRepoUrl, gitRepoUrl),
@@ -139,36 +85,6 @@ export async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
     approvalStatus: existingProject.approvalStatus,
   };
 }
-
-export async function checkProjectDuplicateInTransaction(tx: TransactionDB, gitRepoUrl: string) {
-  const existingProject = await tx.query.project.findFirst({
-    where: eq(project.gitRepoUrl, gitRepoUrl),
-    columns: {
-      id: true,
-      name: true,
-      approvalStatus: true,
-    },
-  });
-
-  if (!existingProject) {
-    return { exists: false };
-  }
-
-  const statusMessage =
-    existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
-      ? 'approved and is already listed'
-      : existingProject.approvalStatus === APPROVAL_STATUS.PENDING
-        ? 'pending review'
-        : 'been submitted but was rejected';
-
-  return {
-    exists: true,
-    projectName: existingProject.name,
-    statusMessage,
-    approvalStatus: existingProject.approvalStatus,
-  };
-}
-
 export async function resolveAllIds(
   db: DB,
   input: { status: string; type: string; tags: string[] },
