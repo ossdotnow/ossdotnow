@@ -60,7 +60,7 @@ export default function AdminProjectsDashboard() {
     data: projects,
     isLoading,
     isError,
-  } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus: 'all' }));
+  } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus }));
 
   // Fetch categories for filters
   const { data: projectStatuses } = useQuery(
@@ -121,33 +121,21 @@ export default function AdminProjectsDashboard() {
 
   const handleAccept = (projectId: string) => {
     acceptProject({ projectId });
-    queryClient.invalidateQueries({
-      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
-    });
   };
 
   const handleReject = (projectId: string) => {
     rejectProject({ projectId });
-    queryClient.invalidateQueries({
-      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
-    });
   };
 
   const handlePin = (projectId: string) => {
     pinProject({ projectId });
-    queryClient.invalidateQueries({
-      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
-    });
   };
 
   const handleUnpin = (projectId: string) => {
     unpinProject({ projectId });
-    queryClient.invalidateQueries({
-      queryKey: [...trpc.projects.getProjects.queryKey({ approvalStatus: 'all' })],
-    });
   };
 
-  const tabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
+  const tabs = approvalStatusTabs;
 
   const filteredProjects = projects.data
     .filter((project) => approvalStatus === 'all' || project.approvalStatus === approvalStatus)
@@ -288,9 +276,7 @@ export default function AdminProjectsDashboard() {
                 </div>
 
                 <ProjectsTable
-                  projects={filteredProjects.filter(
-                    (project) => project.approvalStatus === tab || tab === 'all',
-                  )}
+                  projects={filteredProjects}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
                   handlePin={handlePin}
