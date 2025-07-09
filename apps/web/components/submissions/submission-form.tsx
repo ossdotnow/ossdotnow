@@ -454,7 +454,7 @@ export default function SubmissionForm({
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   return success && env.NEXT_PUBLIC_ENV === 'production' ? (
-  // return success ? (
+    // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>
@@ -897,13 +897,12 @@ export default function SubmissionForm({
           )}
 
           <DialogFooter>
-            <div className="flex justify-between gap-4 pt-6 pb-20">
+            <div className="flex items-center justify-between gap-4 pt-6 pb-20">
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none"
+                className={`${currentStep === 0 ? 'hidden' : ''} rounded-none`}
                 onClick={prevStep}
-                disabled={currentStep === 0}
               >
                 <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
