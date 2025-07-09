@@ -1,5 +1,5 @@
 import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/project-helpers';
-import { project, projectTagRelations } from '@workspace/db/schema';
+import { project, projectClaim, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
@@ -39,10 +39,11 @@ async function checkUserOwnsProject(ctx: Context, gitRepoUrl: string) {
     });
     if (userResult) {
       ownerId = userResult.id;
-      return { isOwner: true, ownerId };
+      return { isOwner: true, ownerId, userResult, owner };
     } else {
       return {
         isOwner: false,
+        owner,
       };
     }
   } else {
@@ -136,6 +137,21 @@ export const submissionRouter = createTRPCRouter({
         }));
         await tx.insert(projectTagRelations).values(tagRelations);
       }
+      if (ownerId && newProject?.id && ctx.session?.userId) {
+        await tx.insert(projectClaim).values({
+          projectId: newProject.id,
+          userId: ctx.session.userId,
+          success: true,
+          verificationMethod: 'submission_username_match',
+          verificationDetails: {
+            verifiedAs: ownerCheck.userResult?.username || 'unknown',
+            submissionMethod: 'auto_claim_during_submission',
+            repositoryUrl: input.gitRepoUrl,
+            matchedUsername: ownerCheck.owner,
+          },
+        });
+      }
+
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,
