@@ -44,8 +44,6 @@ export const earlySubmissionRouter = createTRPCRouter({
         });
       }
     }
-
-    // Resolve string values to database IDs outside transaction since they're just lookups
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,
@@ -96,7 +94,6 @@ export const earlySubmissionRouter = createTRPCRouter({
         await tx.insert(projectTagRelations).values(tagRelations);
       }
 
-      // Get the current total count of projects after insertion
       const [totalCount] = await tx.select({ count: count() }).from(project);
 
       return {

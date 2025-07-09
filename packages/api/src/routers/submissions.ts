@@ -1,5 +1,5 @@
 import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/project-helpers';
-import { project, projectTagRelations } from '@workspace/db/schema';
+import { project, projectTagRelations, projectClaim } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { createInsertSchema } from 'drizzle-zod';
@@ -21,7 +21,6 @@ const createProjectInput = createInsertSchema(project)
     deletedAt: true,
   })
   .extend({
-    // Override enum validations to accept database values
     status: z.string().min(1, 'Project status is required'),
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
@@ -40,10 +39,11 @@ async function checkUserOwnsProject(ctx: Context, gitRepoUrl: string) {
     });
     if (userResult) {
       ownerId = userResult.id;
-      return { isOwner: true, ownerId };
+      return { isOwner: true, ownerId, userResult, owner };
     } else {
       return {
         isOwner: false,
+        owner,
       };
     }
   } else {
@@ -88,8 +88,6 @@ export const submissionRouter = createTRPCRouter({
       });
     }
     const ownerId = ownerCheck.ownerId;
-
-    // Resolve string values to database IDs outside transaction since they're just lookups
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,
@@ -132,8 +130,6 @@ export const submissionRouter = createTRPCRouter({
           message: `This repository has already been submitted! The project "${existing[0]?.name}" has ${statusMsg}. If you think this is an error, please contact support.`,
         });
       }
-
-      // Create tag relationships atomically
       if (tagIds.length > 0 && newProject?.id) {
         const tagRelations = tagIds.map((tagId: string) => ({
           projectId: newProject.id as string,
@@ -141,8 +137,21 @@ export const submissionRouter = createTRPCRouter({
         }));
         await tx.insert(projectTagRelations).values(tagRelations);
       }
+      if (ownerId && newProject?.id && ctx.session?.userId) {
+        await tx.insert(projectClaim).values({
+          projectId: newProject.id,
+          userId: ctx.session.userId,
+          success: true,
+          verificationMethod: 'submission_username_match',
+          verificationDetails: {
+            verifiedAs: ownerCheck.userResult?.username || 'unknown',
+            submissionMethod: 'auto_claim_during_submission',
+            repositoryUrl: input.gitRepoUrl,
+            matchedUsername: ownerCheck.owner,
+          },
+        });
+      }
 
-      // Get the actual count instead of returning count function
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,

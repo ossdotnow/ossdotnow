@@ -21,7 +21,6 @@ export async function seedDb() {
 }
 
 seedDb().catch((error) => {
-  // catch any unhandled errors
   console.error('❌ Unexpected error:', error);
   process.exit(1);
 });
