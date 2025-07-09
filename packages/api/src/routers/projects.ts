@@ -1,5 +1,5 @@
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { account, project, projectTagRelations } from '@workspace/db/schema';
+import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
 import { APPROVAL_STATUS, resolveAllIds } from '../utils/project-helpers';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
@@ -455,10 +455,27 @@ export const projectsRouter = createTRPCRouter({
           throw error;
         }
 
-        console.error('GitHub API error:', error);
+        console.error('API error during claim verification:', error);
+        try {
+          await ctx.db.insert(projectClaim).values({
+            projectId: input.projectId,
+            userId: ctx.session.userId!,
+            success: false,
+            verificationMethod: `${provider}_api_error`,
+            verificationDetails: {
+              error: error instanceof Error ? error.message : String(error),
+              provider,
+              repositoryUrl: projectToClaim.gitRepoUrl,
+            },
+            errorReason: `API error during ${provider} verification: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        } catch (dbError) {
+          console.error('Failed to record claim attempt:', dbError);
+        }
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to verify GitHub ownership. Please try again.',
+          message: `Failed to verify ${provider} ownership. Please try again.`,
         });
       }
     }),

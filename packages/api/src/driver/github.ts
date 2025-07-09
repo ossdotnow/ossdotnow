@@ -12,7 +12,7 @@ import {
   restEndpointMethods,
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
-import { project } from '@workspace/db/schema';
+import { project, projectClaim } from '@workspace/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
@@ -237,6 +237,20 @@ export class GithubManager implements GitManager {
 
     if (!isOwner) {
       console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
+      await ctx.db.insert(projectClaim).values({
+        projectId,
+        userId: ctx.session?.userId!,
+        success: false,
+        verificationMethod: 'github_api',
+        verificationDetails: {
+          verifiedAs: currentUser.username,
+          repoOwner: repoData.owner.login,
+          repoOwnerType: repoData.owner.type,
+          reason: 'insufficient_permissions',
+        },
+        errorReason: `User ${currentUser.username} does not have required permissions. Repository owner: ${repoData.owner.login}`,
+      });
+
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
@@ -260,6 +274,19 @@ export class GithubManager implements GitManager {
         message: 'Project has already been claimed by another user',
       });
     }
+    await ctx.db.insert(projectClaim).values({
+      projectId,
+      userId: ctx.session?.userId!,
+      success: true,
+      verificationMethod: ownershipType,
+      verificationDetails: {
+        verifiedAs: currentUser.username,
+        repoOwner: repoData.owner.login,
+        repoOwnerType: repoData.owner.type,
+        ownershipType,
+        repositoryUrl: `https://github.com/${owner}/${repo}`,
+      },
+    });
 
     // Create a notification or send an email to inform about the claim
     // This would require implementing a notification system
