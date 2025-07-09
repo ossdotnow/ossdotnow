@@ -237,6 +237,19 @@ export class GithubManager implements GitManager {
 
     if (!isOwner) {
       console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
+      await ctx.db.insert(projectClaim).values({
+        projectId,
+        userId: ctx.session?.userId!,
+        success: false,
+        verificationMethod: 'github_api',
+        verificationDetails: {
+          verifiedAs: currentUser.username,
+          repoOwner: repoData.owner.login,
+          repoOwnerType: repoData.owner.type,
+          reason: 'insufficient_permissions',
+        },
+        errorReason: `User ${currentUser.username} does not have required permissions. Repository owner: ${repoData.owner.login}`,
+      });
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
@@ -244,19 +257,6 @@ export class GithubManager implements GitManager {
     }
 
     console.log(`Claim approved: ${currentUser.username} is ${ownershipType} for ${owner}/${repo}`);
-    await ctx.db.insert(projectClaim).values({
-      projectId,
-      userId: ctx.session?.userId!,
-      success: false,
-      verificationMethod: 'github_api',
-      verificationDetails: {
-        verifiedAs: currentUser.username,
-        repoOwner: repoData.owner.login,
-        repoOwnerType: repoData.owner.type,
-        reason: 'insufficient_permissions',
-      },
-      errorReason: `User ${currentUser.username} does not have required permissions. Repository owner: ${repoData.owner.login}`,
-    });
     const updatedProject = await ctx.db
       .update(project)
       .set({
