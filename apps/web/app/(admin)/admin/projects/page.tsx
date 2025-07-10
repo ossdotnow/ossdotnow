@@ -61,8 +61,6 @@ export default function AdminProjectsDashboard() {
     isLoading,
     isError,
   } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus }));
-
-  // Fetch categories for filters
   const { data: projectStatuses } = useQuery(
     trpc.categories.getProjectStatuses.queryOptions({ activeOnly: true }),
   );

@@ -34,7 +34,6 @@ export const project = pgTable(
 
     approvalStatus: projectApprovalStatusEnum('approval_status').notNull().default('pending'),
 
-    // Replace enum columns with foreign keys
     statusId: uuid('status_id')
       .references(() => categoryProjectStatuses.id, { onDelete: 'restrict' })
       .notNull(),
@@ -57,13 +56,11 @@ export const project = pgTable(
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    statusIdIdx: index('project_status_id_idx').on(table.statusId),
-    typeIdIdx: index('project_type_id_idx').on(table.typeId),
-  }),
+  (table) => [
+    index('project_status_id_idx').on(table.statusId),
+    index('project_type_id_idx').on(table.typeId),
+],
 );
-
-// Many-to-many relationship table for project tags
 export const projectTagRelations = pgTable(
   'project_tag_relations',
   {
@@ -76,14 +73,13 @@ export const projectTagRelations = pgTable(
       .notNull(),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
   },
-  (table) => ({
-    projectIdIdx: index('project_tag_relations_project_id_idx').on(table.projectId),
-    tagIdIdx: index('project_tag_relations_tag_id_idx').on(table.tagId),
-    uniqueProjectTag: index('unique_project_tag').on(table.projectId, table.tagId),
-  }),
+  (table) => [
+    index('project_tag_relations_project_id_idx').on(table.projectId),
+    index('project_tag_relations_tag_id_idx').on(table.tagId),
+    index('unique_project_tag').on(table.projectId, table.tagId),
+  ],
 );
 
-// Update relations
 export const projectRelations = relations(project, ({ one, many }) => ({
   owner: one(user, {
     fields: [project.ownerId],
