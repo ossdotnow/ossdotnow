@@ -557,7 +557,7 @@ export default function SubmissionForm({
                             if (parsed) {
                               field.onChange(parsed.repo);
                               form.setValue('gitHost', parsed.host);
-                              validateRepository(parsed.repo, parsed.host);
+                              debouncedValidateRepo(parsed.repo, parsed.host);
                             } else {
                               field.onChange(inputValue);
                               const gitHost = form.getValues('gitHost') || 'github';
@@ -583,7 +583,7 @@ export default function SubmissionForm({
                                 if (parsed) {
                                   field.onChange(parsed.repo);
                                   form.setValue('gitHost', parsed.host);
-                                  validateRepository(parsed.repo, parsed.host);
+                                  debouncedValidateRepo(parsed.repo, parsed.host);
                                 } else {
                                   const gitHost = form.getValues('gitHost') || 'github';
                                   debouncedValidateRepo(inputValue, gitHost);
