@@ -239,7 +239,7 @@ export class GithubManager implements GitManager {
       console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
       await ctx.db.insert(projectClaim).values({
         projectId,
-        userId: ctx.session?.userId!,
+        userId: ctx.session!.userId,
         success: false,
         verificationMethod: 'github_api',
         verificationDetails: {
