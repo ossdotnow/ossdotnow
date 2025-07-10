@@ -256,7 +256,7 @@ export class GitlabManager implements GitManager {
       console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
       await ctx.db.insert(projectClaim).values({
         projectId,
-        userId: ctx.session?.userId!,
+        userId: ctx.session!.userId,
         success: false,
         verificationMethod: 'gitlab_api',
         verificationDetails: {
@@ -267,6 +267,7 @@ export class GitlabManager implements GitManager {
         },
         errorReason: `User ${currentUser.username} does not have required permissions. Repository owner: ${repoData.owner.login}`,
       });
+
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
@@ -292,7 +293,7 @@ export class GitlabManager implements GitManager {
     }
     await ctx.db.insert(projectClaim).values({
       projectId,
-      userId: ctx.session?.userId!,
+      userId: ctx.session!.userId,
       success: true,
       verificationMethod: ownershipType,
       verificationDetails: {
@@ -303,6 +304,7 @@ export class GitlabManager implements GitManager {
         repositoryUrl: `https://gitlab.com/${owner}/${repo}`,
       },
     });
+
     // Create a notification or send an email to inform about the claim
     // This would require implementing a notification system
     // Example: await createNotification({

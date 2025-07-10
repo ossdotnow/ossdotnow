@@ -250,6 +250,7 @@ export class GithubManager implements GitManager {
         },
         errorReason: `User ${currentUser.username} does not have required permissions. Repository owner: ${repoData.owner.login}`,
       });
+
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
@@ -257,6 +258,7 @@ export class GithubManager implements GitManager {
     }
 
     console.log(`Claim approved: ${currentUser.username} is ${ownershipType} for ${owner}/${repo}`);
+
     const updatedProject = await ctx.db
       .update(project)
       .set({
@@ -274,7 +276,7 @@ export class GithubManager implements GitManager {
     }
     await ctx.db.insert(projectClaim).values({
       projectId,
-      userId: ctx.session?.userId!,
+      userId: ctx.session!.userId,
       success: true,
       verificationMethod: ownershipType,
       verificationDetails: {
