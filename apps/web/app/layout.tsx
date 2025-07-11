@@ -33,7 +33,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/icon.svg',
   },
-  metadataBase: new URL(env.VERCEL_URL as string),
+  metadataBase: new URL(
+    env.VERCEL_URL === 'localhost' ? 'http://localhost:3000' : `https://${env.VERCEL_URL}`,
+  ),
 };
 
 async function UTSSR() {
