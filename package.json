@@ -19,6 +19,7 @@
     "db:make-all-admin": "dotenv -- turbo run db:make-all-admin"
   },
   "devDependencies": {
+    "@types/minimatch": "^6.0.0",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "dotenv-cli": "^8.0.0",
