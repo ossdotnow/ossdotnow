@@ -36,9 +36,7 @@ export function NavInner({ session }: { session: any }) {
         )}
       >
         <div className="flex items-center gap-2">
-          {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-            <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
-          ) : null}
+          <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
           <Link href="/" className="flex items-center gap-2" event="home_nav_click">
             <Icons.logo className="size-6 sm:size-7" />
             <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
