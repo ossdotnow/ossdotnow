@@ -55,9 +55,7 @@ export function NavInner({ session }: { session: any }) {
           )}
 
           {session?.user.id ? (
-            env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-              <UserNav />
-            ) : null
+            <UserNav />
           ) : (
             <Button
               className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
