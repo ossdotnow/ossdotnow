@@ -1,6 +1,14 @@
 'use client';
 
 import {
+  categoryProjectStatuses,
+  categoryProjectTypes,
+  categoryTags,
+  project,
+  projectApprovalStatusEnum,
+  projectProviderEnum,
+} from '@workspace/db/schema';
+import {
   Table,
   TableBody,
   TableCell,
@@ -16,23 +24,31 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import {
+  CheckCircle,
+  Edit,
+  Eye,
+  Pin,
+  PinOff,
+  XCircle,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@workspace/ui/components/card';
-import { categoryProjectStatuses, categoryProjectTypes, categoryTags, project, projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Edit, Eye, Pin, PinOff, XCircle } from 'lucide-react';
+import { parseAsStringEnum, parseAsInteger, useQueryState } from 'nuqs';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
 import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
 type Project = typeof project.$inferSelect & {
@@ -45,22 +61,37 @@ type Project = typeof project.$inferSelect & {
 
 const approvalStatusTabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
 const approvalStatusParser = parseAsStringEnum([...approvalStatusTabs]).withDefault('all');
+const pageParser = parseAsInteger.withDefault(1);
 
 export default function AdminProjectsDashboard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [approvalStatus, setApprovalStatus] = useQueryState('approvalStatus', approvalStatusParser);
+  const [page, setPage] = useQueryState('page', pageParser);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('all');
   const [providerFilter, setProviderFilter] = useState('all');
+  const pageSize = 20;
 
   const {
-    data: projects,
+    data: projectsData,
     isLoading,
     isError,
-  } = useQuery(trpc.projects.getProjects.queryOptions({ approvalStatus }));
+  } = useQuery(
+    trpc.projects.getProjects.queryOptions({
+      approvalStatus,
+      page,
+      pageSize,
+      searchQuery: searchQuery || undefined,
+      statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+      typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+      tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+      providerFilter: providerFilter === 'all' ? undefined : providerFilter,
+    }),
+  );
+
   const { data: projectStatuses } = useQuery(
     trpc.categories.getProjectStatuses.queryOptions({ activeOnly: true }),
   );
@@ -75,6 +106,13 @@ export default function AdminProjectsDashboard() {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
           approvalStatus,
+          page,
+          pageSize,
+          searchQuery: searchQuery || undefined,
+          statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+          typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+          tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+          providerFilter: providerFilter === 'all' ? undefined : providerFilter,
         }),
       });
     },
@@ -86,6 +124,13 @@ export default function AdminProjectsDashboard() {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
           approvalStatus,
+          page,
+          pageSize,
+          searchQuery: searchQuery || undefined,
+          statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+          typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+          tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+          providerFilter: providerFilter === 'all' ? undefined : providerFilter,
         }),
       });
     },
@@ -97,6 +142,13 @@ export default function AdminProjectsDashboard() {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
           approvalStatus,
+          page,
+          pageSize,
+          searchQuery: searchQuery || undefined,
+          statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+          typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+          tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+          providerFilter: providerFilter === 'all' ? undefined : providerFilter,
         }),
       });
     },
@@ -108,6 +160,13 @@ export default function AdminProjectsDashboard() {
       queryClient.invalidateQueries({
         queryKey: trpc.projects.getProjects.queryKey({
           approvalStatus,
+          page,
+          pageSize,
+          searchQuery: searchQuery || undefined,
+          statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+          typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+          tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+          providerFilter: providerFilter === 'all' ? undefined : providerFilter,
         }),
       });
     },
@@ -115,7 +174,9 @@ export default function AdminProjectsDashboard() {
 
   if (isLoading) return <div>Loading...</div>;
   if (isError) return <div>Error</div>;
-  if (!projects) return <div>No projects found</div>;
+  if (!projectsData) return <div>No projects found</div>;
+
+  const { data: projects, pagination } = projectsData;
 
   const handleAccept = (projectId: string) => {
     acceptProject({ projectId });
@@ -133,25 +194,12 @@ export default function AdminProjectsDashboard() {
     unpinProject({ projectId });
   };
 
-  const tabs = approvalStatusTabs;
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const filteredProjects = projects.data
-    .filter((project) => approvalStatus === 'all' || project.approvalStatus === approvalStatus)
-    .filter((project) => {
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        project.name.toLowerCase().includes(searchLower) ||
-        (project.gitRepoUrl?.toLowerCase().includes(searchLower) ?? false)
-      );
-    })
-    .filter((project) => statusFilter === 'all' || project.status?.name === statusFilter)
-    .filter((project) => typeFilter === 'all' || project.type?.name === typeFilter)
-    .filter((project) => providerFilter === 'all' || project.gitHost === providerFilter)
-    .filter(
-      (project) =>
-        tagFilter === 'all' ||
-        project.tagRelations.some((relation) => relation.tag?.name === tagFilter),
-    );
+  const tabs = approvalStatusTabs;
 
   return (
     <div className="space-y-6">
@@ -167,7 +215,10 @@ export default function AdminProjectsDashboard() {
               key={tab}
               value={tab}
               className="w-28"
-              onClick={() => setApprovalStatus(tab)}
+              onClick={() => {
+                setApprovalStatus(tab);
+                setPage(1);
+              }}
             >
               <span className="capitalize">{tab}</span>
             </TabsTrigger>
@@ -182,11 +233,13 @@ export default function AdminProjectsDashboard() {
                 <CardDescription>
                   {tab === 'all' ? (
                     <span>
-                      Showing all <NumberFlow value={filteredProjects.length} /> projects.
+                      Showing <NumberFlow value={projects.length} /> of{' '}
+                      <NumberFlow value={pagination.totalCount} /> projects.
                     </span>
                   ) : (
                     <span>
-                      Showing <NumberFlow value={filteredProjects.length} /> {tab} projects.
+                      Showing <NumberFlow value={projects.length} /> of{' '}
+                      <NumberFlow value={pagination.totalCount} /> {tab} projects.
                     </span>
                   )}
                 </CardDescription>
@@ -195,12 +248,21 @@ export default function AdminProjectsDashboard() {
                 <div className="mb-4 flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <Input
-                      placeholder="Search projects..."
+                      placeholder="Search all projects..."
                       className="w-64"
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setPage(1);
+                      }}
                     />
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => {
+                        setStatusFilter(value);
+                        setPage(1);
+                      }}
+                    >
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -213,7 +275,13 @@ export default function AdminProjectsDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={providerFilter} onValueChange={setProviderFilter}>
+                    <Select
+                      value={providerFilter}
+                      onValueChange={(value) => {
+                        setProviderFilter(value);
+                        setPage(1);
+                      }}
+                    >
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -226,7 +294,13 @@ export default function AdminProjectsDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <Select
+                      value={typeFilter}
+                      onValueChange={(value) => {
+                        setTypeFilter(value);
+                        setPage(1);
+                      }}
+                    >
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -239,7 +313,13 @@ export default function AdminProjectsDashboard() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                    <Select
+                      value={tagFilter}
+                      onValueChange={(value) => {
+                        setTagFilter(value);
+                        setPage(1);
+                      }}
+                    >
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
@@ -259,13 +339,16 @@ export default function AdminProjectsDashboard() {
                         searchQuery === '' &&
                         statusFilter === 'all' &&
                         typeFilter === 'all' &&
-                        tagFilter === 'all'
+                        tagFilter === 'all' &&
+                        providerFilter === 'all'
                       }
                       onClick={() => {
                         setSearchQuery('');
                         setStatusFilter('all');
                         setTypeFilter('all');
                         setTagFilter('all');
+                        setProviderFilter('all');
+                        setPage(1);
                       }}
                     >
                       Clear
@@ -274,12 +357,64 @@ export default function AdminProjectsDashboard() {
                 </div>
 
                 <ProjectsTable
-                  projects={filteredProjects}
+                  projects={projects}
                   handleAccept={handleAccept}
                   handleReject={handleReject}
                   handlePin={handlePin}
                   handleUnpin={handleUnpin}
                 />
+
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="text-muted-foreground text-sm">
+                    Page {pagination.page} of {pagination.totalPages}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={!pagination.hasPreviousPage}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center space-x-1">
+                      {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                        let pageNumber;
+                        if (pagination.totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (pagination.page <= 3) {
+                          pageNumber = i + 1;
+                        } else if (pagination.page >= pagination.totalPages - 2) {
+                          pageNumber = pagination.totalPages - 4 + i;
+                        } else {
+                          pageNumber = pagination.page - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={i}
+                            variant={pagination.page === pageNumber ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNumber)}
+                            className="w-10"
+                          >
+                            {pageNumber}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={!pagination.hasNextPage}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

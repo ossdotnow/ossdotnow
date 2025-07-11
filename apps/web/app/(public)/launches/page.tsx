@@ -37,6 +37,10 @@ export default function LaunchesPage() {
     trpc.launches.getYesterdayLaunches.queryOptions({ limit: 50 }),
   );
 
+  const { data: allLaunches, isLoading: allLoading } = useQuery(
+    trpc.launches.getAllLaunches.queryOptions({ limit: 50 }),
+  );
+
   const voteMutation = useMutation({
     ...trpc.launches.voteProject.mutationOptions(),
     onSuccess: () => {
@@ -301,7 +305,7 @@ export default function LaunchesPage() {
   return (
     <div className="mx-6 max-w-[1080px] py-8 md:mx-auto">
       <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="mb-6 grid w-full grid-cols-2 rounded-none border border-t-0 border-[#404040] bg-[#262626]">
+        <TabsList className="mb-6 grid w-full grid-cols-3 rounded-none border border-t-0 border-[#404040] bg-[#262626]">
           <TabsTrigger value="today" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Today
@@ -309,6 +313,10 @@ export default function LaunchesPage() {
           <TabsTrigger value="yesterday" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Yesterday
+          </TabsTrigger>
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            All Launches
           </TabsTrigger>
         </TabsList>
 
@@ -347,6 +355,25 @@ export default function LaunchesPage() {
           ) : (
             <Card className="rounded-none p-12 text-center">
               <p className="text-neutral-400">No launches yesterday.</p>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="all" className="space-y-4">
+          {allLoading ? (
+            <div className="py-12 text-center">
+              <p className="text-neutral-400">Loading all launches...</p>
+            </div>
+          ) : allLaunches && allLaunches.length > 0 ? (
+            <>
+              {allLaunches[0] && <FeaturedLaunch project={allLaunches[0]} />}
+              {allLaunches.slice(1).map((project, index) => (
+                <ProjectCard key={project.id} project={project} index={index + 1} />
+              ))}
+            </>
+          ) : (
+            <Card className="rounded-none p-12 text-center">
+              <p className="text-neutral-400">No launches yet.</p>
             </Card>
           )}
         </TabsContent>

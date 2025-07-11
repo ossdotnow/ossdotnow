@@ -4,11 +4,11 @@ import ProjectFilters from '@/components/projects/project-filters';
 import LoadingSpinner from '@/components/loading-spinner';
 import { Button } from '@workspace/ui/components/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import ProjectCard from './project-card';
-import { useQueryState } from 'nuqs';
 
 export default function ProjectsPage() {
   const trpc = useTRPC();
@@ -16,7 +16,11 @@ export default function ProjectsPage() {
     defaultValue: '1',
     parse: (value) => value || '1',
   });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery] = useQueryState('search', parseAsString.withDefault(''));
+  const [statusFilter] = useQueryState('status', parseAsString.withDefault('all'));
+  const [typeFilter] = useQueryState('type', parseAsString.withDefault('all'));
+  const [tagFilter] = useQueryState('tag', parseAsString.withDefault('all'));
+  const [sortBy] = useQueryState('sort', parseAsString.withDefault('name'));
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -28,6 +32,11 @@ export default function ProjectsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setPage('1');
+  }, [searchQuery, statusFilter, typeFilter, tagFilter, sortBy, setPage]);
+
   const pageNumber = parseInt(page, 10);
   const pageSize = 20;
 
@@ -36,6 +45,11 @@ export default function ProjectsPage() {
       approvalStatus: 'approved',
       page: pageNumber,
       pageSize,
+      searchQuery: searchQuery || undefined,
+      statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+      typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+      tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+      sortBy: sortBy as 'recent' | 'name' | 'stars' | 'forks' | undefined,
     }),
   );
 
@@ -44,84 +58,75 @@ export default function ProjectsPage() {
       approvalStatus: 'approved',
       page: 1,
       pageSize: 4,
+      searchQuery: searchQuery || undefined,
+      statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+      typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+      tagFilter: tagFilter === 'all' ? undefined : tagFilter,
+      sortBy: sortBy as 'recent' | 'name' | 'stars' | 'forks' | undefined,
     }),
   );
 
-  const filteredProjects = useMemo(() => {
-    if (!data?.data) return [];
-    if (!searchQuery.trim()) return data.data;
+  const projects = data?.data || [];
+  const pinnedProjects = featuredProjects?.data?.filter((p) => p.isPinned) || [];
 
-    const query = searchQuery.toLowerCase().trim();
-    return data.data.filter((project) => project.name.toLowerCase().includes(query));
-  }, [data?.data, searchQuery]);
-
-  const filteredFeaturedProjects = useMemo(() => {
-    if (!featuredProjects?.data) return [];
-    if (!searchQuery.trim()) return featuredProjects.data.filter((p) => p.isPinned);
-
-    const query = searchQuery.toLowerCase().trim();
-    return featuredProjects.data
-      .filter((p) => p.isPinned)
-      .filter((project) => project.name.toLowerCase().includes(query));
-  }, [featuredProjects?.data, searchQuery]);
+  const hasActiveFilters =
+    searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || tagFilter !== 'all';
 
   return (
-    <div className="mx-auto max-w-[1080px]">
+    <div className="relative mx-auto max-w-[1080px]">
+      <div
+        className={`pointer-events-none fixed top-[calc(32px+65px+36px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+          showShadow ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
-      <div className="py-[31px]">
+      <div className="py-6">
         <ProjectFilters />
-        <div
-          className={`pointer-events-none sticky top-[calc(32px+65px+36px)] z-10 -mt-8 h-10 bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
-            showShadow ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
 
-        {!searchQuery.trim() && filteredFeaturedProjects.length > 0 && (
+        {!hasActiveFilters && pinnedProjects.length > 0 && (
           <div className="mb-12">
             <div className="mb-6">
               <h2 className="mb-2 text-2xl font-bold text-white">Featured Projects</h2>
               <p className="text-neutral-400">Your favorite projects, curated by the community</p>
             </div>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
-              {filteredFeaturedProjects.map((project) => (
+              {pinnedProjects.map((project) => (
                 <ProjectCard key={project.id} project={project} />
               ))}
             </div>
           </div>
         )}
 
-        {/* <div className="mb-6">
+        <div className="mb-6">
           <h2 className="mb-2 text-2xl font-bold text-white">
-            {!searchQuery.trim() && filteredFeaturedProjects.length > 0
-              ? 'All Projects'
-              : 'Projects'}
+            {!hasActiveFilters && pinnedProjects.length > 0 ? 'All Projects' : 'Projects'}
           </h2>
           <p className="text-neutral-400">
-            {searchQuery.trim()
-              ? `Found ${filteredProjects.length} project${filteredProjects.length === 1 ? '' : 's'} matching "${searchQuery}"`
+            {hasActiveFilters && data
+              ? `Found ${data.pagination.totalCount} project${data.pagination.totalCount === 1 ? '' : 's'}`
               : 'Discover amazing open source projects'}
           </p>
-        </div> */}
+        </div>
 
         {isLoading ? (
           <LoadingSpinner />
         ) : isError ? (
           <div className="text-center text-sm text-red-700">Error loading projects</div>
-        ) : filteredProjects.length > 0 ? (
+        ) : projects.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {filteredProjects.map((project) => (
+            {projects.map((project) => (
               <ProjectCard key={project.id} project={project} />
             ))}
           </div>
-        ) : searchQuery.trim() ? (
+        ) : hasActiveFilters ? (
           <div className="text-center text-sm text-neutral-400">
-            No projects found matching &quot;{searchQuery}&quot;.
+            No projects found with the selected filters.
           </div>
         ) : (
           <div className="text-center text-sm">No projects found</div>
         )}
 
-        {!searchQuery.trim() && data && data.pagination && data.pagination.totalPages > 1 && (
+        {data && data.pagination && data.pagination.totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-2">
             <Button
               variant="outline"
@@ -204,7 +209,7 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {!searchQuery.trim() && data && data.pagination && (
+        {data && data.pagination && (
           <div className="mt-4 text-center text-sm text-neutral-500">
             Showing {(pageNumber - 1) * pageSize + 1} -{' '}
             {Math.min(pageNumber * pageSize, data.pagination.totalCount)} of{' '}

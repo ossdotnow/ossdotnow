@@ -1,14 +1,16 @@
+import { categoryProjectStatuses, categoryProjectTypes, categoryTags } from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { account, project,projectClaim, projectTagRelations } from '@workspace/db/schema';
+import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
+import { and, asc, count, desc, eq, or, ilike, inArray } from 'drizzle-orm';
 import { APPROVAL_STATUS, resolveAllIds } from '../utils/project-helpers';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
-import { and, asc, count, desc, eq } from 'drizzle-orm';
 import { getActiveDriver } from '../driver/utils';
 import { createInsertSchema } from 'drizzle-zod';
 import type { createTRPCContext } from '../trpc';
 import type { Context } from '../driver/utils';
 import { TRPCError } from '@trpc/server';
+import { sql } from 'drizzle-orm';
 import { z } from 'zod/v4';
 
 const createProjectInput = createInsertSchema(project)
@@ -59,41 +61,152 @@ export const projectsRouter = createTRPCRouter({
         approvalStatus: z.enum(['approved', 'rejected', 'pending', 'all']).optional(),
         page: z.number().min(1).default(1),
         pageSize: z.number().min(1).max(100).default(20),
+        searchQuery: z.string().optional(),
+        statusFilter: z.string().optional(),
+        typeFilter: z.string().optional(),
+        tagFilter: z.string().optional(),
+        providerFilter: z.string().optional(),
+        sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { page, pageSize, approvalStatus } = input;
+      const {
+        page,
+        pageSize,
+        approvalStatus,
+        searchQuery,
+        statusFilter,
+        typeFilter,
+        tagFilter,
+        providerFilter,
+        sortBy,
+      } = input;
       const offset = (page - 1) * pageSize;
 
-      const whereClause =
-        approvalStatus === 'all' || !approvalStatus
-          ? undefined
-          : eq(project.approvalStatus, approvalStatus);
+      const conditions = [];
 
-      const [totalCountResult] = await ctx.db
+      if (approvalStatus && approvalStatus !== 'all') {
+        conditions.push(eq(project.approvalStatus, approvalStatus));
+      }
+
+      if (searchQuery) {
+        conditions.push(
+          or(
+            ilike(project.name, `%${searchQuery}%`),
+            ilike(project.gitRepoUrl, `%${searchQuery}%`),
+          ),
+        );
+      }
+
+      if (providerFilter && providerFilter !== 'all') {
+        conditions.push(
+          eq(project.gitHost, providerFilter as (typeof projectProviderEnum.enumValues)[number]),
+        );
+      }
+
+      const query = ctx.db
+        .select({
+          project: project,
+          status: categoryProjectStatuses,
+          type: categoryProjectTypes,
+          tagCount: sql<number>`count(distinct ${projectTagRelations.tagId})`.as('tagCount'),
+        })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+        .groupBy(project.id, categoryProjectStatuses.id, categoryProjectTypes.id);
+
+      if (statusFilter && statusFilter !== 'all') {
+        conditions.push(eq(categoryProjectStatuses.name, statusFilter));
+      }
+
+      if (typeFilter && typeFilter !== 'all') {
+        conditions.push(eq(categoryProjectTypes.name, typeFilter));
+      }
+
+      if (tagFilter && tagFilter !== 'all') {
+        conditions.push(eq(categoryTags.name, tagFilter));
+      }
+
+      if (conditions.length > 0) {
+        query.where(and(...conditions));
+      }
+
+      const countQuery = ctx.db
         .select({ totalCount: count() })
         .from(project)
-        .where(whereClause)
-        .limit(1);
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id));
 
-      const projects = await ctx.db.query.project.findMany({
-        where: whereClause,
-        orderBy: [desc(project.isPinned), asc(project.name)],
-        limit: pageSize,
-        offset,
-        with: {
-          status: true,
-          type: true,
-          tagRelations: {
-            with: {
-              tag: true,
-            },
-          },
+      if (conditions.length > 0) {
+        countQuery.where(and(...conditions));
+      }
+
+      const [totalCountResult] = await countQuery;
+
+      const orderByClause = [];
+
+      orderByClause.push(desc(project.isPinned));
+
+      switch (sortBy) {
+        case 'name':
+          orderByClause.push(asc(project.name));
+          break;
+        case 'stars':
+          // TODO: Add stars count to project data
+          // For now, fallback to recent
+          orderByClause.push(desc(project.createdAt));
+          break;
+        case 'forks':
+          // TODO: Add forks count to project data
+          // For now, fallback to recent
+          orderByClause.push(desc(project.createdAt));
+          break;
+        case 'recent':
+        default:
+          orderByClause.push(desc(project.createdAt));
+          break;
+      }
+
+      const projectResults = await query
+        .orderBy(...orderByClause)
+        .limit(pageSize)
+        .offset(offset);
+
+      const projectIds = projectResults.map((r) => r.project.id);
+      const tagRelations =
+        projectIds.length > 0
+          ? await ctx.db.query.projectTagRelations.findMany({
+              where: inArray(projectTagRelations.projectId, projectIds),
+              with: {
+                tag: true,
+              },
+            })
+          : [];
+
+      const tagsByProject = tagRelations.reduce(
+        (acc, rel) => {
+          if (!acc[rel.projectId]) {
+            acc[rel.projectId] = [];
+          }
+          acc[rel.projectId]?.push(rel);
+          return acc;
         },
-      });
+        {} as Record<string, typeof tagRelations>,
+      );
+
+      const projects = projectResults.map((r) => ({
+        ...r.project,
+        status: r.status,
+        type: r.type,
+        tagRelations: tagsByProject[r.project.id] || [],
+      }));
 
       const totalCount = totalCountResult?.totalCount ?? 0;
-
       const totalPages = Math.ceil(totalCount / pageSize);
       const hasNextPage = page < totalPages;
       const hasPreviousPage = page > 1;

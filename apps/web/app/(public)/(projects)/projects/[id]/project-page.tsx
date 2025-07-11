@@ -17,13 +17,13 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
-import ProjectDescription from './project-description';
-import ProjectErrorPage from '../project-error-page';
+import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
+import ProjectDescription from './project-description';
+import ProjectErrorPage from '../project-error-page';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import NumberFlow from '@number-flow/react';
@@ -160,32 +160,32 @@ export default function ProjectPage({ id }: { id: string }) {
 
   return (
     <div className="mt-4 px-6 md:mt-8">
+      <div
+        className={`pointer-events-none fixed top-[calc(32px+65px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+          showShadow ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
-      <div className="mx-auto max-w-[1080px] py-8">
-        <div
-          className={`pointer-events-none sticky top-[calc(32px+66px)] z-10 -mt-8 h-10 bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
-            showShadow ? 'opacity-100' : 'opacity-0'
-          }`}
+      <div className="mx-auto max-w-[1080px] py-4">
+        <ClaimProjectSection
+          isUnclaimed={isUnclaimed}
+          user={user}
+          project={project}
+          className="mt-0 mb-4 w-full rounded-none border border-neutral-700 bg-neutral-800/30 p-2"
         />
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">
-            <ProjectDescription
-              isOwner={isOwner}
-              isUnclaimed={isUnclaimed}
-              project={project}
-              repo={repo}
-              user={user}
-            />
+            <ProjectDescription isOwner={isOwner} project={project} repo={repo} />
 
-            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+            <div className="">
               <Tabs defaultValue="issues" className="w-full">
                 <TabsList className="bg-neutral-900/0 p-0">
-                  <TabsTrigger value="issues" className="text-sm">
+                  <TabsTrigger value="issues" className="rounded-none text-sm">
                     <AlertCircle className="h-4 w-4" />
                     <span className="hidden sm:inline">Issues</span>
                     <span className="sm:hidden">Issues</span>
                   </TabsTrigger>
-                  <TabsTrigger value="pull-requests" className="text-sm">
+                  <TabsTrigger value="pull-requests" className="rounded-none text-sm">
                     <GitPullRequest className="h-4 w-4" />
                     <span className="hidden sm:inline">Pull Requests</span>
                     <span className="sm:hidden">PRs</span>
@@ -206,7 +206,7 @@ export default function ProjectPage({ id }: { id: string }) {
                         .map((issue: any) => (
                           <div
                             key={issue.id}
-                            className="rounded-md border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
+                            className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
@@ -416,7 +416,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <Star className="h-4 w-4" />
                       <span className="text-sm">Stars</span>
                     </div>
-                    <span className="text-base font-bold text-white sm:text-lg">
+                    <span className="text-sm">
                       <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
                     </span>
                   </div>
@@ -425,7 +425,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <GitFork className="h-4 w-4" />
                       <span className="text-sm">Forks</span>
                     </div>
-                    <span className="text-base font-bold text-white sm:text-lg">
+                    <span className="text-sm">
                       <NumberFlow value={repo?.forks_count || 0} />
                     </span>
                   </div>
@@ -434,7 +434,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <Users className="h-4 w-4" />
                       <span className="text-sm">Contributors</span>
                     </div>
-                    <span className="text-base font-bold text-white sm:text-lg">
+                    <span className="text-sm">
                       <NumberFlow value={contributors?.length || 0} />
                     </span>
                   </div>
@@ -443,7 +443,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <AlertCircle className="h-4 w-4" />
                       <span className="text-sm">Issues</span>
                     </div>
-                    <span className="text-base font-bold text-white sm:text-lg">
+                    <span className="text-sm">
                       {issues?.filter(
                         // TODO: fix this
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -456,7 +456,7 @@ export default function ProjectPage({ id }: { id: string }) {
                 </div>
               </div>
 
-              <Separator className="my-6 bg-neutral-700" />
+              <Separator className="my-6 bg-neutral-700/40" />
 
               <div>
                 <h3 className="mb-3 text-sm font-medium text-neutral-300">About</h3>
@@ -470,26 +470,19 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   )}
                   {project?.updatedAt && (
-                    <>
-                      <Separator className="bg-neutral-800" />
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-400">Updated</span>
-                        <span className="text-neutral-300">
-                          {formatDate(new Date(repo?.updated_at as string))}
-                        </span>
-                      </div>
-                    </>
+                    <div className="flex items-center justify-between">
+                      <span className="text-neutral-400">Updated</span>
+                      <span className="text-neutral-300">
+                        {formatDate(new Date(repo?.updated_at as string))}
+                      </span>
+                    </div>
                   )}
                   {project?.gitHost && (
-                    <>
-                      <Separator className="bg-neutral-800" />
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-400">Host</span>
-                        <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
-                      </div>
-                    </>
+                    <div className="flex items-center justify-between">
+                      <span className="text-neutral-400">Host</span>
+                      <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
+                    </div>
                   )}
-                  <Separator className="bg-neutral-800" />
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-400">Visibility</span>
                     <span className="text-neutral-300">
@@ -509,7 +502,7 @@ export default function ProjectPage({ id }: { id: string }) {
                 {project?.tagRelations?.map((relation, index: number) => (
                   <span
                     key={index}
-                    className="rounded-full bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 md:px-3 md:text-sm"
+                    className="rounded-none bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700 md:px-3 md:text-sm"
                   >
                     #{relation.tag?.displayName || relation.tag?.name}
                   </span>
@@ -533,7 +526,7 @@ export default function ProjectPage({ id }: { id: string }) {
                 <h2 className="mb-4 text-lg font-semibold text-white">Opportunities</h2>
                 <div className="space-y-3">
                   {project?.isLookingForContributors && (
-                    <div className="flex items-start gap-3 rounded-md bg-emerald-500/10 p-3">
+                    <div className="flex items-start gap-3 rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 p-3 text-[#00D492]">
                       <Users className="mt-0.5 h-5 w-5 text-emerald-400" />
                       <div>
                         <p className="font-medium text-emerald-400">Open to Contributors</p>
@@ -544,7 +537,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   )}
                   {project?.isLookingForInvestors && (
-                    <div className="flex items-start gap-3 rounded-md bg-blue-500/10 p-3">
+                    <div className="flex items-start gap-3 rounded-none border border-blue-500/30 bg-blue-500/10 p-3">
                       <DollarSign className="mt-0.5 h-5 w-5 text-blue-400" />
                       <div>
                         <p className="font-medium text-blue-400">Seeking Investment</p>
@@ -555,7 +548,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   )}
                   {project?.isHiring && (
-                    <div className="flex items-start gap-3 rounded-md bg-purple-500/10 p-3">
+                    <div className="flex items-start gap-3 rounded-none border border-purple-500/20 bg-purple-500/10 p-3">
                       <Briefcase className="mt-0.5 h-5 w-5 text-purple-400" />
                       <div>
                         <p className="font-medium text-purple-400">We&apos;re Hiring!</p>
@@ -568,6 +561,39 @@ export default function ProjectPage({ id }: { id: string }) {
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ClaimProjectSection({
+  isUnclaimed,
+  user,
+  project,
+  className,
+}: {
+  isUnclaimed: boolean;
+  user?: { id: string } | null;
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  project: any;
+  className: string;
+}) {
+  if (!isUnclaimed || !user) return null;
+
+  return (
+    <div className={className}>
+      <div className="flex w-full flex-row items-center justify-between gap-2">
+        <div className="ml-2 flex flex-row items-center justify-start gap-2">
+          <p className="text-center text-xs font-medium text-neutral-200">Unclaimed</p>
+          <p className="text-center text-xs text-neutral-400">
+            This project hasn&apos;t been claimed yet
+          </p>
+        </div>
+        <ClaimProjectDialog
+          projectId={project.id}
+          provider={project.gitHost as (typeof projectProviderEnum.enumValues)[number]}
+        />
       </div>
     </div>
   );

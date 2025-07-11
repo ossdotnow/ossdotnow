@@ -164,7 +164,6 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
-
       const launchIds = launches.map((l) => l.id);
       let tagsMap: Record<string, string[]> = {};
 
@@ -284,7 +283,115 @@ export const launchesRouter = createTRPCRouter({
         .limit(input.limit)
         .offset(input.offset);
 
-      
+      const launchIds = launches.map((l) => l.id);
+      let tagsMap: Record<string, string[]> = {};
+
+      if (launchIds.length > 0) {
+        const allTags = await ctx.db
+          .select({
+            projectId: projectTagRelations.projectId,
+            tagName: categoryTags.displayName,
+            tagNameFallback: categoryTags.name,
+          })
+          .from(projectTagRelations)
+          .innerJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+          .where(inArray(projectTagRelations.projectId, launchIds));
+
+        tagsMap = allTags.reduce(
+          (acc, tag) => {
+            const projectId = tag.projectId;
+            if (!acc[projectId]) acc[projectId] = [];
+            acc[projectId].push(tag.tagName || tag.tagNameFallback);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
+      }
+
+      if (ctx.session?.userId) {
+        if (launches.length === 0) {
+          return [];
+        }
+
+        const userVotes = await ctx.db
+          .select({
+            projectId: projectVote.projectId,
+          })
+          .from(projectVote)
+          .where(
+            and(
+              eq(projectVote.userId, ctx.session.userId),
+              inArray(projectVote.projectId, launchIds),
+            ),
+          );
+
+        const userVotesSet = new Set(userVotes.map((v) => v.projectId));
+
+        return launches.map((launch) => ({
+          ...launch,
+          tags: tagsMap[launch.id] || [],
+          hasVoted: userVotesSet.has(launch.id),
+        }));
+      }
+
+      return launches.map((launch) => ({
+        ...launch,
+        tags: tagsMap[launch.id] || [],
+        hasVoted: false,
+      }));
+    }),
+
+  getAllLaunches: publicProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const launches = await ctx.db
+        .select({
+          id: project.id,
+          name: project.name,
+          tagline: projectLaunch.tagline,
+          description: project.description,
+          logoUrl: project.logoUrl,
+          gitRepoUrl: project.gitRepoUrl,
+          type: categoryProjectTypes.displayName,
+          launchDate: projectLaunch.launchDate,
+          featured: projectLaunch.featured,
+          owner: {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            image: user.image,
+          },
+          voteCount: sql<number>`count(distinct ${projectVote.id})::int`.as('voteCount'),
+          commentCount: sql<number>`count(distinct ${projectComment.id})::int`.as('commentCount'),
+        })
+        .from(projectLaunch)
+        .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(user, eq(project.ownerId, user.id))
+        .leftJoin(projectVote, eq(projectVote.projectId, project.id))
+        .leftJoin(projectComment, eq(projectComment.projectId, project.id))
+        .where(and(eq(project.approvalStatus, 'approved')))
+        .groupBy(
+          project.id,
+          projectLaunch.id,
+          projectLaunch.tagline,
+          projectLaunch.launchDate,
+          projectLaunch.featured,
+          categoryProjectTypes.displayName,
+          user.id,
+          user.name,
+          user.username,
+          user.image,
+        )
+        .orderBy(desc(sql`count(distinct ${projectVote.id})`), desc(projectLaunch.launchDate))
+        .limit(input.limit)
+        .offset(input.offset);
+
       const launchIds = launches.map((l) => l.id);
       let tagsMap: Record<string, string[]> = {};
 

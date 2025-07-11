@@ -8,20 +8,16 @@ import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { Globe, Linkedin } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 
 export default function ProjectDescription({
   repo,
   project,
-  user,
-  isUnclaimed,
   isOwner,
 }: {
   repo: ProjectData;
   project: ProjectWithRelations;
-  user?: { id: string } | null;
-  isUnclaimed: boolean;
   isOwner: boolean;
 }) {
   const getAvatarImage = (): string => {
@@ -56,12 +52,6 @@ export default function ProjectDescription({
               <StatusBadges project={project} />
             </div>
           </div>
-          <ClaimProjectSection
-            isUnclaimed={isUnclaimed}
-            user={user}
-            project={project}
-            className="mt-4 w-full rounded-none border border-neutral-700 bg-neutral-800/30 p-2 md:mt-0 md:w-1/4"
-          />
         </div>
 
         {/* Content: Social + Description (full width) */}
@@ -107,14 +97,14 @@ function ProjectAvatar({
 function StatusBadges({ project }: { project: ProjectWithRelations }) {
   return (
     <div className="mt-2 flex w-full flex-row flex-wrap gap-1 md:gap-2">
-      <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
+      <span className="rounded-none bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
         {project?.status?.displayName || project?.status?.name || 'Unknown Status'}
       </span>
-      <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
+      <span className="rounded-none bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
         {project?.type?.displayName || project?.type?.name || 'Unknown Type'}
       </span>
       {project?.hasBeenAcquired && (
-        <span className="rounded-md bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400">
+        <span className="rounded-none bg-yellow-500/10 px-2 py-1 text-xs font-medium text-yellow-400">
           Acquired
         </span>
       )}
@@ -225,35 +215,6 @@ function ProjectDescriptionText({ project }: { project: ProjectWithRelations }) 
           {expanded ? 'Show less' : 'Read more'}
         </Button>
       )}
-    </div>
-  );
-}
-
-function ClaimProjectSection({
-  isUnclaimed,
-  user,
-  project,
-  className,
-}: {
-  isUnclaimed: boolean;
-  user?: { id: string } | null;
-  project: ProjectWithRelations;
-  className: string;
-}) {
-  if (!isUnclaimed || !user) return null;
-
-  return (
-    <div className={className}>
-      <div className="flex flex-col items-center justify-center gap-2">
-        <p className="text-center text-xs font-medium text-neutral-200">Unclaimed</p>
-        <p className="text-center text-xs text-neutral-400 sm:w-30">
-          This project hasn&apos;t been claimed yet
-        </p>
-        <ClaimProjectDialog
-          projectId={project.id}
-          provider={project.gitHost as (typeof projectProviderEnum.enumValues)[number]}
-        />
-      </div>
     </div>
   );
 }
