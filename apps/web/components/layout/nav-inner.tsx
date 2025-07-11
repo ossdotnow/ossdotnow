@@ -1,7 +1,5 @@
 'use client';
 
-import SubmissionDialog from '../submissions/submission-dialog';
-import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
@@ -10,7 +8,7 @@ import { navItems } from '@/lib/nav-items';
 import { MobileNav } from './mobile-nav';
 import PublicNav from './public-nav';
 import { TempNav } from './temp-nav';
-import UserNav from './user-nav';
+
 import { useState } from 'react';
 
 // TODO: fix this
@@ -47,26 +45,9 @@ export function NavInner({ session }: { session: any }) {
             {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
               <TempNav />
             ) : (
-              <>
-                <PublicNav />
-                <SubmissionDialog />
-              </>
+              <PublicNav session={session} />
             )}
           </nav>
-          <div className="flex items-center gap-2">
-            {session?.user.id ? (
-              <UserNav />
-            ) : (
-              <Button
-                className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
-                asChild
-              >
-                <Link href="/login" event="login_nav_click">
-                  Login
-                </Link>
-              </Button>
-            )}
-          </div>
         </div>
       </div>
     </header>

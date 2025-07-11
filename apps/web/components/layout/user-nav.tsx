@@ -27,11 +27,11 @@ export default function NavUser() {
   const { data: user, isLoading } = useQuery(trpc.user.me.queryOptions());
 
   return isLoading ? (
-    <Skeleton className="ml-2 h-8 w-8 rounded-full" />
+    <Skeleton className="ml-2 size-9 rounded-none" />
   ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="ml-2 h-8 w-8 cursor-pointer rounded-full">
+        <Avatar className="ml-2 size-9 cursor-pointer rounded-none">
           <AvatarImage src={user?.image || ''} alt={user?.name} />
           <AvatarFallback className="bg-neutral-900 text-xs text-neutral-400">
             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -46,7 +46,7 @@ export default function NavUser() {
       >
         <DropdownMenuLabel className="p-0 font-normal">
           <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-            <Avatar className="h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8 rounded-none">
               <AvatarImage src={user?.image || ''} alt={user?.name} />
               <AvatarFallback className="bg-neutral-800 text-neutral-400">
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -61,7 +61,7 @@ export default function NavUser() {
         <DropdownMenuSeparator className="bg-neutral-800" />
         <DropdownMenuItem
           asChild
-          className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+          className="rounded-none text-neutral-300 hover:bg-neutral-800 hover:text-white"
         >
           <Link href="/profile/me">
             <User />
@@ -72,7 +72,7 @@ export default function NavUser() {
           <>
             <DropdownMenuItem
               asChild
-              className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+              className="rounded-none text-neutral-300 hover:bg-neutral-800 hover:text-white"
             >
               <Link href="/admin">
                 <LayoutDashboard />
@@ -84,7 +84,7 @@ export default function NavUser() {
         )}
         <DropdownMenuItem
           onClick={signOut}
-          className="text-neutral-300 hover:bg-neutral-800 hover:text-white"
+          className="rounded-none text-neutral-300 hover:bg-neutral-800 hover:text-white"
         >
           <LogOut />
           Log out
