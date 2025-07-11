@@ -42,29 +42,32 @@ export function NavInner({ session }: { session: any }) {
             <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
           </Link>
         </div>
-        <nav className="flex items-center gap-2">
-          {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-            <TempNav />
-          ) : (
-            <>
-              <PublicNav />
-              <SubmissionDialog />
-            </>
-          )}
-
-          {session?.user.id ? (
-            <UserNav />
-          ) : (
-            <Button
-              className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
-              asChild
-            >
-              <Link href="/login" event="login_nav_click">
-                Login
-              </Link>
-            </Button>
-          )}
-        </nav>
+        <div className="flex items-center gap-2">
+          <nav className="hidden items-center gap-2 md:flex">
+            {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
+              <TempNav />
+            ) : (
+              <>
+                <PublicNav />
+                <SubmissionDialog />
+              </>
+            )}
+          </nav>
+          <div className="flex items-center gap-2">
+            {session?.user.id ? (
+              <UserNav />
+            ) : (
+              <Button
+                className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
+                asChild
+              >
+                <Link href="/login" event="login_nav_click">
+                  Login
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );
