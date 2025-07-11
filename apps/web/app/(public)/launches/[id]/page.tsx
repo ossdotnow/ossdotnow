@@ -54,7 +54,7 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
   );
 
   // Fetch project details
-  const { data: project } = useQuery(trpc.projects.getProject.queryOptions({ id: projectId }));
+  // const { data: project } = useQuery(trpc.projects.getProject.queryOptions({ id: projectId }));
 
   // Fetch comments
   const { data: comments, isLoading: commentsLoading } = useQuery(
@@ -307,6 +307,8 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
             {commentsLoading ? (
               <p>Loading comments...</p>
             ) : comments && comments.length > 0 ? (
+              // TODO: fix this
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               comments.map((comment: any) => (
                 <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8">

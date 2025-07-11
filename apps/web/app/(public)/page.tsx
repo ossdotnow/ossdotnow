@@ -2,13 +2,12 @@ import { WaitlistForm } from '@/components/waitlist-form';
 import { Button } from '@workspace/ui/components/button';
 import GitAvatars from '@/components/git-avatars';
 import Link from '@workspace/ui/components/link';
-import { Logos } from '@/components/logos';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 
 export default function Page() {
   return (
-    <div className="flex min-h-[calc(100vh-80px)] overflow-hidden p-6 md:min-h-[calc(100vh-80px)]">
+    <div className="flex h-[calc(100vh-66px)] overflow-hidden p-6 md:min-h-[calc(100vh-80px)]">
       <Image
         src="/home-background.png"
         alt=""
@@ -47,7 +46,6 @@ export default function Page() {
             </div>
           </div>
         </div>
-        <Logos />
       </div>
     </div>
   );

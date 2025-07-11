@@ -9,9 +9,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
-import { Loader2, Shield, AlertCircle, CheckCircle, Github, Gitlab } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { DebugGitHubPermissions } from './debug-permissions';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
@@ -104,7 +104,7 @@ export function ClaimProjectDialog({
 
         <div className="space-y-4 py-4">
           <Alert className="rounded-none">
-            <Github className="h-4 w-4" />
+            <Icons.github className="h-4 w-4" />
             <AlertTitle>Repository</AlertTitle>
             <AlertDescription>
               <code className="bg-muted rounded-none px-1 py-0.5 font-mono text-sm">

@@ -5,6 +5,7 @@
   "scripts": {
     "build": "dotenv -- turbo run build",
     "dev": "dotenv -- turbo run dev",
+    "start": "dotenv -- turbo run start",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "docker:up": "docker-compose up -d",
@@ -14,7 +15,8 @@
     "db:migrate": "dotenv -- turbo run db:migrate",
     "db:push": "dotenv -- turbo run db:push",
     "db:studio": "dotenv -- turbo run db:studio",
-    "db:seed": "dotenv -- turbo run db:seed"
+    "db:seed": "dotenv -- turbo run db:seed",
+    "db:make-all-admin": "dotenv -- turbo run db:make-all-admin"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

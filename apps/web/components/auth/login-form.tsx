@@ -1,22 +1,14 @@
 'use client';
 
-import { Form, FormField } from '@workspace/ui/components/form';
-import { Separator } from '@workspace/ui/components/separator';
 import LoadingSpinner from '@/components/loading-spinner';
 import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
-import Link from '@workspace/ui/components/link';
 import { ComponentProps, useState } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
 import { env } from '@workspace/env/client';
-import { useForm } from 'react-hook-form';
-import { loginForm } from '@/forms/index';
 import { toast } from 'sonner';
-import { z } from 'zod/v4';
 
 export function LoginForm({
   className,
@@ -27,16 +19,16 @@ export function LoginForm({
     loading: false,
     provider: null as ProviderId | null,
   });
-  const form = useForm<z.infer<typeof loginForm>>({
-    resolver: zodResolver(loginForm),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
+  // const form = useForm<z.infer<typeof loginForm>>({
+  //   resolver: zodResolver(loginForm),
+  //   defaultValues: {
+  //     email: '',
+  //     password: '',
+  //   },
+  // });
 
   const signInWithProvider = async (providerId: ProviderId) => {
-    if (env.NEXT_PUBLIC_ENV === 'production') {
+    if (env.NEXT_PUBLIC_VERCEL_ENV === 'production') {
       toast.error('This feature is not available in production');
       return;
     }
@@ -69,7 +61,7 @@ export function LoginForm({
       className={cn('z-10 flex w-full max-w-sm flex-col items-center gap-6', className)}
       {...props}
     >
-      <Form {...form}>
+      {/* <Form {...form}>
         <form
           className="flex min-w-sm flex-col gap-4"
           onSubmit={(e) => {
@@ -127,7 +119,7 @@ export function LoginForm({
           orientation="horizontal"
         />
       </div>
-
+*/}
       <div className="flex w-full flex-col gap-2">
         <Button
           type="button"

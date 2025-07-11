@@ -13,6 +13,8 @@ import { TempNav } from './temp-nav';
 import UserNav from './user-nav';
 import { useState } from 'react';
 
+// TODO: fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function NavInner({ session }: { session: any }) {
   const [open, setOpen] = useState(false);
 
@@ -34,29 +36,35 @@ export function NavInner({ session }: { session: any }) {
         )}
       >
         <div className="flex items-center gap-2">
-          <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
+          {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
+            <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
+          ) : null}
           <Link href="/" className="flex items-center gap-2" event="home_nav_click">
             <Icons.logo className="size-6 sm:size-7" />
             <span className="text-lg font-medium text-white sm:text-xl">oss.now</span>
           </Link>
         </div>
         <nav className="flex items-center gap-2">
-          {env.NEXT_PUBLIC_ENV === 'production' ? (
-            <TempNav className="hidden md:block" />
+          {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
+            <TempNav />
           ) : (
-            <PublicNav className="hidden md:block" />
+            <>
+              <PublicNav />
+              <SubmissionDialog />
+            </>
           )}
 
-          <SubmissionDialog />
           {session?.user.id ? (
-            <UserNav />
+            env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
+              <UserNav />
+            ) : null
           ) : (
             <Button
               className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"
               asChild
             >
               <Link href="/login" event="login_nav_click">
-                login
+                Login
               </Link>
             </Button>
           )}

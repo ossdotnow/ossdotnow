@@ -1,7 +1,9 @@
 import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from '../../schema';
 import { fixture } from '../create-fixture';
+import { DB } from '../..';
 
-export const categoryTagsData = fixture(categoryTags).data([
+// Raw data arrays
+export const categoryTagsRawData = [
   {
     name: 'web',
     displayName: 'Web Development',
@@ -116,9 +118,9 @@ export const categoryTagsData = fixture(categoryTags).data([
     isActive: true,
     sortOrder: 190,
   },
-]);
+];
 
-export const categoryProjectTypesData = fixture(categoryProjectTypes).data([
+export const categoryProjectTypesRawData = [
   {
     name: 'fintech',
     displayName: 'Financial Technology',
@@ -185,9 +187,9 @@ export const categoryProjectTypesData = fixture(categoryProjectTypes).data([
     isActive: true,
     sortOrder: 110,
   },
-]);
+];
 
-export const categoryProjectStatusesData = fixture(categoryProjectStatuses).data([
+export const categoryProjectStatusesRawData = [
   {
     name: 'active',
     displayName: 'Active - Currently being developed',
@@ -248,4 +250,23 @@ export const categoryProjectStatusesData = fixture(categoryProjectStatuses).data
     isActive: true,
     sortOrder: 100,
   },
-]);
+];
+
+// Fixtures
+export const categoryTagsData = {
+  async run(db: DB) {
+    const existing = await db.select().from(categoryTags);
+    if (existing.length === 0) {
+      await db.insert(categoryTags).values(categoryTagsRawData);
+      console.log(`✅ Seeded category_tags with ${categoryTagsRawData.length} records`);
+    } else {
+      console.log(`⏭️  Skipping category_tags - already seeded`);
+    }
+  },
+};
+export const categoryProjectTypesData = fixture(categoryProjectTypes).data(
+  categoryProjectTypesRawData,
+);
+export const categoryProjectStatusesData = fixture(categoryProjectStatuses).data(
+  categoryProjectStatusesRawData,
+);
