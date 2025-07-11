@@ -1,6 +1,6 @@
 // This script sets all users' role to 'admin'.
-import { db } from '..';
 import { user } from '../schema/auth';
+import { db } from '..';
 
 async function makeAllAdmins() {
   console.log('🚨 Setting all users to admin...');
@@ -10,5 +10,6 @@ async function makeAllAdmins() {
 }
 
 makeAllAdmins().catch((error) => {
+  console.error('❌ Error setting all users to admin:', error);
   process.exit(1);
-})
+});

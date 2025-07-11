@@ -17,21 +17,17 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
-import ProjectDescription from './_components/project-description';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
+import ProjectDescription from './project-description';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import NumberFlow from '@number-flow/react';
+import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-
-// TODO: finish this file
-type GitHubIssue = RestEndpointMethodTypes['issues']['listForRepo']['response']['data'][0];
-type GitHubPullRequest = RestEndpointMethodTypes['pulls']['list']['response']['data'][0];
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -52,6 +48,16 @@ export default function ProjectPage({ id }: { id: string }) {
   const { project } = useProject(id);
   const { data: session } = authClient.useSession();
   const user = session?.user;
+  const [showShadow, setShowShadow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowShadow(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const trpc = useTRPC();
 
@@ -59,28 +65,28 @@ export default function ProjectPage({ id }: { id: string }) {
     queries: [
       trpc.repository.getRepo.queryOptions(
         {
-          url: project?.gitRepoUrl!,
+          url: project?.gitRepoUrl as string,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
         { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
       ),
       trpc.repository.getContributors.queryOptions(
         {
-          url: project?.gitRepoUrl!,
+          url: project?.gitRepoUrl as string,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
         { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
       ),
       trpc.repository.getIssues.queryOptions(
         {
-          url: project?.gitRepoUrl!,
+          url: project?.gitRepoUrl as string,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
         { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
       ),
       trpc.repository.getPullRequests.queryOptions(
         {
-          url: project?.gitRepoUrl!,
+          url: project?.gitRepoUrl as string,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
         { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
@@ -113,7 +119,13 @@ export default function ProjectPage({ id }: { id: string }) {
 
   return (
     <div className="mt-4 px-6 md:mt-8">
+      <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
       <div className="mx-auto max-w-[1080px] py-8">
+        <div
+          className={`pointer-events-none sticky top-[calc(32px+66px)] z-10 -mt-8 h-10 bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+            showShadow ? 'opacity-100' : 'opacity-0'
+          }`}
+        />
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">
             <ProjectDescription
@@ -139,11 +151,17 @@ export default function ProjectPage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="issues">
+                  {/* TODO: fix this */}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                   {issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
                     <div className="space-y-3">
                       {issues
+                        // TODO: fix this
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .filter((issue: any) => !issue.pull_request)
                         .slice(0, 10)
+                        // TODO: fix this
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         .map((issue: any) => (
                           <div
                             key={issue.id}
@@ -178,6 +196,8 @@ export default function ProjectPage({ id }: { id: string }) {
                                 </Link>
                                 {issue.labels && issue.labels.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-1">
+                                    {/* TODO: fix this */}
+                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                     {issue.labels.map((label: any) => (
                                       <span
                                         key={label.id || label}
@@ -211,6 +231,8 @@ export default function ProjectPage({ id }: { id: string }) {
                             </div>
                           </div>
                         ))}
+                      {/* TODO: fix this */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {issues.filter((issue: any) => !issue.pull_request).length > 10 && (
                         <Link
                           href={`${repo?.html_url}/issues`}
@@ -219,6 +241,8 @@ export default function ProjectPage({ id }: { id: string }) {
                           eventObject={{ projectId: project.id }}
                           className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
                         >
+                          {/* TODO: fix this */}
+                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                           View all {issues.filter((issue: any) => !issue.pull_request).length}{' '}
                           issues on GitHub →
                         </Link>
@@ -231,6 +255,8 @@ export default function ProjectPage({ id }: { id: string }) {
                 <TabsContent value="pull-requests">
                   {pullRequests && pullRequests.length > 0 ? (
                     <div className="space-y-3">
+                      {/* TODO: fix this */}
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {pullRequests.slice(0, 10).map((pr: any) => (
                         <div
                           key={pr.id}
@@ -275,6 +301,8 @@ export default function ProjectPage({ id }: { id: string }) {
                               </Link>
                               {pr.labels && pr.labels.length > 0 && (
                                 <div className="mt-2 flex flex-wrap gap-1">
+                                  {/* TODO: fix this */}
+                                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                                   {pr.labels.map((label: any) => (
                                     <span
                                       key={label.id || label}
@@ -376,6 +404,8 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                     <span className="text-base font-bold text-white sm:text-lg">
                       {issues?.filter(
+                        // TODO: fix this
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (issue: any) =>
                           !issue.pull_request &&
                           (issue.state === 'open' || issue.state === 'opened'),
@@ -394,7 +424,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     <div className="flex items-center justify-between">
                       <span className="text-neutral-400">Created</span>
                       <span className="text-neutral-300">
-                        {formatDate(new Date(repo?.created_at!))}
+                        {formatDate(new Date(repo?.created_at as string))}
                       </span>
                     </div>
                   )}
@@ -404,7 +434,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <div className="flex items-center justify-between">
                         <span className="text-neutral-400">Updated</span>
                         <span className="text-neutral-300">
-                          {formatDate(new Date(repo?.updated_at!))}
+                          {formatDate(new Date(repo?.updated_at as string))}
                         </span>
                       </div>
                     </>

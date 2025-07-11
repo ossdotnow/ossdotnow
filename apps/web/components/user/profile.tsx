@@ -90,6 +90,7 @@ export default function ProfilePage({ id }: { id: string }) {
   });
 
   // const featuredProjects = projectsWithGithubData?.filter((project) => project.featured);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const featuredProjects = [] as any[];
 
   return (

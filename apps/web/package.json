@@ -27,7 +27,7 @@
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
     "@workspace/ui": "workspace:*",
-    "better-auth": "^1.2.9",
+    "better-auth": "^1.2.10",
     "date-fns": "^4.1.0",
     "drizzle-zod": "^0.8.2",
     "lucide-react": "^0.518.0",
@@ -47,8 +47,8 @@
   "devDependencies": {
     "@faker-js/faker": "^9.8.0",
     "@types/node": "^24",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "19.1.8",
+    "@types/react-dom": "19.1.6",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "typescript": "^5.8.3"

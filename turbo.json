@@ -18,6 +18,10 @@
       "cache": false,
       "persistent": true
     },
+    "start": {
+      "cache": true,
+      "persistent": true
+    },
     "db:generate": {
       "cache": false
     },
@@ -35,6 +39,10 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
     "db:seed": {
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
+    },
+    "db:make-all-admin": {
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     }

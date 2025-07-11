@@ -3,6 +3,7 @@ import { z } from 'zod/v4';
 
 export const env = createEnv({
   server: {
+    VERCEL_URL: z.string().url(),
     // Environment
     VERCEL_ENV: z.enum(['development', 'production', 'preview']),
     // Database

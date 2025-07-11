@@ -16,8 +16,12 @@ export default function ProjectDescription({
   isUnclaimed,
   isOwner,
 }: {
-  repo: any; // todo: fix type
-  project: any; // todo: fix type
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  repo: any;
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  project: any;
   user?: { id: string } | null;
   isUnclaimed: boolean;
   isOwner: boolean;
@@ -102,6 +106,8 @@ function ProjectAvatar({
   );
 }
 
+// TODO: fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StatusBadges({ project }: { project: any }) {
   return (
     <div className="mt-2 flex w-full flex-row flex-wrap gap-1 md:gap-2">
@@ -120,6 +126,8 @@ function StatusBadges({ project }: { project: any }) {
   );
 }
 
+// TODO: fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ProjectTitleAndTicks({ project, className }: { project: any; className: string }) {
   return (
     <div className="flex items-center gap-2 md:gap-3">
@@ -129,6 +137,8 @@ function ProjectTitleAndTicks({ project, className }: { project: any; className:
   );
 }
 
+// TODO: fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function SocialLinks({ project }: { project: any }) {
   if (!project?.socialLinks) return null;
 
@@ -189,6 +199,8 @@ function SocialLinks({ project }: { project: any }) {
   );
 }
 
+// TODO: fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ProjectDescriptionText({ project }: { project: any }) {
   // TODO; Handle long descriptions properly, either by not allowing them or truncating with a "read more" option
   return (
@@ -206,6 +218,8 @@ function ClaimProjectSection({
 }: {
   isUnclaimed: boolean;
   user?: { id: string } | null;
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   project: any;
   className: string;
 }) {
@@ -234,7 +248,11 @@ function ActionButtons({
   className,
 }: {
   isOwner: boolean;
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   project: any;
+  // TODO: fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   repo: any;
   className: string;
 }) {

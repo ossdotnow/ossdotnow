@@ -9,20 +9,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
-import { Loader2, AlertCircle, CheckCircle, Flag } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
-import { useMutation } from '@tanstack/react-query';
+import { Loader2, AlertCircle, CheckCircle, Flag } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
+import { authClient } from '@workspace/auth/client';
+import { useMutation } from '@tanstack/react-query';
+import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { authClient } from '@workspace/auth/client';
-import Link from '@workspace/ui/components/link';
-
-type ProjectReportProps = {
-  projectId: string;
-  projectName: string;
-};
 
 export function ProjectReport({
   projectId,
@@ -104,7 +99,12 @@ export function ProjectReport({
           >
             Cancel
           </Button>
-          <Button variant="destructive" className="rounded-none" onClick={handleReport} disabled={isPending}>
+          <Button
+            variant="destructive"
+            className="rounded-none"
+            onClick={handleReport}
+            disabled={isPending}
+          >
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

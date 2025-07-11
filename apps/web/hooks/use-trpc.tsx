@@ -32,7 +32,7 @@ export function TRPCReactProvider(props: Readonly<TRPCReactProviderProps>) {
       links: [
         loggerLink({
           enabled: (op) =>
-            env.NEXT_PUBLIC_ENV === 'development' ||
+            env.NEXT_PUBLIC_VERCEL_ENV === 'development' ||
             (op.direction === 'down' && op.result instanceof Error),
         }),
         httpBatchStreamLink({
