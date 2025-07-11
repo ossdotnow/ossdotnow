@@ -3,13 +3,13 @@ import { z } from 'zod/v4';
 
 export const env = createEnv({
   server: {
-    VERCEL_URL: z.string().url(),
+    VERCEL_URL: z.string().min(1),
     // Environment
     VERCEL_ENV: z.enum(['development', 'production', 'preview']),
     // Database
-    DATABASE_URL: z.string().url().startsWith('postgresql://'),
+    DATABASE_URL: z.url().startsWith('postgresql://'),
     // Redis
-    UPSTASH_REDIS_REST_URL: z.string().url(),
+    UPSTASH_REDIS_REST_URL: z.url(),
     UPSTASH_REDIS_REST_TOKEN: z.string().min(1),
     // Github
     GITHUB_CLIENT_ID: z.string().min(1),
