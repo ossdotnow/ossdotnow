@@ -45,7 +45,8 @@ export default function NavUser() {
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">
-          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+          <Link href="/profile/me" className="rounded-none">
+          <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm hover:bg-neutral-800">
             <Avatar className="h-8 w-8 rounded-none">
               <AvatarImage src={user?.image || ''} alt={user?.name} />
               <AvatarFallback className="bg-neutral-800 text-neutral-400">
@@ -57,17 +58,9 @@ export default function NavUser() {
               <span className="truncate text-xs text-neutral-400">{user?.email}</span>
             </div>
           </div>
+          </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-neutral-800" />
-        <DropdownMenuItem
-          asChild
-          className="rounded-none text-neutral-300 hover:bg-neutral-800 hover:text-white"
-        >
-          <Link href="/profile/me">
-            <User />
-            Profile
-          </Link>
-        </DropdownMenuItem>
         {user?.role === 'admin' && (
           <>
             <DropdownMenuItem
