@@ -22,7 +22,8 @@ export default function SubmissionDialog() {
             trackDatabuddy('submit_project_nav_click');
             trackVercel('submit_project_nav_click');
           }}
-          className="ml-2 cursor-pointer rounded-none p-2 text-sm"
+          size="sm"
+          className="ml-2 cursor-pointer rounded-none px-2 text-xs md:text-sm"
         >
           Submit Project
         </Button>

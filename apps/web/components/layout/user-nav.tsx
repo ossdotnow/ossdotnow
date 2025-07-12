@@ -31,7 +31,7 @@ export default function NavUser() {
   ) : (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className="ml-2 size-9 cursor-pointer rounded-none">
+        <Avatar className="ml-2 size-8 cursor-pointer rounded-none">
           <AvatarImage src={user?.image || ''} alt={user?.name} />
           <AvatarFallback className="bg-neutral-900 text-xs text-neutral-400">
             {user?.name?.charAt(0)?.toUpperCase() || 'U'}
