@@ -7,3 +7,5 @@
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for more information on how to get started.
+
+**Important:** Make sure to use the [dev branch](https://github.com/ossdotnow/ossdotnow/tree/dev) for contributing.
