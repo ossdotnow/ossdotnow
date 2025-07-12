@@ -72,7 +72,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
       <span className="sr-only">View {project.name}</span>
       {rankBadge && (
         <div
-          className={`bg-linear-to-r ${rankBadge.color} mb-1 flex h-8 items-center px-2 py-1 text-xs font-semibold`}
+          className={`bg-gradient-to-r ${rankBadge.color} mb-1 flex h-8 items-center px-2 py-1 text-xs font-semibold`}
         >
           <span className={`text-xs font-semibold text-white`}>{rankBadge.text}</span>
         </div>

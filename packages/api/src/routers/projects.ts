@@ -135,7 +135,7 @@ export const projectsRouter = createTRPCRouter({
       }
 
       const countQuery = ctx.db
-        .select({ totalCount: count() })
+        .select({ totalCount: sql<number>`count(distinct ${project.id})` })
         .from(project)
         .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
         .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
