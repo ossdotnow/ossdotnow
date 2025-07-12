@@ -2,6 +2,74 @@ import { project } from '@workspace/db/schema';
 
 type RestEndpointMethodTypes = any;
 
+export interface ProjectData {
+  id: string | number;
+  name: string;
+  description?: string;
+  url: string;
+  // for GitHub repos
+  owner?: {
+    login?: string;
+    name?: string;
+    type?: string;
+    avatar_url?: string;
+  };
+  // for GitLab repos
+  namespace?: {
+    name?: string;
+    avatar_url?: string;
+  };
+  html_url?: string; // github URL
+  web_url?: string; // gitlab URL
+  [key: string]: any;
+}
+export interface ProjectWithRelations {
+  id: string;
+  ownerId: string | null;
+  logoUrl: string | null;
+  gitRepoUrl: string;
+  gitHost: 'github' | 'gitlab' | null;
+  name: string;
+  description: string | null;
+  socialLinks: {
+    twitter?: string;
+    discord?: string;
+    linkedin?: string;
+    website?: string;
+    [key: string]: string | undefined;
+  } | null;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  isPinned: boolean;
+  hasBeenAcquired: boolean;
+  isLookingForContributors: boolean;
+  isLookingForInvestors: boolean;
+  isHiring: boolean;
+  isPublic: boolean;
+  acquiredBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  statusId: string;
+  typeId: string;
+  deletedAt: Date | null;
+  status?: {
+    id: string;
+    name: string;
+    displayName?: string;
+  };
+  type?: {
+    id: string;
+    name: string;
+    displayName?: string;
+  };
+  tagRelations?: Array<{
+    tag?: {
+      id: string;
+      name: string;
+      displayName?: string;
+    };
+  }>;
+}
+
 export interface RepoData {
   id: string | number;
   name: string;

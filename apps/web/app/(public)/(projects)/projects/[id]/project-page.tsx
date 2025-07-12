@@ -19,6 +19,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import type { RestEndpointMethodTypes } from '@octokit/plugin-rest-endpoint-methods';
 import ProjectDescription from './_components/project-description';
+import ProjectErrorPage from './_components/project-error-page';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
@@ -41,71 +42,105 @@ const isValidProvider = (
 
 function useProject(id: string) {
   const trpc = useTRPC();
-  const query = useQuery(trpc.projects.getProject.queryOptions({ id }));
+  //made a change here
+  const query = useQuery(trpc.projects.getProject.queryOptions({ id }, { retry: false }));
 
   return {
     project: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
   };
 }
 
 export default function ProjectPage({ id }: { id: string }) {
-  const { project } = useProject(id);
+  const { project, isLoading: projectLoading, error: projectError } = useProject(id);
   const { data: session } = authClient.useSession();
   const user = session?.user;
 
   const trpc = useTRPC();
 
-  const repoData = useQueries({
+  const repoQuery = useQuery(
+    trpc.repository.getRepo.queryOptions(
+      {
+        url: project?.gitRepoUrl!,
+        provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+      },
+      {
+        enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        retry: false, // made a change here
+      },
+    ),
+  );
+  const otherQueries = useQueries({
     queries: [
-      trpc.repository.getRepo.queryOptions(
-        {
-          url: project?.gitRepoUrl!,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
-        },
-        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
-      ),
       trpc.repository.getContributors.queryOptions(
         {
           url: project?.gitRepoUrl!,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
-        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
       ),
       trpc.repository.getIssues.queryOptions(
         {
           url: project?.gitRepoUrl!,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
-        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
       ),
       trpc.repository.getPullRequests.queryOptions(
         {
           url: project?.gitRepoUrl!,
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
-        { enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost) },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
       ),
     ],
   });
-
-  if (!project || !project.gitRepoUrl)
+  if (projectLoading) {
     return (
-      <div className="flex h-[calc(100vh-100px)] w-full items-center justify-center">
-        Project not found
+      <div className="flex min-h-[calc(100vh-200px)] w-full items-center justify-center px-4 sm:px-6 lg:px-8">
+        <LoadingSpinner />
       </div>
     );
+  }
+  if (projectError || !project) {
+    return <ProjectErrorPage type="projectNotFound" />;
+  }
+  if (!project.gitRepoUrl) {
+    return <ProjectErrorPage type="repoNotAvailable" />;
+  }
+
+  if (repoQuery.isLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-200px)] w-full items-center justify-center px-4 sm:px-6 lg:px-8">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+  if (repoQuery.error || !repoQuery.data) {
+    return <ProjectErrorPage type="repoNotFound" onTryAgain={() => repoQuery.refetch()} />;
+  }
 
   const isUnclaimed = !project.ownerId;
   const isOwner = user?.id === project.ownerId;
 
-  const repo = repoData[0].data;
-  const contributors = repoData[1].data;
-  const issues = repoData[2].data;
-  const pullRequests = repoData[3].data;
-
-  if (!repo || !contributors || !issues || !pullRequests) {
+  const repo = repoQuery.data;
+  const contributors = otherQueries[0].data;
+  const issues = otherQueries[1].data;
+  const pullRequests = otherQueries[2].data;
+  const otherDataLoading = otherQueries.some((query) => query.isLoading);
+  if (otherDataLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex min-h-[calc(100vh-200px)] w-full items-center justify-center px-4 sm:px-6 lg:px-8">
         <LoadingSpinner />
       </div>
     );

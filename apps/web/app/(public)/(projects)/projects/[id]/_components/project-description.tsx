@@ -1,12 +1,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
+import { ProjectData, ProjectWithRelations } from '@workspace/api';
 import ProjectTicks from '@/components/project/project-ticks';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { Globe, Linkedin } from 'lucide-react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 export default function ProjectDescription({
@@ -16,8 +18,8 @@ export default function ProjectDescription({
   isUnclaimed,
   isOwner,
 }: {
-  repo: any; // todo: fix type
-  project: any; // todo: fix type
+  repo: ProjectData;
+  project: ProjectWithRelations;
   user?: { id: string } | null;
   isUnclaimed: boolean;
   isOwner: boolean;
@@ -43,7 +45,7 @@ export default function ProjectDescription({
             <ProjectAvatar
               avatarImage={avatarImage}
               projectName={project.name}
-              repoOwnerName={repo?.owner.name}
+              repoOwnerName={repo?.owner?.name || repo?.namespace?.name || ''}
               className="h-12 w-12 flex-shrink-0 rounded-full md:h-16 md:w-16"
             />
             <div className="w-full flex-1">
@@ -102,7 +104,7 @@ function ProjectAvatar({
   );
 }
 
-function StatusBadges({ project }: { project: any }) {
+function StatusBadges({ project }: { project: ProjectWithRelations }) {
   return (
     <div className="mt-2 flex w-full flex-row flex-wrap gap-1 md:gap-2">
       <span className="rounded-md bg-neutral-800 px-2 py-1 text-xs font-medium text-neutral-300">
@@ -120,7 +122,13 @@ function StatusBadges({ project }: { project: any }) {
   );
 }
 
-function ProjectTitleAndTicks({ project, className }: { project: any; className: string }) {
+function ProjectTitleAndTicks({
+  project,
+  className,
+}: {
+  project: ProjectWithRelations;
+  className: string;
+}) {
   return (
     <div className="flex items-center gap-2 md:gap-3">
       <h1 className={className}>{project?.name}</h1>
@@ -129,7 +137,7 @@ function ProjectTitleAndTicks({ project, className }: { project: any; className:
   );
 }
 
-function SocialLinks({ project }: { project: any }) {
+function SocialLinks({ project }: { project: ProjectWithRelations }) {
   if (!project?.socialLinks) return null;
 
   return (
@@ -189,12 +197,35 @@ function SocialLinks({ project }: { project: any }) {
   );
 }
 
-function ProjectDescriptionText({ project }: { project: any }) {
-  // TODO; Handle long descriptions properly, either by not allowing them or truncating with a "read more" option
+function ProjectDescriptionText({ project }: { project: ProjectWithRelations }) {
+  const [expanded, setExpanded] = useState(false);
+  const description = project?.description || '';
+  const CHAR_LIMIT = 300;
+  const isLong = description.length > CHAR_LIMIT;
+  const displayText = expanded || !isLong ? description : description.slice(0, CHAR_LIMIT) + '...';
+
   return (
-    <p className="line-clamp-3 text-sm leading-relaxed break-words text-neutral-400 md:mb-6 md:text-base">
-      {project?.description}
-    </p>
+    <div className="md:mb-6">
+      <p
+        className={
+          `text-sm leading-relaxed break-words text-neutral-400 md:text-base` +
+          (!expanded && isLong ? ' line-clamp-3' : '')
+        }
+      >
+        {displayText}
+      </p>
+      {isLong && (
+        <Button
+          variant="link"
+          size="sm"
+          type="button"
+          className="mt-1 px-0 text-xs font-medium"
+          onClick={() => setExpanded((prev) => !prev)}
+        >
+          {expanded ? 'Show less' : 'Read more'}
+        </Button>
+      )}
+    </div>
   );
 }
 
@@ -206,7 +237,7 @@ function ClaimProjectSection({
 }: {
   isUnclaimed: boolean;
   user?: { id: string } | null;
-  project: any;
+  project: ProjectWithRelations;
   className: string;
 }) {
   if (!isUnclaimed || !user) return null;
@@ -234,37 +265,49 @@ function ActionButtons({
   className,
 }: {
   isOwner: boolean;
-  project: any;
-  repo: any;
+  project: ProjectWithRelations;
+  repo: ProjectData;
   className: string;
 }) {
+  const getRepoUrl = () => {
+    if (project.gitHost === 'github') {
+      return repo?.html_url || project.gitRepoUrl;
+    } else {
+      return repo?.web_url || project.gitRepoUrl;
+    }
+  };
+
+  const repoUrl = getRepoUrl();
+
   return (
     <div className={className}>
       {isOwner && <LaunchProjectDialog projectId={project.id} projectName={project.name} />}
-      <Link
-        href={project.gitHost === 'github' ? repo?.html_url : repo?.web_url}
-        target="_blank"
-        event="project_page_github_link_clicked"
-        eventObject={{ projectId: project.id }}
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600"
+      {repoUrl && (
+        <Link
+          href={repoUrl}
+          target="_blank"
+          event="project_page_github_link_clicked"
+          eventObject={{ projectId: project.id }}
         >
-          {project.gitHost === 'github' ? (
-            <>
-              <Icons.github className="h-4 w-4" />
-              View on GitHub
-            </>
-          ) : (
-            <>
-              <Icons.gitlab className="h-4 w-4" />
-              View on GitLab
-            </>
-          )}
-        </Button>
-      </Link>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600"
+          >
+            {project.gitHost === 'github' ? (
+              <>
+                <Icons.github className="h-4 w-4" />
+                View on GitHub
+              </>
+            ) : (
+              <>
+                <Icons.gitlab className="h-4 w-4" />
+                View on GitLab
+              </>
+            )}
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }
