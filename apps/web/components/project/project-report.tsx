@@ -49,10 +49,16 @@ export function ProjectReport({
 
   if (!session?.user) {
     return (
-      <Button variant="outline" size="icon" asChild>
-        <Link href="/login" event="report_project_login_button_clicked">
-          <Flag className="h-4 w-4" />
-        </Link>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          window.location.href = '/login';
+        }}
+      >
+        <Flag className="h-4 w-4" />
       </Button>
     );
   }
