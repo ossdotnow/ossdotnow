@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Card } from '@workspace/ui/components/card';
 import { Calendar, TrendingUp } from 'lucide-react';
+import { parseAsString, useQueryState } from 'nuqs';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
@@ -10,7 +11,7 @@ import LaunchCard from './launch-card';
 
 export default function LaunchesPage() {
   const trpc = useTRPC();
-  const [selectedTab, setSelectedTab] = useState('today');
+  const [tab, setTab] = useQueryState('tab', parseAsString.withDefault('today'));
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -71,17 +72,26 @@ export default function LaunchesPage() {
       />
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
       <div className="mx-auto min-h-screen max-w-[1080px] pt-20">
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="fixed top-[calc(32px+65px)] z-10 mb-6 flex w-full max-w-[1080px] rounded-none border border-t-0 border-[#404040] bg-[#262626]">
-            <TabsTrigger value="today" className="flex shrink items-center gap-2">
+            <TabsTrigger
+              value="today"
+              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+            >
               <Calendar className="h-4 w-4" />
               Today
             </TabsTrigger>
-            <TabsTrigger value="yesterday" className="flex shrink items-center gap-2">
+            <TabsTrigger
+              value="yesterday"
+              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+            >
               <TrendingUp className="h-4 w-4" />
               Yesterday
             </TabsTrigger>
-            <TabsTrigger value="all" className="flex shrink items-center gap-2">
+            <TabsTrigger
+              value="all"
+              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+            >
               <TrendingUp className="h-4 w-4" />
               All Launches
             </TabsTrigger>

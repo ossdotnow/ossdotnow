@@ -68,12 +68,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   if (isError) return <div>Error</div>;
 
   return (
-    <Link
-      href={`/launches/${project.id}`}
-      event="project_card_link_clicked"
-      eventObject={{ projectId: project.id }}
-      className="group/project relative flex h-full flex-col bg-[#171717] p-1"
-    >
+    <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
       <span className="sr-only">View {project.name}</span>
       {rankBadge && (
         <div
@@ -82,7 +77,12 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
           <span className={`text-xs font-semibold text-white`}>{rankBadge.text}</span>
         </div>
       )}
-      <div className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4">
+      <Link
+        href={`/launches/${project.id}`}
+        event="project_card_link_clicked"
+        eventObject={{ projectId: project.id }}
+        className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4"
+      >
         <div className="flex items-center gap-3">
           {(repo && repo?.owner && repo?.owner?.avatar_url) ||
           (repo?.namespace && repo?.namespace?.avatar_url) ? (
@@ -101,12 +101,28 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
               {project.name} -{' '}
               <span className="font-light text-neutral-300">{project.gitRepoUrl}</span>
             </h3>
-            <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
+            <p className="line-clamp-1 text-xs leading-relaxed text-neutral-400 md:text-sm">
               {project.description}
             </p>
+            <span className="mt-2 flex w-full flex-row gap-2 overflow-x-scroll">
+              <span className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300">
+                {project?.status || 'Unknown Status'}
+              </span>
+              <span className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300">
+                {project?.type || 'Unknown Type'}
+              </span>
+              {project.tags.map((tag: string) => (
+                <span
+                  key={tag}
+                  className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </span>
           </div>
         </div>
-      </div>
+      </Link>
 
       <div>
         <div className="flex items-center justify-between pt-1">
@@ -159,7 +175,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                 <Button
                   variant={project.hasVoted ? 'default' : 'outline'}
                   size="sm"
-                  className={`flex h-8 flex-row items-center gap-1 rounded-none border p-2 ${
+                  className={`flex h-8 cursor-pointer flex-row items-center gap-1 rounded-none border p-2 ${
                     project.hasVoted
                       ? 'border-[#404040] bg-[#262626] text-white hover:border-[#343434] hover:bg-[#343434] hover:text-white'
                       : 'border-neutral-300 bg-neutral-300 text-black hover:border-neutral-400 hover:bg-neutral-400 hover:text-black'
@@ -175,6 +191,6 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

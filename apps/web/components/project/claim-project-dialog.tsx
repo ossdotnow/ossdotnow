@@ -83,7 +83,12 @@ export function ClaimProjectDialog({
         </Button>
       );
     }
-    return null;
+    return (
+      <Button variant="outline" size="sm" className="gap-2 rounded-none">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading...
+      </Button>
+    );
   }
 
   return (

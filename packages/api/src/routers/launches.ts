@@ -126,6 +126,7 @@ export const launchesRouter = createTRPCRouter({
           gitRepoUrl: project.gitRepoUrl,
           gitHost: project.gitHost,
           type: categoryProjectTypes.displayName,
+          status: categoryProjectStatuses.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -139,6 +140,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
         .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
@@ -156,6 +158,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectStatuses.displayName,
           categoryProjectTypes.displayName,
           user.id,
           user.name,
@@ -246,6 +249,7 @@ export const launchesRouter = createTRPCRouter({
           gitRepoUrl: project.gitRepoUrl,
           gitHost: project.gitHost,
           type: categoryProjectTypes.displayName,
+          status: categoryProjectStatuses.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -259,6 +263,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
         .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
@@ -276,6 +281,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectStatuses.displayName,
           categoryProjectTypes.displayName,
           user.id,
           user.name,
@@ -362,6 +368,7 @@ export const launchesRouter = createTRPCRouter({
           gitRepoUrl: project.gitRepoUrl,
           gitHost: project.gitHost,
           type: categoryProjectTypes.displayName,
+          status: categoryProjectStatuses.displayName,
           launchDate: projectLaunch.launchDate,
           featured: projectLaunch.featured,
           owner: {
@@ -375,6 +382,7 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectLaunch)
         .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
         .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
@@ -386,6 +394,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.launchDate,
           projectLaunch.featured,
+          categoryProjectStatuses.displayName,
           categoryProjectTypes.displayName,
           user.id,
           user.name,

@@ -171,7 +171,7 @@ export default function ProjectPage({ id }: { id: string }) {
           isUnclaimed={isUnclaimed}
           user={user}
           project={project}
-          className="mt-0 mb-4 w-full rounded-none border border-neutral-700 bg-neutral-800/30 p-2"
+          className="mt-0 mb-4 w-full rounded-none border border-neutral-800 bg-neutral-900/50 p-2"
         />
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">

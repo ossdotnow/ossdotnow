@@ -73,7 +73,7 @@ export default function ProjectsPage() {
     searchQuery || statusFilter !== 'all' || typeFilter !== 'all' || tagFilter !== 'all';
 
   return (
-    <div className="relative mx-auto max-w-[1080px]">
+    <div className="relative mx-auto min-h-screen max-w-[1080px]">
       <div
         className={`pointer-events-none fixed top-[calc(32px+65px+36px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
           showShadow ? 'opacity-100' : 'opacity-0'
@@ -109,7 +109,7 @@ export default function ProjectsPage() {
         </div>
 
         {isLoading ? (
-          <LoadingSpinner />
+          <LoadingSpinner className="mt-10" />
         ) : isError ? (
           <div className="text-center text-sm text-red-700">Error loading projects</div>
         ) : projects.length > 0 ? (
