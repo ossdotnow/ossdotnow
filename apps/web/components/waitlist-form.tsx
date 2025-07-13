@@ -52,6 +52,7 @@ function useWaitlistCount() {
 
   return {
     count: query.data?.count ?? 0,
+    earlySubmissionCount: query.data?.earlySubmissionCount ?? 0,
     mutate,
     success,
   };
@@ -114,7 +115,8 @@ export function WaitlistForm({ className, ...props }: ComponentProps<'div'>) {
         <span className="size-2 animate-pulse rounded-full bg-green-600 dark:bg-green-400" />
         <span className="absolute left-0 size-2 animate-pulse rounded-full bg-green-600 blur-xs dark:bg-green-400" />
         <span className="text-sm">
-          <NumberFlow value={waitlist.count} /> people already joined
+          <NumberFlow value={waitlist.count} /> people joined •{' '}
+          <NumberFlow value={waitlist.earlySubmissionCount} /> projects submitted
         </span>
       </div>
     </div>

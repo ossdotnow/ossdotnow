@@ -1,6 +1,6 @@
 import { adminProcedure, createTRPCRouter, publicProcedure } from '../trpc';
+import { project, waitlist } from '@workspace/db/schema';
 import { getRateLimiter } from '../utils/rate-limit';
-import { waitlist } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
@@ -9,6 +9,7 @@ import { z } from 'zod/v4';
 export const earlyAccessRouter = createTRPCRouter({
   getWaitlistCount: publicProcedure.query(async ({ ctx }) => {
     const waitlistCount = await ctx.db.select({ count: count() }).from(waitlist);
+    const earlySubmissionCount = await ctx.db.select({ count: count() }).from(project);
 
     if (!waitlistCount[0]) {
       throw new TRPCError({
@@ -17,8 +18,16 @@ export const earlyAccessRouter = createTRPCRouter({
       });
     }
 
+    if (!earlySubmissionCount[0]) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to get early submission count',
+      });
+    }
+
     return {
       count: waitlistCount[0].count,
+      earlySubmissionCount: earlySubmissionCount[0].count,
     };
   }),
   getWaitlist: adminProcedure.query(async ({ ctx }) => {
