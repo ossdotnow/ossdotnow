@@ -23,7 +23,12 @@ export function DebugGitHubPermissions({
 
   if (!showDebug) {
     return (
-      <Button variant="outline" size="sm" onClick={() => setShowDebug(true)} className="mt-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setShowDebug(true)}
+        className="mt-2 rounded-none"
+      >
         Debug GitHub Permissions
       </Button>
     );
@@ -51,10 +56,15 @@ export function DebugGitHubPermissions({
       ) : null}
 
       <div className="mt-2 flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => refetch()}>
+        <Button size="sm" variant="outline" className="rounded-none" onClick={() => refetch()}>
           Refresh
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setShowDebug(false)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-none"
+          onClick={() => setShowDebug(false)}
+        >
           Hide
         </Button>
       </div>
