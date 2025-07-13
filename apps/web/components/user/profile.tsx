@@ -411,12 +411,11 @@ function UserPullRequests({ profile }: { profile: any }) {
       case 'impact':
         return calculatePRScore(b) - calculatePRScore(a);
       case 'discussion':
-        // Without comment data, just use recent
         return (
           new Date(b.updatedAt || b.createdAt).getTime() -
           new Date(a.updatedAt || a.createdAt).getTime()
         );
-      case 'fastest':
+      case 'fastest': {
         const aTime = a.mergedAt
           ? new Date(a.mergedAt).getTime() - new Date(a.createdAt).getTime()
           : Infinity;
@@ -424,7 +423,7 @@ function UserPullRequests({ profile }: { profile: any }) {
           ? new Date(b.mergedAt).getTime() - new Date(b.createdAt).getTime()
           : Infinity;
         return aTime - bTime;
-      case 'recent':
+      }
       default:
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
@@ -476,7 +475,7 @@ function UserPullRequests({ profile }: { profile: any }) {
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Pull Requests</h2>
         <div className="flex gap-2">
-          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+          <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
             <SelectTrigger className="w-[140px] rounded-none">
               <SelectValue />
             </SelectTrigger>
@@ -487,7 +486,7 @@ function UserPullRequests({ profile }: { profile: any }) {
               <SelectItem value="fastest">Fastest Merged</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={selectedState} onValueChange={(value: any) => setSelectedState(value)}>
+          <Select value={selectedState} onValueChange={(value: string) => setSelectedState(value)}>
             <SelectTrigger className="w-[140px] rounded-none">
               <SelectValue />
             </SelectTrigger>

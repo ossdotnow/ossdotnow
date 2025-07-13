@@ -440,30 +440,40 @@ export class GitlabManager implements GitManager {
         sort: 'desc',
       });
 
-      return mergeRequests.map((mr: any) => ({
-        id: mr.id.toString(),
-        number: mr.iid,
-        title: mr.title,
-        state: mr.state === 'opened' ? 'open' : mr.state,
-        url: mr.web_url,
-        createdAt: mr.created_at,
-        updatedAt: mr.updated_at,
-        closedAt: mr.closed_at || undefined,
-        mergedAt: mr.merged_at || undefined,
-        isDraft: mr.draft || mr.work_in_progress || false,
-        headRefName: mr.source_branch,
-        baseRefName: mr.target_branch,
-        repository: {
-          nameWithOwner:
-            mr.references?.full?.replace('!', '#') ||
-            `${mr.author.username}/${mr.source_project_id}`,
-          url: mr.web_url.split('/-/merge_requests/')[0] || '',
-          isPrivate: mr.project_id ? false : true,
-          owner: {
-            login: mr.author.username,
+      return mergeRequests.map((mr: any) => {
+        // Extract project path from web_url
+        // GitLab URL format: https://gitlab.com/owner/repo/-/merge_requests/123
+        const urlParts = mr.web_url.split('/-/merge_requests/');
+        const projectUrl = urlParts[0] || '';
+        const pathMatch = projectUrl.match(/gitlab\.com\/(.+)$/);
+        const projectPath = pathMatch ? pathMatch[1] : '';
+
+        return {
+          id: mr.id.toString(),
+          number: mr.iid,
+          title: mr.title,
+          state: mr.state === 'opened' ? 'open' : mr.state,
+          url: mr.web_url,
+          createdAt: mr.created_at,
+          updatedAt: mr.updated_at,
+          closedAt: mr.closed_at || undefined,
+          mergedAt: mr.merged_at || undefined,
+          isDraft: mr.draft || mr.work_in_progress || false,
+          headRefName: mr.source_branch,
+          baseRefName: mr.target_branch,
+          repository: {
+            nameWithOwner:
+              mr.references?.full?.replace('!', '#') ||
+              projectPath ||
+              `${mr.author.username}/unknown`,
+            url: projectUrl,
+            isPrivate: undefined, // Cannot determine from MR data alone
+            owner: {
+              login: mr.author.username,
+            },
           },
-        },
-      }));
+        };
+      });
     } catch (error) {
       if (error instanceof TRPCError) {
         throw error;
