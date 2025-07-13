@@ -101,6 +101,40 @@ export interface PullRequestData {
   [key: string]: any;
 }
 
+export interface UserPullRequestData extends PullRequestData {
+  repository: {
+    nameWithOwner: string;
+    url: string;
+    isPrivate?: boolean;
+    owner?: {
+      login: string;
+    };
+    stargazersCount?: number;
+    forksCount?: number;
+    primaryLanguage?: {
+      name: string;
+      color?: string;
+    };
+  };
+  createdAt: string;
+  updatedAt?: string;
+  mergedAt?: string;
+  closedAt?: string;
+  isDraft?: boolean;
+  headRefName?: string;
+  baseRefName?: string;
+  number: number;
+  additions?: number;
+  deletions?: number;
+  changedFiles?: number;
+  commentCount?: number;
+  reviewCount?: number;
+  labels?: Array<{
+    name: string;
+    color?: string;
+  }>;
+}
+
 export interface UserData {
   provider: 'github' | 'gitlab';
   login: string;
@@ -134,6 +168,13 @@ export interface GitManager {
   getContributors(identifier: string): Promise<ContributorData[]>;
   getIssues(identifier: string): Promise<IssueData[]>;
   getPullRequests(identifier: string): Promise<PullRequestData[]>;
+  getUserPullRequests(
+    username: string,
+    options?: {
+      state?: 'open' | 'closed' | 'merged' | 'all';
+      limit?: number;
+    },
+  ): Promise<UserPullRequestData[]>;
   getRepoData(identifier: string): Promise<{
     repo: RepoData;
     contributors: ContributorData[];

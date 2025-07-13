@@ -233,4 +233,38 @@ export const profileRouter = createTRPCRouter({
 
       return activities.slice(0, 50);
     }),
+  getUserPullRequests: publicProcedure
+    .input(
+      z.object({
+        username: z.string(),
+        provider: z.enum(['github', 'gitlab']),
+        state: z.enum(['open', 'closed', 'merged', 'all']).optional().default('all'),
+        limit: z.number().min(1).max(100).optional().default(50),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { username, provider, state, limit } = input;
+
+      try {
+        const driver = await getActiveDriver(provider, ctx);
+        const pullRequests = await driver.getUserPullRequests(username, {
+          state,
+          limit,
+        });
+
+        return {
+          pullRequests,
+          count: pullRequests.length,
+          provider,
+        };
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch user pull requests',
+        });
+      }
+    }),
 });

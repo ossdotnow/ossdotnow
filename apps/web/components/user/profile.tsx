@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
+import {
   Calendar,
   Clock,
   ExternalLink,
@@ -8,12 +15,11 @@ import {
   Globe,
   Heart,
   MapPin,
-  MessageCircle,
-  Star,
   TrendingUp,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
+import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -22,12 +28,29 @@ import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';
+import { cn } from '@workspace/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
-import Image from 'next/image';
+import { useQueryState } from 'nuqs';
+
+interface Profile {
+  git?: {
+    login: string;
+    provider: 'github' | 'gitlab';
+  };
+}
+
+interface PullRequestData {
+  mergedAt?: string;
+  isDraft?: boolean;
+  createdAt: string;
+}
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
+  const [tab, setTab] = useQueryState('tab', {
+    defaultValue: 'projects',
+  });
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -203,7 +226,7 @@ export default function ProfilePage({ id }: { id: string }) {
             </div>
 
             <div className="lg:col-span-8">
-              <Tabs defaultValue="projects" className="w-full">
+              <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 rounded-none border-neutral-800 bg-neutral-900/50">
                   <TabsTrigger value="projects" className="rounded-none">
                     Projects
@@ -263,68 +286,7 @@ export default function ProfilePage({ id }: { id: string }) {
                       >
                         {featuredProjects.length > 0 ? (
                           featuredProjects?.map((project) => (
-                            <Card
-                              key={project.id}
-                              className="h-48 min-w-[320px] rounded-none border-neutral-800 bg-neutral-900/50 pb-0 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
-                            >
-                              <CardContent className="flex h-full flex-col p-4">
-                                <div className="flex flex-1 space-x-4">
-                                  <div className="flex-shrink-0">
-                                    <div className="h-16 w-16 overflow-hidden bg-white">
-                                      <Image
-                                        src={
-                                          project.githubData?.owner.avatar_url || '/placeholder.svg'
-                                        }
-                                        alt={project.name}
-                                        width={64}
-                                        height={64}
-                                        className="h-full w-full object-contain"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex min-w-0 flex-1 flex-col justify-between">
-                                    <div>
-                                      <div className="mb-1 flex items-center justify-between">
-                                        <h3 className="truncate pr-2 text-lg font-semibold">
-                                          {project.name}
-                                        </h3>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <Badge className="bg-orange-500 text-xs hover:bg-orange-600">
-                                          {project.approvalStatus}
-                                        </Badge>
-                                        {project.language && (
-                                          <Badge className="bg-neutral-700 text-xs hover:bg-neutral-600">
-                                            {project.language}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 flex items-center justify-between border-neutral-800/50 pt-3 text-sm text-neutral-400">
-                                  <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-1">
-                                      <Star className="h-4 w-4" />
-                                      <span>{project.stars.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <GitFork className="h-4 w-4" />
-                                      <span>{project.forks.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                    className="transition-colors duration-150 hover:text-neutral-200"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <ProjectCard key={project.id} project={project} />
                           ))
                         ) : (
                           <div className="flex items-center justify-center">
@@ -339,107 +301,14 @@ export default function ProfilePage({ id }: { id: string }) {
                     <h2 className="mb-4 text-xl font-semibold">All Projects</h2>
                     <div className="space-y-4">
                       {projectsWithGithubData?.map((project) => (
-                        <Card
-                          key={project.id}
-                          className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
-                        >
-                          <CardContent className="px-6">
-                            <div className="flex items-start space-x-4">
-                              <Image
-                                src={project.githubData?.owner.avatar_url || '/placeholder.svg'}
-                                alt={project.name}
-                                width={80}
-                                height={80}
-                                className="h-20 w-20 flex-shrink-0 object-cover"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-2 flex items-start justify-between">
-                                  <div>
-                                    <h3 className="mb-1 text-lg font-semibold">{project.name}</h3>
-                                    <div className="mb-2 flex items-center gap-2">
-                                      <Badge variant="secondary" className="text-xs">
-                                        {project.approvalStatus}
-                                      </Badge>
-                                      {project.language && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {project.language}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <p className="mb-3 text-sm text-neutral-400">
-                                  {project.description}
-                                </p>
-
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                  {project.tagRelations?.map((relation, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
-                                      {relation.tag?.displayName || relation.tag?.name}
-                                    </Badge>
-                                  ))}
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                  <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-400">
-                                    <div className="flex items-center gap-1">
-                                      <Icons.star className="h-4 w-4" />
-                                      <span>{project.stars.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Icons.fork className="h-4 w-4" />
-                                      <span>{project.forks.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Icons.clock className="h-4 w-4" />
-                                      <span>{project.lastCommit}</span>
-                                    </div>
-                                    {project.openIssues > 0 && (
-                                      <div className="flex items-center gap-1">
-                                        <MessageCircle className="h-4 w-4" />
-                                        <span>{project.openIssues}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="transition-colors duration-150 hover:text-neutral-200"
-                                    >
-                                      <Heart className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      asChild
-                                      className="transition-colors duration-150 hover:text-neutral-200"
-                                    >
-                                      <Link
-                                        href={`https://${project.gitHost}.com/${project.gitRepoUrl}`}
-                                        target="_blank"
-                                      >
-                                        <ExternalLink className="h-4 w-4" />
-                                      </Link>
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <ProjectCard key={project.id} project={project} />
                       ))}
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="contributions" className="mt-6">
-                  <div className="py-12 text-center">
-                    <div className="mb-4 text-neutral-400">
-                      <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                      <p>Contribution history coming soon...</p>
-                    </div>
-                  </div>
+                  <UserPullRequests profile={profile as Profile} />
                 </TabsContent>
 
                 <TabsContent value="collections" className="mt-6">
@@ -459,43 +328,339 @@ export default function ProfilePage({ id }: { id: string }) {
   );
 }
 
+function UserPullRequests({ profile }: { profile: Profile }) {
+  const trpc = useTRPC();
+  const [selectedState, setSelectedState] = useQueryState('selectedState', {
+    defaultValue: 'all',
+  });
+  const [sortBy, setSortBy] = useQueryState('sortBy', {
+    defaultValue: 'recent',
+  });
+
+  const { data, isLoading, error } = useQuery(
+    trpc.profile.getUserPullRequests.queryOptions(
+      {
+        username: profile?.git?.login ?? '',
+        provider: profile?.git?.provider ?? 'github',
+        state: selectedState as 'all' | 'open' | 'closed' | 'merged',
+        limit: 100,
+      },
+      {
+        enabled: !!profile?.git?.login && !!profile?.git?.provider,
+      },
+    ),
+  );
+
+  if (!profile?.git?.login || !profile?.git?.provider) {
+    return (
+      <div className="py-12 text-center">
+        <div className="mb-4 text-neutral-400">
+          <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
+          <p>No Git provider connected to this profile</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="rounded-none border-neutral-800 bg-neutral-900/50">
+            <CardContent className="p-4 py-0">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <Skeleton className="mb-2 h-5 w-3/4 rounded-none" />
+                  <Skeleton className="mb-2 h-4 w-1/2 rounded-none" />
+                  <Skeleton className="h-4 w-1/4 rounded-none" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center">
+        <div className="mb-4 text-neutral-400">
+          <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
+          <p>Failed to load pull requests</p>
+          <p className="mt-2 text-sm">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const pullRequests = data?.pullRequests || [];
+
+  const calculatePRScore = (pr: PullRequestData) => {
+    let score = 0;
+
+    if (pr.mergedAt) score += 20;
+    if (pr.isDraft) score -= 10;
+
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(pr.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (ageInDays < 30) score += 5;
+
+    if (pr.mergedAt && pr.createdAt) {
+      const daysToMerge = Math.floor(
+        (new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      if (daysToMerge < 3) score += 10;
+      else if (daysToMerge > 30) score -= 5;
+    }
+
+    return Math.round(score);
+  };
+
+  const sortedPullRequests = [...pullRequests].sort((a, b) => {
+    switch (sortBy) {
+      case 'impact':
+        return calculatePRScore(b) - calculatePRScore(a);
+      case 'discussion':
+        return (
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime()
+        );
+      case 'fastest': {
+        const aTime = a.mergedAt
+          ? new Date(a.mergedAt).getTime() - new Date(a.createdAt).getTime()
+          : Infinity;
+        const bTime = b.mergedAt
+          ? new Date(b.mergedAt).getTime() - new Date(b.createdAt).getTime()
+          : Infinity;
+        return aTime - bTime;
+      }
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
+
+  const stats = {
+    open: pullRequests.filter((pr) => pr.state === 'open').length,
+    closed: pullRequests.filter((pr) => pr.state === 'closed' && !pr.mergedAt).length,
+    merged: pullRequests.filter((pr) => pr.mergedAt).length,
+    avgMergeTime: (() => {
+      const mergedPRs = pullRequests.filter((pr) => pr.mergedAt);
+      if (mergedPRs.length === 0) return 0;
+      const totalTime = mergedPRs.reduce((sum, pr) => {
+        return sum + (new Date(pr.mergedAt!).getTime() - new Date(pr.createdAt).getTime());
+      }, 0);
+      return Math.round(totalTime / mergedPRs.length / (1000 * 60 * 60 * 24));
+    })(),
+  };
+
+  return (
+    <div>
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.merged}</div>
+            <div className="text-xs text-neutral-400">Merged PRs</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.open}</div>
+            <div className="text-xs text-neutral-400">Open PRs</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.avgMergeTime}d</div>
+            <div className="text-xs text-neutral-400">Avg Merge Time</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{pullRequests.length}</div>
+            <div className="text-xs text-neutral-400">Total PRs</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Pull Requests</h2>
+        <div className="flex gap-2">
+          <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
+            <SelectTrigger className="w-[140px] rounded-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="impact">By Status</SelectItem>
+              <SelectItem value="discussion">Last Updated</SelectItem>
+              <SelectItem value="fastest">Fastest Merged</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedState} onValueChange={(value: string) => setSelectedState(value)}>
+            <SelectTrigger className="w-[140px] rounded-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="merged">Merged</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {sortedPullRequests.length === 0 ? (
+        <div className="py-12 text-center">
+          <div className="mb-4 text-neutral-400">
+            <GitFork className="mx-auto mb-4 h-12 w-12 opacity-50" />
+            <p>No {selectedState !== 'all' ? selectedState : ''} pull requests found</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sortedPullRequests.map((pr) => {
+            // const score = calculatePRScore(pr);
+            const isMergedQuickly =
+              pr.mergedAt &&
+              new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime() <
+                3 * 24 * 60 * 60 * 1000;
+
+            return (
+              <Card
+                key={pr.id}
+                className={cn(
+                  'rounded-none border-neutral-800 bg-neutral-900/50 transition-colors hover:bg-neutral-900/70',
+                  isMergedQuickly && 'border-green-900/50',
+                )}
+              >
+                <CardContent className="p-4 py-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Link
+                          href={pr.url}
+                          target="_blank"
+                          className="hover:text-primary text-base font-medium"
+                        >
+                          {pr.title}
+                        </Link>
+                        <Badge
+                          variant={
+                            pr.state === 'open' ? 'default' : pr.mergedAt ? 'secondary' : 'outline'
+                          }
+                          className={cn(
+                            'rounded-none text-xs',
+                            pr.state === 'open' &&
+                              'border-green-800 bg-green-900/20 text-green-400',
+                            pr.mergedAt && 'border-purple-800 bg-purple-900/20 text-purple-400',
+                            pr.state === 'closed' &&
+                              !pr.mergedAt &&
+                              'border-red-800 bg-red-900/20 text-red-400',
+                          )}
+                        >
+                          {pr.mergedAt ? 'Merged' : pr.state}
+                        </Badge>
+                        {pr.isDraft && (
+                          <Badge variant="outline" className="rounded-none text-xs">
+                            Draft
+                          </Badge>
+                        )}
+                        {isMergedQuickly && (
+                          <Badge className="rounded-none border-green-800 bg-green-900/20 text-xs text-green-400">
+                            <Clock className="mr-1 h-3 w-3" />
+                            Quick Merge
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-neutral-400">
+                        <Link
+                          href={pr.repository.url}
+                          target="_blank"
+                          className="hover:text-neutral-200"
+                        >
+                          {pr.repository.nameWithOwner}
+                        </Link>
+                        <span>#{pr.number}</span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Icons.clock className="h-3 w-3" />
+                          {new Date(pr.createdAt).toLocaleDateString()}
+                        </span>
+                        {pr.mergedAt && (
+                          <span className="flex items-center gap-1 text-xs">
+                            <Icons.merge className="h-3 w-3" />{' '}
+                            {new Date(pr.mergedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {pr.headRefName && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                            {pr.headRefName}
+                          </code>
+                          <span>→</span>
+                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                            {pr.baseRefName}
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={pr.url} target="_blank">
+                        <ExternalLink className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileSidebarSkeleton() {
   return (
     <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
       <CardContent className="px-6">
         <div className="text-center">
-          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-full" />
-          <Skeleton className="mx-auto mb-2 h-7 w-40" />
-          <Skeleton className="mx-auto mb-4 h-5 w-60" />
+          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-none" />
+          <Skeleton className="mx-auto mb-2 h-7 w-40 rounded-none" />
+          <Skeleton className="mx-auto mb-4 h-5 w-60 rounded-none" />
 
           <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-4 rounded-none" />
+            <Skeleton className="h-4 w-20 rounded-none" />
           </div>
 
           <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-4 rounded-none" />
+            <Skeleton className="h-4 w-28 rounded-none" />
           </div>
 
           <div className="mb-6 flex justify-center space-x-3">
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9 rounded-none" />
+            <Skeleton className="h-9 w-9 rounded-none" />
+            <Skeleton className="h-9 w-9 rounded-none" />
           </div>
 
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
           </div>
         </div>
