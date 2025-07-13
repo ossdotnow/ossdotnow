@@ -7,6 +7,7 @@ import {
   PullRequestData,
   RepoData,
   UserData,
+  UserPullRequestData,
 } from './types';
 import { project, projectClaim } from '@workspace/db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
@@ -402,5 +403,75 @@ export class GitlabManager implements GitManager {
 
   getContributions(username: string): Promise<ContributionData[]> {
     throw new Error('Method not implemented.');
+  }
+
+  async getUserPullRequests(
+    username: string,
+    options?: {
+      state?: 'open' | 'closed' | 'merged' | 'all';
+      limit?: number;
+    },
+  ): Promise<UserPullRequestData[]> {
+    const limit = options?.limit || 100;
+    const stateFilter = options?.state || 'all';
+
+    let stateParam: 'opened' | 'closed' | 'merged' | undefined;
+    if (stateFilter === 'open') stateParam = 'opened';
+    else if (stateFilter === 'closed') stateParam = 'closed';
+    else if (stateFilter === 'merged') stateParam = 'merged';
+
+    try {
+      const users = await this.gitlab.Users.all({ username });
+      const user = users.find((u: any) => u.username === username);
+
+      if (!user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `GitLab user '${username}' not found`,
+        });
+      }
+
+      const mergeRequests = await this.gitlab.MergeRequests.all({
+        authorId: user.id,
+        perPage: limit,
+        maxPages: Math.ceil(limit / 100),
+        state: stateParam,
+        orderBy: 'created_at',
+        sort: 'desc',
+      });
+
+      return mergeRequests.map((mr: any) => ({
+        id: mr.id.toString(),
+        number: mr.iid,
+        title: mr.title,
+        state: mr.state === 'opened' ? 'open' : mr.state,
+        url: mr.web_url,
+        createdAt: mr.created_at,
+        updatedAt: mr.updated_at,
+        closedAt: mr.closed_at || undefined,
+        mergedAt: mr.merged_at || undefined,
+        isDraft: mr.draft || mr.work_in_progress || false,
+        headRefName: mr.source_branch,
+        baseRefName: mr.target_branch,
+        repository: {
+          nameWithOwner:
+            mr.references?.full?.replace('!', '#') ||
+            `${mr.author.username}/${mr.source_project_id}`,
+          url: mr.web_url.split('/-/merge_requests/')[0] || '',
+          isPrivate: mr.project_id ? false : true,
+          owner: {
+            login: mr.author.username,
+          },
+        },
+      }));
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch GitLab merge requests: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 }

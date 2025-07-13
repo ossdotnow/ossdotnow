@@ -7,6 +7,7 @@ import {
   GitManagerConfig,
   ContributionData,
   UserData,
+  UserPullRequestData,
 } from './types';
 import {
   restEndpointMethods,
@@ -75,7 +76,7 @@ export class GithubManager implements GitManager {
   async getContributors(identifier: string): Promise<ContributorData[]> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
 
-    let allContributors: any[] = [];
+    const allContributors: any[] = [];
     let page = 1;
     let hasMore = true;
 
@@ -351,5 +352,147 @@ export class GithubManager implements GitManager {
 
   getContributions(username: string): Promise<ContributionData[]> {
     throw new Error('Method not implemented.');
+  }
+
+  async getUserPullRequests(
+    username: string,
+    options?: {
+      state?: 'open' | 'closed' | 'merged' | 'all';
+      limit?: number;
+    },
+  ): Promise<UserPullRequestData[]> {
+    const limit = options?.limit || 100;
+    const stateFilter = options?.state || 'all';
+
+    const query = `
+      query GetUserPullRequests($username: String!, $first: Int!, $after: String) {
+        user(login: $username) {
+          pullRequests(first: $first, after: $after, orderBy: {field: CREATED_AT, direction: DESC}) {
+            totalCount
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            nodes {
+              id
+              number
+              title
+              state
+              isDraft
+              createdAt
+              updatedAt
+              closedAt
+              mergedAt
+              url
+              headRefName
+              baseRefName
+              repository {
+                nameWithOwner
+                url
+                isPrivate
+                owner {
+                  login
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const allPRs: UserPullRequestData[] = [];
+    let hasNextPage = true;
+    let cursor: string | null = null;
+
+    while (hasNextPage && allPRs.length < limit) {
+      const response = await this.octokit.graphql<{
+        user: {
+          pullRequests: {
+            totalCount: number;
+            pageInfo: {
+              hasNextPage: boolean;
+              endCursor: string | null;
+            };
+            nodes: Array<{
+              id: string;
+              number: number;
+              title: string;
+              state: 'OPEN' | 'CLOSED' | 'MERGED';
+              isDraft: boolean;
+              createdAt: string;
+              updatedAt: string;
+              closedAt: string | null;
+              mergedAt: string | null;
+              url: string;
+              headRefName: string;
+              baseRefName: string;
+              repository: {
+                nameWithOwner: string;
+                url: string;
+                isPrivate: boolean;
+                owner: {
+                  login: string;
+                };
+              };
+            }>;
+          };
+        };
+      }>(query, {
+        username,
+        first: Math.min(100, limit - allPRs.length),
+        after: cursor,
+      });
+
+      if (!response.user) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `GitHub user '${username}' not found`,
+        });
+      }
+
+      const prs = response.user.pullRequests.nodes;
+
+      const formattedPRs: UserPullRequestData[] = prs.map((pr) => ({
+        id: pr.id,
+        number: pr.number,
+        title: pr.title,
+        state: pr.state.toLowerCase(),
+        url: pr.url,
+        createdAt: pr.createdAt,
+        updatedAt: pr.updatedAt,
+        closedAt: pr.closedAt || undefined,
+        mergedAt: pr.mergedAt || undefined,
+        isDraft: pr.isDraft,
+        headRefName: pr.headRefName,
+        baseRefName: pr.baseRefName,
+        repository: {
+          nameWithOwner: pr.repository.nameWithOwner,
+          url: pr.repository.url,
+          isPrivate: pr.repository.isPrivate,
+          owner: {
+            login: pr.repository.owner.login,
+          },
+        },
+      }));
+
+      const filteredPRs = formattedPRs.filter((pr) => {
+        if (stateFilter === 'all') return true;
+        if (stateFilter === 'open') return pr.state === 'open';
+        if (stateFilter === 'closed') return pr.state === 'closed' && !pr.mergedAt;
+        if (stateFilter === 'merged') return pr.state === 'merged' || !!pr.mergedAt;
+        return true;
+      });
+
+      allPRs.push(...filteredPRs);
+
+      hasNextPage = response.user.pullRequests.pageInfo.hasNextPage;
+      cursor = response.user.pullRequests.pageInfo.endCursor;
+
+      if (!hasNextPage || allPRs.length >= limit) {
+        break;
+      }
+    }
+
+    return allPRs.slice(0, limit);
   }
 }

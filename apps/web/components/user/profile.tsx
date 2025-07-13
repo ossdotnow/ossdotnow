@@ -12,8 +12,16 @@ import {
   Star,
   TrendingUp,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
+import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -22,12 +30,17 @@ import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';
+import { cn } from '@workspace/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
+import { useQueryState } from 'nuqs';
 import Image from 'next/image';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
+  const [tab, setTab] = useQueryState('tab', {
+    defaultValue: 'projects',
+  });
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -203,7 +216,7 @@ export default function ProfilePage({ id }: { id: string }) {
             </div>
 
             <div className="lg:col-span-8">
-              <Tabs defaultValue="projects" className="w-full">
+              <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 rounded-none border-neutral-800 bg-neutral-900/50">
                   <TabsTrigger value="projects" className="rounded-none">
                     Projects
@@ -263,68 +276,7 @@ export default function ProfilePage({ id }: { id: string }) {
                       >
                         {featuredProjects.length > 0 ? (
                           featuredProjects?.map((project) => (
-                            <Card
-                              key={project.id}
-                              className="h-48 min-w-[320px] rounded-none border-neutral-800 bg-neutral-900/50 pb-0 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
-                            >
-                              <CardContent className="flex h-full flex-col p-4">
-                                <div className="flex flex-1 space-x-4">
-                                  <div className="flex-shrink-0">
-                                    <div className="h-16 w-16 overflow-hidden bg-white">
-                                      <Image
-                                        src={
-                                          project.githubData?.owner.avatar_url || '/placeholder.svg'
-                                        }
-                                        alt={project.name}
-                                        width={64}
-                                        height={64}
-                                        className="h-full w-full object-contain"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex min-w-0 flex-1 flex-col justify-between">
-                                    <div>
-                                      <div className="mb-1 flex items-center justify-between">
-                                        <h3 className="truncate pr-2 text-lg font-semibold">
-                                          {project.name}
-                                        </h3>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <Badge className="bg-orange-500 text-xs hover:bg-orange-600">
-                                          {project.approvalStatus}
-                                        </Badge>
-                                        {project.language && (
-                                          <Badge className="bg-neutral-700 text-xs hover:bg-neutral-600">
-                                            {project.language}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="mt-4 flex items-center justify-between border-neutral-800/50 pt-3 text-sm text-neutral-400">
-                                  <div className="flex items-center space-x-4">
-                                    <div className="flex items-center space-x-1">
-                                      <Star className="h-4 w-4" />
-                                      <span>{project.stars.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <GitFork className="h-4 w-4" />
-                                      <span>{project.forks.toLocaleString()}</span>
-                                    </div>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => window.open(project.gitRepoUrl, '_blank')}
-                                    className="transition-colors duration-150 hover:text-neutral-200"
-                                  >
-                                    <ExternalLink className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
+                            <ProjectCard key={project.id} project={project} />
                           ))
                         ) : (
                           <div className="flex items-center justify-center">
@@ -339,107 +291,14 @@ export default function ProfilePage({ id }: { id: string }) {
                     <h2 className="mb-4 text-xl font-semibold">All Projects</h2>
                     <div className="space-y-4">
                       {projectsWithGithubData?.map((project) => (
-                        <Card
-                          key={project.id}
-                          className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm transition-all duration-200 hover:bg-neutral-900/70"
-                        >
-                          <CardContent className="px-6">
-                            <div className="flex items-start space-x-4">
-                              <Image
-                                src={project.githubData?.owner.avatar_url || '/placeholder.svg'}
-                                alt={project.name}
-                                width={80}
-                                height={80}
-                                className="h-20 w-20 flex-shrink-0 object-cover"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-2 flex items-start justify-between">
-                                  <div>
-                                    <h3 className="mb-1 text-lg font-semibold">{project.name}</h3>
-                                    <div className="mb-2 flex items-center gap-2">
-                                      <Badge variant="secondary" className="text-xs">
-                                        {project.approvalStatus}
-                                      </Badge>
-                                      {project.language && (
-                                        <Badge variant="outline" className="text-xs">
-                                          {project.language}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                                <p className="mb-3 text-sm text-neutral-400">
-                                  {project.description}
-                                </p>
-
-                                <div className="mb-3 flex flex-wrap gap-2">
-                                  {project.tagRelations?.map((relation, index) => (
-                                    <Badge key={index} variant="outline" className="text-xs">
-                                      {relation.tag?.displayName || relation.tag?.name}
-                                    </Badge>
-                                  ))}
-                                </div>
-
-                                <div className="flex items-center justify-between">
-                                  <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-400">
-                                    <div className="flex items-center gap-1">
-                                      <Icons.star className="h-4 w-4" />
-                                      <span>{project.stars.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Icons.fork className="h-4 w-4" />
-                                      <span>{project.forks.toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <Icons.clock className="h-4 w-4" />
-                                      <span>{project.lastCommit}</span>
-                                    </div>
-                                    {project.openIssues > 0 && (
-                                      <div className="flex items-center gap-1">
-                                        <MessageCircle className="h-4 w-4" />
-                                        <span>{project.openIssues}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="transition-colors duration-150 hover:text-neutral-200"
-                                    >
-                                      <Heart className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      asChild
-                                      className="transition-colors duration-150 hover:text-neutral-200"
-                                    >
-                                      <Link
-                                        href={`https://${project.gitHost}.com/${project.gitRepoUrl}`}
-                                        target="_blank"
-                                      >
-                                        <ExternalLink className="h-4 w-4" />
-                                      </Link>
-                                    </Button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
+                        <ProjectCard key={project.id} project={project} />
                       ))}
                     </div>
                   </div>
                 </TabsContent>
 
                 <TabsContent value="contributions" className="mt-6">
-                  <div className="py-12 text-center">
-                    <div className="mb-4 text-neutral-400">
-                      <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                      <p>Contribution history coming soon...</p>
-                    </div>
-                  </div>
+                  <UserPullRequests profile={profile} />
                 </TabsContent>
 
                 <TabsContent value="collections" className="mt-6">
@@ -459,12 +318,181 @@ export default function ProfilePage({ id }: { id: string }) {
   );
 }
 
+function UserPullRequests({ profile }: { profile: any }) {
+  const trpc = useTRPC();
+  const [prs, setPrs] = useQueryState('prs', {
+    defaultValue: 'all',
+  });
+
+  const { data, isLoading, error } = useQuery(
+    trpc.profile.getUserPullRequests.queryOptions(
+      {
+        username: profile?.git?.login ?? '',
+        provider: profile?.git?.provider ?? 'github',
+        state: prs as 'all' | 'open' | 'closed' | 'merged',
+        limit: 100,
+      },
+      {
+        enabled: !!profile?.git?.login && !!profile?.git?.provider,
+      },
+    ),
+  );
+
+  if (!profile?.git?.login || !profile?.git?.provider) {
+    return (
+      <div className="py-12 text-center">
+        <div className="mb-4 text-neutral-400">
+          <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
+          <p>No Git provider connected to this profile</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="rounded-none border-neutral-800 bg-neutral-900/50">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <Skeleton className="mb-2 h-5 w-3/4" />
+                  <Skeleton className="mb-2 h-4 w-1/2" />
+                  <Skeleton className="h-4 w-1/4" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center">
+        <div className="mb-4 text-neutral-400">
+          <Icons.github className="mx-auto mb-4 h-12 w-12 opacity-50" />
+          <p>Failed to load pull requests</p>
+          <p className="mt-2 text-sm">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const pullRequests = data?.pullRequests || [];
+
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Pull Requests</h2>
+        <Select value={prs} onValueChange={setPrs}>
+          <SelectTrigger className="w-[140px] rounded-none">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="rounded-none">
+            <SelectItem value="all">All</SelectItem>
+            <SelectItem value="open">Open</SelectItem>
+            <SelectItem value="merged">Merged</SelectItem>
+            <SelectItem value="closed">Closed</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {pullRequests.length === 0 ? (
+        <div className="py-12 text-center">
+          <div className="mb-4 text-neutral-400">
+            <GitFork className="mx-auto mb-4 h-12 w-12 opacity-50" />
+            <p>No {prs !== 'all' ? prs : ''} pull requests found</p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {pullRequests.map((pr) => (
+            <Card
+              key={pr.id}
+              className="rounded-none border-neutral-800 bg-neutral-900/50 transition-colors hover:bg-neutral-900/70"
+            >
+              <CardContent className="px-4 py-0">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Link
+                        href={pr.url}
+                        target="_blank"
+                        className="hover:text-primary text-base font-medium"
+                      >
+                        {pr.title}
+                      </Link>
+                      <Badge
+                        variant={
+                          pr.state === 'open' ? 'default' : pr.mergedAt ? 'secondary' : 'outline'
+                        }
+                        className={cn(
+                          'rounded-none text-xs',
+                          pr.state === 'open' && 'border-green-800 bg-green-900/20 text-green-400',
+                          pr.mergedAt && 'border-purple-800 bg-purple-900/20 text-purple-400',
+                          pr.state === 'closed' &&
+                            !pr.mergedAt &&
+                            'border-red-800 bg-red-900/20 text-red-400',
+                        )}
+                      >
+                        {pr.mergedAt ? 'Merged' : pr.state}
+                      </Badge>
+                      {pr.isDraft && (
+                        <Badge variant="outline" className="rounded-none text-xs">
+                          Draft
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-neutral-400">
+                      <Link
+                        href={pr.repository.url}
+                        target="_blank"
+                        className="hover:text-neutral-200"
+                      >
+                        {pr.repository.nameWithOwner}
+                      </Link>
+                      <span>#{pr.number}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {new Date(pr.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {pr.headRefName && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                          {pr.headRefName}
+                        </code>
+                        <span>→</span>
+                        <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                          {pr.baseRefName}
+                        </code>
+                      </div>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={pr.url} target="_blank">
+                      <ExternalLink className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProfileSidebarSkeleton() {
   return (
     <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
       <CardContent className="px-6">
         <div className="text-center">
-          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-full" />
+          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-none" />
           <Skeleton className="mx-auto mb-2 h-7 w-40" />
           <Skeleton className="mx-auto mb-4 h-5 w-60" />
 
