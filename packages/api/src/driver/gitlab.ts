@@ -448,6 +448,9 @@ export class GitlabManager implements GitManager {
         const pathMatch = projectUrl.match(/gitlab\.com\/(.+)$/);
         const projectPath = pathMatch ? pathMatch[1] : '';
 
+        // Extract owner from project path (owner/repo format)
+        const [ownerLogin] = projectPath.split('/');
+
         return {
           id: mr.id.toString(),
           number: mr.iid,
@@ -462,14 +465,11 @@ export class GitlabManager implements GitManager {
           headRefName: mr.source_branch,
           baseRefName: mr.target_branch,
           repository: {
-            nameWithOwner:
-              mr.references?.full?.replace('!', '#') ||
-              projectPath ||
-              `${mr.author.username}/unknown`,
+            nameWithOwner: projectPath || `${mr.author.username}/unknown`,
             url: projectUrl,
             isPrivate: undefined, // Cannot determine from MR data alone
             owner: {
-              login: mr.author.username,
+              login: ownerLogin || mr.author.username,
             },
           },
         };
