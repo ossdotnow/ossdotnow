@@ -30,17 +30,18 @@ export default function ProjectCard({ project }: { project: Project }) {
   if (isError) return <div>Error</div>;
 
   return (
-    <Link
-      href={`/projects/${project.id}`}
-      event="project_card_link_clicked"
-      eventObject={{ projectId: project.id }}
-      className="group/project relative flex h-full flex-col bg-[#171717] p-1"
-    >
+    <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
       <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover/project:opacity-100">
         <ProjectReport projectId={project.id} projectName={project.name} />
       </div>
-      <span className="sr-only">View {project.name}</span>
-      <div className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4">
+
+      <Link
+        href={`/projects/${project.id}`}
+        event="project_card_link_clicked"
+        eventObject={{ projectId: project.id }}
+        className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4"
+      >
+        <span className="sr-only">View {project.name}</span>
         <div className="mb-3 flex items-center gap-3">
           {(repo && repo?.owner && repo?.owner?.avatar_url) ||
           (repo?.namespace && repo?.namespace?.avatar_url) ? (
@@ -82,7 +83,7 @@ export default function ProjectCard({ project }: { project: Project }) {
         <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
           {project.description}
         </p>
-      </div>
+      </Link>
 
       <div>
         <div className="flex items-center gap-3 p-2 pb-1 text-xs md:gap-4 md:text-sm">
@@ -106,6 +107,6 @@ export default function ProjectCard({ project }: { project: Project }) {
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
