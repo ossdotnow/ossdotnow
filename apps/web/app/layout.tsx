@@ -61,7 +61,7 @@ export default function RootLayout({
           <Footer />
           <Analytics />
           <Databuddy
-            clientId="kg5_9BY_IEWCCEbukXJPm"
+            clientId={env.DATABUDDY_CLIENT_ID}
             enableBatching={true}
             trackErrors
             trackOutgoingLinks

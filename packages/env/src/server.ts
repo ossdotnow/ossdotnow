@@ -20,6 +20,8 @@ export const env = createEnv({
     GITLAB_CLIENT_SECRET: z.string().min(1),
     GITLAB_ISSUER: z.string().min(1),
     GITLAB_TOKEN: z.string().min(1),
+    // Databuddy
+    DATABUDDY_CLIENT_ID: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
   skipValidation: process.env.NODE_ENV !== 'production',
