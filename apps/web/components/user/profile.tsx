@@ -26,6 +26,7 @@ import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Button } from '@workspace/ui/components/button';
+import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
@@ -33,7 +34,6 @@ import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
-import { useQueryState } from 'nuqs';
 import Image from 'next/image';
 
 export default function ProfilePage({ id }: { id: string }) {
@@ -320,8 +320,11 @@ export default function ProfilePage({ id }: { id: string }) {
 
 function UserPullRequests({ profile }: { profile: any }) {
   const trpc = useTRPC();
-  const [prs, setPrs] = useQueryState('prs', {
+  const [selectedState, setSelectedState] = useQueryState('selectedState', {
     defaultValue: 'all',
+  });
+  const [sortBy, setSortBy] = useQueryState('sortBy', {
+    defaultValue: 'recent',
   });
 
   const { data, isLoading, error } = useQuery(
@@ -329,7 +332,7 @@ function UserPullRequests({ profile }: { profile: any }) {
       {
         username: profile?.git?.login ?? '',
         provider: profile?.git?.provider ?? 'github',
-        state: prs as 'all' | 'open' | 'closed' | 'merged',
+        state: selectedState as 'all' | 'open' | 'closed' | 'merged',
         limit: 100,
       },
       {
@@ -383,104 +386,236 @@ function UserPullRequests({ profile }: { profile: any }) {
 
   const pullRequests = data?.pullRequests || [];
 
+  // Calculate PR scores for ranking
+  const calculatePRScore = (pr: any) => {
+    let score = 0;
+
+    // Basic scoring based on available data
+    // Status boost
+    if (pr.mergedAt) score += 20;
+    if (pr.isDraft) score -= 10;
+
+    // Time-based scoring
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(pr.createdAt).getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (ageInDays < 30) score += 5; // Recent PRs
+
+    // Time to merge (if merged)
+    if (pr.mergedAt && pr.createdAt) {
+      const daysToMerge = Math.floor(
+        (new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime()) /
+          (1000 * 60 * 60 * 24),
+      );
+      if (daysToMerge < 3) score += 10;
+      else if (daysToMerge > 30) score -= 5;
+    }
+
+    return Math.round(score);
+  };
+
+  // Sort pull requests based on selected criteria
+  const sortedPullRequests = [...pullRequests].sort((a, b) => {
+    switch (sortBy) {
+      case 'impact':
+        return calculatePRScore(b) - calculatePRScore(a);
+      case 'discussion':
+        // Without comment data, just use recent
+        return (
+          new Date(b.updatedAt || b.createdAt).getTime() -
+          new Date(a.updatedAt || a.createdAt).getTime()
+        );
+      case 'fastest':
+        const aTime = a.mergedAt
+          ? new Date(a.mergedAt).getTime() - new Date(a.createdAt).getTime()
+          : Infinity;
+        const bTime = b.mergedAt
+          ? new Date(b.mergedAt).getTime() - new Date(b.createdAt).getTime()
+          : Infinity;
+        return aTime - bTime;
+      case 'recent':
+      default:
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+  });
+
+  const stats = {
+    open: pullRequests.filter((pr) => pr.state === 'open').length,
+    closed: pullRequests.filter((pr) => pr.state === 'closed' && !pr.mergedAt).length,
+    merged: pullRequests.filter((pr) => pr.mergedAt).length,
+    avgMergeTime: (() => {
+      const mergedPRs = pullRequests.filter((pr) => pr.mergedAt);
+      if (mergedPRs.length === 0) return 0;
+      const totalTime = mergedPRs.reduce((sum, pr) => {
+        return sum + (new Date(pr.mergedAt!).getTime() - new Date(pr.createdAt).getTime());
+      }, 0);
+      return Math.round(totalTime / mergedPRs.length / (1000 * 60 * 60 * 24));
+    })(),
+  };
+
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Pull Requests</h2>
-        <Select value={prs} onValueChange={setPrs}>
-          <SelectTrigger className="w-[140px] rounded-none">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="rounded-none">
-            <SelectItem value="all">All</SelectItem>
-            <SelectItem value="open">Open</SelectItem>
-            <SelectItem value="merged">Merged</SelectItem>
-            <SelectItem value="closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Stats Summary */}
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.merged}</div>
+            <div className="text-xs text-neutral-400">Merged PRs</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.open}</div>
+            <div className="text-xs text-neutral-400">Open PRs</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{stats.avgMergeTime}d</div>
+            <div className="text-xs text-neutral-400">Avg Merge Time</div>
+          </CardContent>
+        </Card>
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+          <CardContent className="p-4 py-0">
+            <div className="text-2xl font-bold">{pullRequests.length}</div>
+            <div className="text-xs text-neutral-400">Total PRs</div>
+          </CardContent>
+        </Card>
       </div>
 
-      {pullRequests.length === 0 ? (
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Pull Requests</h2>
+        <div className="flex gap-2">
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-[140px] rounded-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="impact">By Status</SelectItem>
+              <SelectItem value="discussion">Last Updated</SelectItem>
+              <SelectItem value="fastest">Fastest Merged</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={selectedState} onValueChange={(value: any) => setSelectedState(value)}>
+            <SelectTrigger className="w-[140px] rounded-none">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-none">
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="merged">Merged</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {sortedPullRequests.length === 0 ? (
         <div className="py-12 text-center">
           <div className="mb-4 text-neutral-400">
             <GitFork className="mx-auto mb-4 h-12 w-12 opacity-50" />
-            <p>No {prs !== 'all' ? prs : ''} pull requests found</p>
+            <p>No {selectedState !== 'all' ? selectedState : ''} pull requests found</p>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {pullRequests.map((pr) => (
-            <Card
-              key={pr.id}
-              className="rounded-none border-neutral-800 bg-neutral-900/50 transition-colors hover:bg-neutral-900/70"
-            >
-              <CardContent className="px-4 py-0">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Link
-                        href={pr.url}
-                        target="_blank"
-                        className="hover:text-primary text-base font-medium"
-                      >
-                        {pr.title}
-                      </Link>
-                      <Badge
-                        variant={
-                          pr.state === 'open' ? 'default' : pr.mergedAt ? 'secondary' : 'outline'
-                        }
-                        className={cn(
-                          'rounded-none text-xs',
-                          pr.state === 'open' && 'border-green-800 bg-green-900/20 text-green-400',
-                          pr.mergedAt && 'border-purple-800 bg-purple-900/20 text-purple-400',
-                          pr.state === 'closed' &&
-                            !pr.mergedAt &&
-                            'border-red-800 bg-red-900/20 text-red-400',
-                        )}
-                      >
-                        {pr.mergedAt ? 'Merged' : pr.state}
-                      </Badge>
-                      {pr.isDraft && (
-                        <Badge variant="outline" className="rounded-none text-xs">
-                          Draft
+          {sortedPullRequests.map((pr) => {
+            const score = calculatePRScore(pr);
+            const isMergedQuickly =
+              pr.mergedAt &&
+              new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime() <
+                3 * 24 * 60 * 60 * 1000;
+
+            return (
+              <Card
+                key={pr.id}
+                className={cn(
+                  'rounded-none border-neutral-800 bg-neutral-900/50 transition-colors hover:bg-neutral-900/70',
+                  isMergedQuickly && 'border-green-900/50',
+                )}
+              >
+                <CardContent className="p-4 py-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Link
+                          href={pr.url}
+                          target="_blank"
+                          className="hover:text-primary text-base font-medium"
+                        >
+                          {pr.title}
+                        </Link>
+                        <Badge
+                          variant={
+                            pr.state === 'open' ? 'default' : pr.mergedAt ? 'secondary' : 'outline'
+                          }
+                          className={cn(
+                            'rounded-none text-xs',
+                            pr.state === 'open' &&
+                              'border-green-800 bg-green-900/20 text-green-400',
+                            pr.mergedAt && 'border-purple-800 bg-purple-900/20 text-purple-400',
+                            pr.state === 'closed' &&
+                              !pr.mergedAt &&
+                              'border-red-800 bg-red-900/20 text-red-400',
+                          )}
+                        >
+                          {pr.mergedAt ? 'Merged' : pr.state}
                         </Badge>
+                        {pr.isDraft && (
+                          <Badge variant="outline" className="rounded-none text-xs">
+                            Draft
+                          </Badge>
+                        )}
+                        {isMergedQuickly && (
+                          <Badge className="rounded-none border-green-800 bg-green-900/20 text-xs text-green-400">
+                            <Clock className="mr-1 h-3 w-3" />
+                            Quick Merge
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-neutral-400">
+                        <Link
+                          href={pr.repository.url}
+                          target="_blank"
+                          className="hover:text-neutral-200"
+                        >
+                          {pr.repository.nameWithOwner}
+                        </Link>
+                        <span>#{pr.number}</span>
+                        <span className="flex items-center gap-1 text-xs">
+                          <Icons.clock className="h-3 w-3" />
+                          {new Date(pr.createdAt).toLocaleDateString()}
+                        </span>
+                        {pr.mergedAt && (
+                          <span className="flex items-center gap-1 text-xs">
+                            <Icons.merge className="h-3 w-3" />{' '}
+                            {new Date(pr.mergedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                      {pr.headRefName && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
+                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                            {pr.headRefName}
+                          </code>
+                          <span>→</span>
+                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                            {pr.baseRefName}
+                          </code>
+                        </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-neutral-400">
-                      <Link
-                        href={pr.repository.url}
-                        target="_blank"
-                        className="hover:text-neutral-200"
-                      >
-                        {pr.repository.nameWithOwner}
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={pr.url} target="_blank">
+                        <ExternalLink className="h-4 w-4" />
                       </Link>
-                      <span>#{pr.number}</span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(pr.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {pr.headRefName && (
-                      <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
-                        <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
-                          {pr.headRefName}
-                        </code>
-                        <span>→</span>
-                        <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
-                          {pr.baseRefName}
-                        </code>
-                      </div>
-                    )}
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={pr.url} target="_blank">
-                      <ExternalLink className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

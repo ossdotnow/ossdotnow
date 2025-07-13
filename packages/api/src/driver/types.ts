@@ -109,6 +109,12 @@ export interface UserPullRequestData extends PullRequestData {
     owner?: {
       login: string;
     };
+    stargazersCount?: number;
+    forksCount?: number;
+    primaryLanguage?: {
+      name: string;
+      color?: string;
+    };
   };
   createdAt: string;
   updatedAt?: string;
@@ -118,6 +124,15 @@ export interface UserPullRequestData extends PullRequestData {
   headRefName?: string;
   baseRefName?: string;
   number: number;
+  additions?: number;
+  deletions?: number;
+  changedFiles?: number;
+  commentCount?: number;
+  reviewCount?: number;
+  labels?: Array<{
+    name: string;
+    color?: string;
+  }>;
 }
 
 export interface UserData {
