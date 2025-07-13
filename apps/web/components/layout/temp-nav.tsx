@@ -1,11 +1,10 @@
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import { cn } from '@workspace/ui/lib/utils';
 
-export function TempNav({ className }: { className?: string }) {
+export function TempNav() {
   return (
-    <div className={cn('flex items-center gap-2', className)}>
+    <>
       <Link
         href="/roadmap"
         event="roadmap_nav_click"
@@ -43,7 +42,7 @@ export function TempNav({ className }: { className?: string }) {
           <Icons.twitter className="size-4 sm:size-5" />
         </Link>
       </Button>
-    </div>
+    </>
   );
 }
 
