@@ -132,10 +132,10 @@ export function ClaimProjectDialog({
 
           {error && (
             <>
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Verification Failed</AlertTitle>
-                <AlertDescription>{error.message}</AlertDescription>
+              <Alert variant="destructive" className="rounded-none">
+                <AlertCircle className="h-4 w-4 !text-red-500" />
+                <AlertTitle className="text-red-500">Verification Failed</AlertTitle>
+                <AlertDescription className="!text-red-500">{error.message}</AlertDescription>
               </Alert>
               {claimStatus.gitRepoUrl && (
                 <DebugGitHubPermissions repoUrl={claimStatus.gitRepoUrl} projectId={projectId} />
