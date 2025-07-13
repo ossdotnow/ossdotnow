@@ -54,19 +54,16 @@ export default function AboutPage() {
       icon: <Code2 className="h-5 w-5" />,
       title: 'Open Source First',
       description: 'We believe in the power of open collaboration',
-      color: 'text-cyan-400',
     },
     {
       icon: <Heart className="h-5 w-5" />,
       title: 'Community Driven',
       description: 'Built by developers, for developers',
-      color: 'text-emerald-400',
     },
     {
       icon: <Sparkles className="h-5 w-5" />,
       title: 'Quality Over Quantity',
       description: 'Curated projects that make a difference',
-      color: 'text-cyan-400',
     },
   ];
 
