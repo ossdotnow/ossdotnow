@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
+import {
   Calendar,
   Clock,
   ExternalLink,
@@ -8,17 +15,8 @@ import {
   Globe,
   Heart,
   MapPin,
-  MessageCircle,
-  Star,
   TrendingUp,
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
@@ -26,7 +24,6 @@ import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Button } from '@workspace/ui/components/button';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
@@ -34,7 +31,7 @@ import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
-import Image from 'next/image';
+import { useQueryState } from 'nuqs';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
@@ -386,22 +383,17 @@ function UserPullRequests({ profile }: { profile: any }) {
 
   const pullRequests = data?.pullRequests || [];
 
-  // Calculate PR scores for ranking
   const calculatePRScore = (pr: any) => {
     let score = 0;
 
-    // Basic scoring based on available data
-    // Status boost
     if (pr.mergedAt) score += 20;
     if (pr.isDraft) score -= 10;
 
-    // Time-based scoring
     const ageInDays = Math.floor(
       (Date.now() - new Date(pr.createdAt).getTime()) / (1000 * 60 * 60 * 24),
     );
-    if (ageInDays < 30) score += 5; // Recent PRs
+    if (ageInDays < 30) score += 5;
 
-    // Time to merge (if merged)
     if (pr.mergedAt && pr.createdAt) {
       const daysToMerge = Math.floor(
         (new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime()) /
@@ -414,7 +406,6 @@ function UserPullRequests({ profile }: { profile: any }) {
     return Math.round(score);
   };
 
-  // Sort pull requests based on selected criteria
   const sortedPullRequests = [...pullRequests].sort((a, b) => {
     switch (sortBy) {
       case 'impact':
@@ -455,7 +446,6 @@ function UserPullRequests({ profile }: { profile: any }) {
 
   return (
     <div>
-      {/* Stats Summary */}
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
           <CardContent className="p-4 py-0">
@@ -521,7 +511,7 @@ function UserPullRequests({ profile }: { profile: any }) {
       ) : (
         <div className="space-y-4">
           {sortedPullRequests.map((pr) => {
-            const score = calculatePRScore(pr);
+            // const score = calculatePRScore(pr);
             const isMergedQuickly =
               pr.mergedAt &&
               new Date(pr.mergedAt).getTime() - new Date(pr.createdAt).getTime() <

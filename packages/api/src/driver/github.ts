@@ -407,7 +407,7 @@ export class GithubManager implements GitManager {
 
     try {
       while (hasNextPage && allPRs.length < limit) {
-        const response = await this.octokit.graphql<{
+        const response: any = await this.octokit.graphql<{
           user: {
             pullRequests: {
               totalCount: number;
@@ -454,7 +454,7 @@ export class GithubManager implements GitManager {
 
         const prs = response.user.pullRequests.nodes;
 
-        const formattedPRs: UserPullRequestData[] = prs.map((pr) => ({
+        const formattedPRs: UserPullRequestData[] = prs.map((pr: any) => ({
           id: pr.id,
           number: pr.number,
           title: pr.title,
