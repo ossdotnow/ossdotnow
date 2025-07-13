@@ -33,6 +33,13 @@ import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
 
+interface Profile {
+  git?: {
+    login: string;
+    provider: 'github' | 'gitlab';
+  };
+}
+
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
   const [tab, setTab] = useQueryState('tab', {
@@ -295,7 +302,7 @@ export default function ProfilePage({ id }: { id: string }) {
                 </TabsContent>
 
                 <TabsContent value="contributions" className="mt-6">
-                  <UserPullRequests profile={profile} />
+                  <UserPullRequests profile={profile as Profile} />
                 </TabsContent>
 
                 <TabsContent value="collections" className="mt-6">
@@ -315,7 +322,7 @@ export default function ProfilePage({ id }: { id: string }) {
   );
 }
 
-function UserPullRequests({ profile }: { profile: any }) {
+function UserPullRequests({ profile }: { profile: Profile }) {
   const trpc = useTRPC();
   const [selectedState, setSelectedState] = useQueryState('selectedState', {
     defaultValue: 'all',
@@ -354,12 +361,12 @@ function UserPullRequests({ profile }: { profile: any }) {
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
           <Card key={i} className="rounded-none border-neutral-800 bg-neutral-900/50">
-            <CardContent className="p-4">
+            <CardContent className="p-4 py-0">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <Skeleton className="mb-2 h-5 w-3/4" />
-                  <Skeleton className="mb-2 h-4 w-1/2" />
-                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="mb-2 h-5 w-3/4 rounded-none" />
+                  <Skeleton className="mb-2 h-4 w-1/2 rounded-none" />
+                  <Skeleton className="h-4 w-1/4 rounded-none" />
                 </div>
               </div>
             </CardContent>
@@ -617,37 +624,37 @@ function ProfileSidebarSkeleton() {
       <CardContent className="px-6">
         <div className="text-center">
           <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-none" />
-          <Skeleton className="mx-auto mb-2 h-7 w-40" />
-          <Skeleton className="mx-auto mb-4 h-5 w-60" />
+          <Skeleton className="mx-auto mb-2 h-7 w-40 rounded-none" />
+          <Skeleton className="mx-auto mb-4 h-5 w-60 rounded-none" />
 
           <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-4 rounded-none" />
+            <Skeleton className="h-4 w-20 rounded-none" />
           </div>
 
           <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4" />
-            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-4 rounded-none" />
+            <Skeleton className="h-4 w-28 rounded-none" />
           </div>
 
           <div className="mb-6 flex justify-center space-x-3">
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
-            <Skeleton className="h-9 w-9" />
+            <Skeleton className="h-9 w-9 rounded-none" />
+            <Skeleton className="h-9 w-9 rounded-none" />
+            <Skeleton className="h-9 w-9 rounded-none" />
           </div>
 
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
             <div>
-              <Skeleton className="h-7 w-12" />
-              <Skeleton className="mt-1 h-3 w-12" />
+              <Skeleton className="h-7 w-12 rounded-none" />
+              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
             </div>
           </div>
         </div>
