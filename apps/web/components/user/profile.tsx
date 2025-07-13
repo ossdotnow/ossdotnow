@@ -40,6 +40,12 @@ interface Profile {
   };
 }
 
+interface PullRequestData {
+  mergedAt?: string;
+  isDraft?: boolean;
+  createdAt: string;
+}
+
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
   const [tab, setTab] = useQueryState('tab', {
@@ -390,7 +396,7 @@ function UserPullRequests({ profile }: { profile: Profile }) {
 
   const pullRequests = data?.pullRequests || [];
 
-  const calculatePRScore = (pr: any) => {
+  const calculatePRScore = (pr: PullRequestData) => {
     let score = 0;
 
     if (pr.mergedAt) score += 20;
