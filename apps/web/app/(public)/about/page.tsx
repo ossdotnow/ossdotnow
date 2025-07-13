@@ -172,14 +172,14 @@ export default function AboutPage() {
             <Code2 className="h-4 w-4" />
             <span>oss.now is proudly open source</span>
             <span>•</span>
-            <a
+            <Link
               href="https://github.com/ossdotnow/ossdotnow"
               className="text-blue-400 hover:underline"
               target="_blank"
               rel="noopener noreferrer"
             >
               Contribute on GitHub
-            </a>
+            </Link>
           </div>
         </section>
       </div>
