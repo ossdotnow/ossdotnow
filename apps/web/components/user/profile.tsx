@@ -22,11 +22,22 @@ import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';
+import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import Image from 'next/image';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
+  const [showShadow, setShowShadow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowShadow(window.scrollY > 10);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const { data: profile, isLoading: isProfileLoading } = useQuery(
     trpc.profile.getProfile.queryOptions({ id }),
@@ -94,9 +105,15 @@ export default function ProfilePage({ id }: { id: string }) {
   const featuredProjects = [] as any[];
 
   return (
-    <div className="mx-auto min-h-[calc(100vh-80px)] max-w-[1080px] pt-10">
-      <div className="relative z-10">
-        <div className="container mx-auto py-8">
+    <div className="relative px-6 pt-10">
+      <div
+        className={`pointer-events-none fixed top-[calc(32px+65px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+          showShadow ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+      <div className="fixed top-0 right-0 left-0 z-10 h-[33px] bg-[#101010]" />
+      <div className="relative mx-auto min-h-[calc(100vh-80px)] max-w-[1080px]">
+        <div className="py-4">
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-4">
               {isProfileLoading ? (
@@ -112,9 +129,7 @@ export default function ProfilePage({ id }: { id: string }) {
                         </AvatarFallback>
                       </Avatar>
                       <h1 className="mb-2 text-2xl font-bold">{profile?.name}</h1>
-                      <p className="mb-4 text-neutral-400">
-                        Full-stack developer & Open source enthusiast
-                      </p>
+                      {/* <p className="mb-4 text-neutral-400">{profile?.bio}</p> */}
 
                       {profile?.git?.location && (
                         <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
@@ -366,21 +381,21 @@ export default function ProfilePage({ id }: { id: string }) {
                                 </div>
 
                                 <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4 text-sm text-neutral-400">
-                                    <div className="flex items-center space-x-1">
-                                      <Star className="h-4 w-4" />
+                                  <div className="flex flex-wrap items-center gap-4 text-sm text-neutral-400">
+                                    <div className="flex items-center gap-1">
+                                      <Icons.star className="h-4 w-4" />
                                       <span>{project.stars.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex items-center space-x-1">
-                                      <GitFork className="h-4 w-4" />
+                                    <div className="flex items-center gap-1">
+                                      <Icons.fork className="h-4 w-4" />
                                       <span>{project.forks.toLocaleString()}</span>
                                     </div>
-                                    <div className="flex items-center space-x-1">
-                                      <Clock className="h-4 w-4" />
+                                    <div className="flex items-center gap-1">
+                                      <Icons.clock className="h-4 w-4" />
                                       <span>{project.lastCommit}</span>
                                     </div>
                                     {project.openIssues > 0 && (
-                                      <div className="flex items-center space-x-1">
+                                      <div className="flex items-center gap-1">
                                         <MessageCircle className="h-4 w-4" />
                                         <span>{project.openIssues}</span>
                                       </div>
