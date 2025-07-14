@@ -50,11 +50,11 @@ export async function invalidateCache(pattern: string): Promise<void> {
   }
   try {
     const fullPattern = `${CACHE_PREFIX}${pattern}*`;
-    // TODO: fix this
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let cursor: any;
+
+    let cursor = 0;
     do {
       const result = await redis.scan(cursor, { match: fullPattern, count: 100 });
+      // @ts-expect-error - cursor is a string
       cursor = result[0];
       const keys = result[1];
       if (keys.length > 0) {
