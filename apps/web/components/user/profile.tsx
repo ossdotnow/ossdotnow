@@ -485,7 +485,7 @@ function UserPullRequests({ profile }: { profile: Profile }) {
         </Card>
       </div>
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between md:mt-7.5">
         <h2 className="text-xl font-semibold">Pull Requests</h2>
         <div className="flex gap-2">
           <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
