@@ -29,10 +29,10 @@ type Activity = {
   claimSuccess?: boolean;
 };
 
-const throttle = (func: Function, delay: number) => {
-  let timeoutId: NodeJS.Timeout;
-  let lastExecTime = 0;
-  return function (...args: any[]) {
+const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T => {
+    let timeoutId: NodeJS.Timeout;
+    let lastExecTime = 0;
+    return ((...args: Parameters<T>) => {
     const currentTime = Date.now();
     if (currentTime - lastExecTime > delay) {
       func(...args);
@@ -47,7 +47,7 @@ const throttle = (func: Function, delay: number) => {
         delay - (currentTime - lastExecTime),
       );
     }
-  };
+  }) as T;
 };
 
 export function RecentActivity({ userId }: { userId: string }) {
