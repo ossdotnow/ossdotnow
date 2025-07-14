@@ -485,14 +485,14 @@ function UserPullRequests({ profile }: { profile: Profile }) {
         </Card>
       </div>
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-semibold">Pull Requests</h2>
-        <div className="flex gap-2">
+        <div className="xs:flex-row xs:gap-2 flex w-full gap-2 sm:w-auto">
           <Select value={sortBy} onValueChange={(value: string) => setSortBy(value)}>
-            <SelectTrigger className="w-[140px] rounded-none">
+            <SelectTrigger className="xs:w-[140px] w-full rounded-none">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-none">
+            <SelectContent className="left-0 rounded-none">
               <SelectItem value="recent">Most Recent</SelectItem>
               <SelectItem value="impact">By Status</SelectItem>
               <SelectItem value="discussion">Last Updated</SelectItem>
@@ -500,10 +500,10 @@ function UserPullRequests({ profile }: { profile: Profile }) {
             </SelectContent>
           </Select>
           <Select value={selectedState} onValueChange={(value: string) => setSelectedState(value)}>
-            <SelectTrigger className="w-[140px] rounded-none">
+            <SelectTrigger className="xs:w-[140px] w-full rounded-none">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-none">
+            <SelectContent className="left-0 rounded-none">
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="open">Open</SelectItem>
               <SelectItem value="merged">Merged</SelectItem>
@@ -537,8 +537,8 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                   isMergedQuickly && 'border-green-900/50',
                 )}
               >
-                <CardContent className="p-4 py-0">
-                  <div className="flex items-start justify-between">
+                <CardContent className="px-4 py-0">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <Link
@@ -576,43 +576,57 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-neutral-400">
-                        <Link
-                          href={pr.repository.url}
-                          target="_blank"
-                          className="hover:text-neutral-200"
-                        >
-                          {pr.repository.nameWithOwner}
-                        </Link>
-                        <span>#{pr.number}</span>
-                        <span className="flex items-center gap-1 text-xs">
-                          <Icons.clock className="h-3 w-3" />
-                          {new Date(pr.createdAt).toLocaleDateString()}
-                        </span>
-                        {pr.mergedAt && (
-                          <span className="flex items-center gap-1 text-xs">
-                            <Icons.merge className="h-3 w-3" />{' '}
-                            {new Date(pr.mergedAt).toLocaleDateString()}
+                      <div className="mb-1 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center text-sm text-neutral-400">
+                          <Link
+                            href={pr.repository.url}
+                            target="_blank"
+                            className="hover:text-neutral-200"
+                          >
+                            {pr.repository.nameWithOwner}
+                          </Link>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-4 text-xs text-neutral-400 sm:mt-0">
+                          <span className="flex items-center gap-1">
+                            <Icons.clock className="h-3 w-3" />
+                            {new Date(pr.createdAt).toLocaleDateString()}
                           </span>
-                        )}
+                          {pr.mergedAt && (
+                            <span className="flex items-center gap-1">
+                              <Icons.merge className="h-3 w-3" />
+                              {new Date(pr.mergedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {pr.headRefName && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500">
-                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
-                            {pr.headRefName}
-                          </code>
-                          <span>→</span>
-                          <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
-                            {pr.baseRefName}
-                          </code>
+                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-neutral-500">
+                          <div className="flex items-center gap-2">
+                            <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                              {pr.headRefName}
+                            </code>
+                            <span>→</span>
+                            <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                              {pr.baseRefName}
+                            </code>
+                          </div>
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={pr.url} target="_blank">
+                              <ExternalLink className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </div>
+                      )}
+                      {!pr.headRefName && (
+                        <div className="mt-2 flex justify-end">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link href={pr.url} target="_blank">
+                              <ExternalLink className="h-4 w-4" />
+                            </Link>
+                          </Button>
                         </div>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={pr.url} target="_blank">
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
