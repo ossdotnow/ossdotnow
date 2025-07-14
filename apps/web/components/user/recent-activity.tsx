@@ -33,13 +33,36 @@ export function RecentActivity({ userId }: { userId: string }) {
   const trpc = useTRPC();
   const { data: activities } = useQuery(trpc.profile.getRecentActivities.queryOptions({ userId }));
   const [showAll, setShowAll] = useState(false);
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(true);
+  const SMALL_SCREEN_BREAKPOINT = 640;
+
+  const throttle = (func: Function, delay: number) => {
+    let timeoutId: NodeJS.Timeout;
+    let lastExecTime = 0;
+    return function (...args: any[]) {
+      const currentTime = Date.now();
+      if (currentTime - lastExecTime > delay) {
+        func(...args);
+        lastExecTime = currentTime;
+      } else {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(
+          () => {
+            func(...args);
+            lastExecTime = Date.now();
+          },
+          delay - (currentTime - lastExecTime),
+        );
+      }
+    };
+  };
 
   useEffect(() => {
-    const checkScreen = () => setIsSmallScreen(window.innerWidth < 640);
+    const checkScreen = () => setIsSmallScreen(window.innerWidth < SMALL_SCREEN_BREAKPOINT);
+    const throttledCheckScreen = throttle(checkScreen, 100);
     checkScreen();
-    window.addEventListener('resize', checkScreen);
-    return () => window.removeEventListener('resize', checkScreen);
+    window.addEventListener('resize', throttledCheckScreen);
+    return () => window.removeEventListener('resize', throttledCheckScreen);
   }, []);
 
   const getActivityIcon = (type: string, claimSuccess?: boolean) => {

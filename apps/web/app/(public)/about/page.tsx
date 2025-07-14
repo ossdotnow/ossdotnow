@@ -118,7 +118,7 @@ export default function AboutPage() {
                   className="border-neutral-800 bg-neutral-900/50 p-6 transition-all hover:border-cyan-500/50 border shadow-sm flex flex-col gap-6"
                 >
                   <div className="flex items-start space-x-4">
-                    <div className="bg-cyan-500/20 p-3 text-cyan-400 border border-cyan-600/20 border-2">
+                    <div className="bg-cyan-500/20 p-3 text-cyan-400 border-cyan-600/20 border-2">
                       {feature.icon}
                     </div>
                     <div className="space-y-2">
