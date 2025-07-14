@@ -42,9 +42,7 @@ export function NavInner({ session }: { session: any }) {
             <MobileNav items={navItems} className="md:hidden" open={open} setOpen={setOpen} />
             <Link href="/" className="flex items-center gap-2" event="home_nav_click">
               <Icons.logo className="size-6 sm:size-7" />
-              <span className="hidden text-lg font-medium text-white sm:inline sm:text-xl">
-                oss.now
-              </span>
+              <span className="hidden text-xl font-medium text-white sm:inline">oss.now</span>
             </Link>
           </div>
           <div className="flex items-center gap-2">
