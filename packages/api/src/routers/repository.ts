@@ -34,11 +34,22 @@ export const repositoryRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const patterns: string[] = [];
 
+      const getUsernameFromIdentifier = (identifier: string): string => {
+        const parts = identifier.split('/');
+        return parts[0] || identifier;
+      };
+
       if (input.type === 'all') {
         const types = ['repo', 'contributors', 'issues', 'pulls', 'user'];
         if (input.identifier) {
           for (const type of types) {
-            patterns.push(`${input.provider}:${type}:${input.identifier}`);
+            if (type === 'user') {
+              patterns.push(
+                `${input.provider}:user:${getUsernameFromIdentifier(input.identifier)}`,
+              );
+            } else {
+              patterns.push(`${input.provider}:${type}:${input.identifier}`);
+            }
           }
         } else {
           for (const type of types) {
@@ -48,7 +59,11 @@ export const repositoryRouter = createTRPCRouter({
       } else if (input.identifier && !input.type) {
         const types = ['repo', 'contributors', 'issues', 'pulls', 'user'];
         for (const type of types) {
-          patterns.push(`${input.provider}:${type}:${input.identifier}`);
+          if (type === 'user') {
+            patterns.push(`${input.provider}:user:${getUsernameFromIdentifier(input.identifier)}`);
+          } else {
+            patterns.push(`${input.provider}:${type}:${input.identifier}`);
+          }
         }
       } else {
         let pattern = input.provider;
@@ -58,7 +73,11 @@ export const repositoryRouter = createTRPCRouter({
         }
 
         if (input.identifier) {
-          pattern += `:${input.identifier}`;
+          if (input.type === 'user') {
+            pattern += `:${getUsernameFromIdentifier(input.identifier)}`;
+          } else {
+            pattern += `:${input.identifier}`;
+          }
         }
 
         patterns.push(pattern);
