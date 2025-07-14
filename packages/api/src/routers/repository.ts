@@ -34,15 +34,26 @@ export const repositoryRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const patterns: string[] = [];
 
-      if (input.type === 'all' && input.identifier) {
-        const types = ['repo', 'contributors', 'issues', 'pulls'];
+      if (input.type === 'all') {
+        const types = ['repo', 'contributors', 'issues', 'pulls', 'user'];
+        if (input.identifier) {
+          for (const type of types) {
+            patterns.push(`${input.provider}:${type}:${input.identifier}`);
+          }
+        } else {
+          for (const type of types) {
+            patterns.push(`${input.provider}:${type}`);
+          }
+        }
+      } else if (input.identifier && !input.type) {
+        const types = ['repo', 'contributors', 'issues', 'pulls', 'user'];
         for (const type of types) {
           patterns.push(`${input.provider}:${type}:${input.identifier}`);
         }
       } else {
         let pattern = input.provider;
 
-        if (input.type && input.type !== 'all') {
+        if (input.type) {
           pattern += `:${input.type}`;
         }
 
