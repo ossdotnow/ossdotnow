@@ -56,15 +56,6 @@ export const repositoryRouter = createTRPCRouter({
             patterns.push(`${input.provider}:${type}`);
           }
         }
-      } else if (input.identifier && !input.type) {
-        const types = ['repo', 'contributors', 'issues', 'pulls', 'user'];
-        for (const type of types) {
-          if (type === 'user') {
-            patterns.push(`${input.provider}:user:${getUsernameFromIdentifier(input.identifier)}`);
-          } else {
-            patterns.push(`${input.provider}:${type}:${input.identifier}`);
-          }
-        }
       } else {
         let pattern = input.provider;
 
