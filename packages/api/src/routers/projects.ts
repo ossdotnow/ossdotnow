@@ -149,8 +149,29 @@ export const projectsRouter = createTRPCRouter({
       const [totalCountResult] = await countQuery;
 
       const orderByClause = [];
+      if(!searchQuery){
+        orderByClause.push(desc(project.isPinned));
+      }
 
-      orderByClause.push(desc(project.isPinned));
+    if (searchQuery) {
+          const lowerSearchQuery = searchQuery.toLowerCase();
+
+          orderByClause.push(
+            desc(ilike(project.name, searchQuery))
+          );
+
+          orderByClause.push(
+            desc(ilike(project.name, `${searchQuery}%`))
+          );
+
+          orderByClause.push(
+            desc(ilike(project.name, `%${searchQuery}%`))
+          );
+
+          orderByClause.push(
+            desc(ilike(project.gitRepoUrl, `%${searchQuery}%`))
+          );
+        }
 
       switch (sortBy) {
         case 'name':
