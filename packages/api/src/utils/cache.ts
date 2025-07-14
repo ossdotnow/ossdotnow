@@ -51,16 +51,15 @@ export async function invalidateCache(pattern: string): Promise<void> {
   try {
     const fullPattern = `${CACHE_PREFIX}${pattern}*`;
 
-    let cursor = 0;
+    let cursor = '0';
     do {
       const result = await redis.scan(cursor, { match: fullPattern, count: 100 });
-      // @ts-expect-error - cursor is a string
       cursor = result[0];
       const keys = result[1];
       if (keys.length > 0) {
         await redis.del(...keys);
       }
-    } while (cursor !== 0);
+    } while (cursor !== '0');
   } catch (error) {
     console.error('Cache invalidation error:', { pattern, error });
   }
