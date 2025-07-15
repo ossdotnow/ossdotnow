@@ -1,9 +1,7 @@
 import { projectProviderEnum, project as projectSchema } from '@workspace/db/schema';
-import { ProjectReport } from '@/components/project/project-report';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
-import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
@@ -36,9 +34,6 @@ export default function ProjectCard({ project }: { project: Project }) {
       eventObject={{ projectId: project.id }}
       className="group/project relative flex h-full flex-col bg-[#171717] p-1"
     >
-      <div className="absolute top-2 right-2 z-10 opacity-0 transition-opacity group-hover/project:opacity-100">
-        <ProjectReport projectId={project.id} projectName={project.name} />
-      </div>
       <span className="sr-only">View {project.name}</span>
       <div className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4">
         <div className="mb-3 flex items-center gap-3">
@@ -89,14 +84,12 @@ export default function ProjectCard({ project }: { project: Project }) {
           <div className="flex items-center gap-1">
             <Icons.star className="h-3 w-3 text-yellow-600 md:h-3.5 md:w-3.5" />
             <span className="text-neutral-300">
-              <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
+              {repo?.stargazers_count || repo?.star_count || 0}
             </span>
           </div>
           <div className="flex items-center gap-1">
             <Icons.fork className="h-3 w-3 text-purple-600 md:h-3.5 md:w-3.5" />
-            <span className="text-neutral-300">
-              <NumberFlow value={repo?.forks_count || 0} />
-            </span>
+            <span className="text-neutral-300">{repo?.forks_count || 0}</span>
           </div>
           <div className="flex items-center gap-1">
             <Icons.clock className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />

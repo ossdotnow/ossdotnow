@@ -5,7 +5,6 @@ import { ArrowUp, MessageCircle } from 'lucide-react';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
@@ -148,14 +147,12 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
               <div className="flex items-center gap-1">
                 <Icons.star className="h-3 w-3 text-yellow-600 md:h-3.5 md:w-3.5" />
                 <span className="text-neutral-300">
-                  <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
+                  {repo?.stargazers_count || repo?.star_count || 0}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <Icons.fork className="h-3 w-3 text-purple-600 md:h-3.5 md:w-3.5" />
-                <span className="text-neutral-300">
-                  <NumberFlow value={repo?.forks_count || 0} />
-                </span>
+                <span className="text-neutral-300">{repo?.forks_count || 0}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Icons.clock className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />

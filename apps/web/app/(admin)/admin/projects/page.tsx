@@ -47,7 +47,6 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
-import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 
@@ -233,13 +232,11 @@ export default function AdminProjectsDashboard() {
                 <CardDescription>
                   {tab === 'all' ? (
                     <span>
-                      Showing <NumberFlow value={projects.length} /> of{' '}
-                      <NumberFlow value={pagination.totalCount} /> projects.
+                      Showing {projects.length} of {pagination.totalCount} projects.
                     </span>
                   ) : (
                     <span>
-                      Showing <NumberFlow value={projects.length} /> of{' '}
-                      <NumberFlow value={pagination.totalCount} /> {tab} projects.
+                      Showing {projects.length} of {pagination.totalCount} {tab} projects.
                     </span>
                   )}
                 </CardDescription>

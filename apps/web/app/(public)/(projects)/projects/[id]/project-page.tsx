@@ -26,7 +26,6 @@ import ProjectDescription from './project-description';
 import ProjectErrorPage from '../project-error-page';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
-import NumberFlow from '@number-flow/react';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
@@ -417,7 +416,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       <span className="text-sm">Stars</span>
                     </div>
                     <span className="text-sm">
-                      <NumberFlow value={repo?.stargazers_count || repo?.star_count || 0} />
+                      {repo?.stargazers_count || repo?.star_count || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -425,18 +424,14 @@ export default function ProjectPage({ id }: { id: string }) {
                       <GitFork className="h-4 w-4" />
                       <span className="text-sm">Forks</span>
                     </div>
-                    <span className="text-sm">
-                      <NumberFlow value={repo?.forks_count || 0} />
-                    </span>
+                    <span className="text-sm">{repo?.forks_count || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-neutral-400">
                       <Users className="h-4 w-4" />
                       <span className="text-sm">Contributors</span>
                     </div>
-                    <span className="text-sm">
-                      <NumberFlow value={contributors?.length || 0} />
-                    </span>
+                    <span className="text-sm">{contributors?.length || 0}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-neutral-400">
