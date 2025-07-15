@@ -2,6 +2,7 @@ import { APPROVAL_STATUS, checkProjectDuplicate, resolveAllIds } from '../utils/
 import { project, projectTagRelations } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
+import { getActiveDriver } from '../driver/utils';
 import { createInsertSchema } from 'drizzle-zod';
 import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
@@ -44,6 +45,25 @@ export const earlySubmissionRouter = createTRPCRouter({
         });
       }
     }
+
+    // Validate that the repository is not private
+    if (input.gitHost && input.gitRepoUrl) {
+      try {
+        const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
+        await driver.getRepo(input.gitRepoUrl);
+      } catch (error) {
+        if (
+          error instanceof TRPCError &&
+          error.code === 'FORBIDDEN' &&
+          (error.message.includes('Private repositories cannot be submitted') ||
+            error.message.includes('Private or internal repositories cannot be submitted'))
+        ) {
+          throw error;
+        }
+        // If it's another error, continue with the flow
+      }
+    }
+
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
       type: input.type,

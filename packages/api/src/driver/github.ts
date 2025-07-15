@@ -54,6 +54,15 @@ export class GithubManager implements GitManager {
       createCacheKey('github', 'repo', identifier),
       async () => {
         const { data } = await this.octokit.rest.repos.get({ owner, repo });
+
+        if (data.private) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message:
+              'Private repositories cannot be submitted. Please make your repository public first.',
+          });
+        }
+
         return {
           ...data,
           id: data.id,

@@ -324,10 +324,21 @@ export default function SubmissionForm({
         }
       } catch (error) {
         console.error('error', error);
+        let errorMessage = 'Repository not found or is private';
+
+        if (error instanceof Error) {
+          if (
+            error.message.includes('Private repositories cannot be submitted') ||
+            error.message.includes('Private or internal repositories cannot be submitted')
+          ) {
+            errorMessage = error.message;
+          }
+        }
+
         setRepoValidation({
           isValidating: false,
           isValid: false,
-          message: 'Repository not found or is private',
+          message: errorMessage,
         });
       }
     },

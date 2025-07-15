@@ -56,6 +56,14 @@ export class GitlabManager implements GitManager {
         try {
           const projectData = await this.gitlab.Projects.show(identifier);
 
+          if (projectData.visibility === 'private' || projectData.visibility === 'internal') {
+            throw new TRPCError({
+              code: 'FORBIDDEN',
+              message:
+                'Private or internal repositories cannot be submitted. Please make your repository public first.',
+            });
+          }
+
           return {
             ...projectData,
             id: projectData.id,
@@ -64,6 +72,9 @@ export class GitlabManager implements GitManager {
             url: projectData.web_url as string,
           };
         } catch (error) {
+          if (error instanceof TRPCError) {
+            throw error;
+          }
           console.error('Error fetching repository:', error);
           throw new Error(
             `Failed to fetch repository ${identifier}: ${error instanceof Error ? error.message : 'Unknown error'}`,
