@@ -14,6 +14,7 @@ import {
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
 import { project, projectClaim } from '@workspace/db/schema';
+import { getCached, createCacheKey } from '../utils/cache';
 import { eq, and, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
@@ -48,14 +49,21 @@ export class GithubManager implements GitManager {
 
   async getRepo(identifier: string): Promise<RepoData> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
-    const { data } = await this.octokit.rest.repos.get({ owner, repo });
-    return {
-      ...data,
-      id: data.id,
-      name: data.name,
-      description: data.description ?? undefined,
-      url: data.html_url,
-    };
+
+    return getCached(
+      createCacheKey('github', 'repo', identifier),
+      async () => {
+        const { data } = await this.octokit.rest.repos.get({ owner, repo });
+        return {
+          ...data,
+          id: data.id,
+          name: data.name,
+          description: data.description ?? undefined,
+          url: data.html_url,
+        };
+      },
+      { ttl: 5 * 60 },
+    );
   }
 
   async getRepoPermissions(
@@ -76,66 +84,86 @@ export class GithubManager implements GitManager {
   async getContributors(identifier: string): Promise<ContributorData[]> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
 
-    const allContributors: any[] = [];
-    let page = 1;
-    let hasMore = true;
+    return getCached(
+      createCacheKey('github', 'contributors', identifier),
+      async () => {
+        const allContributors: any[] = [];
+        let page = 1;
+        let hasMore = true;
 
-    while (hasMore) {
-      const { data } = await this.octokit.rest.repos.listContributors({
-        owner,
-        repo,
-        per_page: 100,
-        page,
-      });
+        while (hasMore) {
+          const { data } = await this.octokit.rest.repos.listContributors({
+            owner,
+            repo,
+            per_page: 100,
+            page,
+          });
 
-      allContributors.push(...data);
+          allContributors.push(...data);
 
-      hasMore = data.length === 100;
-      page++;
+          hasMore = data.length === 100;
+          page++;
 
-      if (page > 50) break;
-    }
+          if (page > 50) break;
+        }
 
-    return allContributors.map((c) => ({
-      ...c,
-      id: c.id!,
-      username: c.login!,
-      avatarUrl: c.avatar_url,
-    }));
+        return allContributors.map((c) => ({
+          ...c,
+          id: c.id!,
+          username: c.login!,
+          avatarUrl: c.avatar_url,
+        }));
+      },
+      { ttl: 60 * 60 },
+    );
   }
 
   async getIssues(identifier: string): Promise<IssueData[]> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
-    const { data } = await this.octokit.rest.issues.listForRepo({
-      owner,
-      repo,
-      state: 'all',
-      per_page: 100,
-    });
-    return data.map((i) => ({
-      ...i,
-      id: i.id,
-      title: i.title,
-      state: i.state,
-      url: i.html_url,
-    }));
+
+    return getCached(
+      createCacheKey('github', 'issues', identifier),
+      async () => {
+        const { data } = await this.octokit.rest.issues.listForRepo({
+          owner,
+          repo,
+          state: 'all',
+          per_page: 100,
+        });
+        return data.map((i) => ({
+          ...i,
+          id: i.id,
+          title: i.title,
+          state: i.state,
+          url: i.html_url,
+        }));
+      },
+      { ttl: 10 * 60 },
+    );
   }
 
   async getPullRequests(identifier: string): Promise<PullRequestData[]> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
-    const { data } = await this.octokit.rest.pulls.list({
-      owner,
-      repo,
-      state: 'all',
-      per_page: 100,
-    });
-    return data.map((p) => ({
-      ...p,
-      id: p.id,
-      title: p.title,
-      state: p.state,
-      url: p.html_url,
-    }));
+
+    return getCached(
+      createCacheKey('github', 'pulls', identifier),
+      async () => {
+        const { data } = await this.octokit.rest.pulls.list({
+          owner,
+          repo,
+          state: 'all',
+          per_page: 100,
+        });
+        return data.map((p) => ({
+          ...p,
+          id: p.id,
+          title: p.title,
+          state: p.state,
+          url: p.html_url,
+        }));
+      },
+      { ttl: 10 * 60 },
+    );
   }
 
   async getRepoData(identifier: string) {
@@ -314,40 +342,46 @@ export class GithubManager implements GitManager {
   }
 
   async getUserDetails(username: string): Promise<UserData> {
-    try {
-      const { data } = await this.octokit.rest.users.getByUsername({ username });
+    return getCached(
+      createCacheKey('github', 'user', username),
+      async () => {
+        try {
+          const { data } = await this.octokit.rest.users.getByUsername({ username });
 
-      return {
-        provider: 'github',
-        login: data.login,
-        id: data.id,
-        avatarUrl: data.avatar_url,
-        name: data.name ?? undefined,
-        company: data.company ?? undefined,
-        blog: data.blog ?? undefined,
-        location: data.location ?? undefined,
-        email: data.email ?? undefined,
-        bio: data.bio ?? undefined,
-        publicRepos: data.public_repos,
-        publicGists: data.public_gists,
-        followers: data.followers,
-        following: data.following,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
-        htmlUrl: data.html_url,
-      };
-    } catch (error) {
-      if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `GitHub user '${username}' not found`,
-        });
-      }
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitHub user details: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
+          return {
+            provider: 'github',
+            login: data.login,
+            id: data.id,
+            avatarUrl: data.avatar_url,
+            name: data.name ?? undefined,
+            company: data.company ?? undefined,
+            blog: data.blog ?? undefined,
+            location: data.location ?? undefined,
+            email: data.email ?? undefined,
+            bio: data.bio ?? undefined,
+            publicRepos: data.public_repos,
+            publicGists: data.public_gists,
+            followers: data.followers,
+            following: data.following,
+            createdAt: data.created_at,
+            updatedAt: data.updated_at,
+            htmlUrl: data.html_url,
+          };
+        } catch (error) {
+          if (error && typeof error === 'object' && 'status' in error && error.status === 404) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `GitHub user '${username}' not found`,
+            });
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch GitHub user details: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 30 * 60 },
+    );
   }
 
   getContributions(username: string): Promise<ContributionData[]> {

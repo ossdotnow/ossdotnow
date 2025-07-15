@@ -10,6 +10,7 @@ import {
   UserPullRequestData,
 } from './types';
 import { project, projectClaim } from '@workspace/db/schema';
+import { getCached, createCacheKey } from '../utils/cache';
 import { eq, and, isNull } from 'drizzle-orm';
 import { Gitlab } from '@gitbeaker/rest';
 import { TRPCError } from '@trpc/server';
@@ -48,22 +49,29 @@ export class GitlabManager implements GitManager {
 
   async getRepo(identifier: string): Promise<RepoData> {
     this.parseRepoIdentifier(identifier);
-    try {
-      const projectData = await this.gitlab.Projects.show(identifier);
 
-      return {
-        ...projectData,
-        id: projectData.id,
-        name: projectData.name,
-        description: projectData.description ?? undefined,
-        url: projectData.web_url as string,
-      };
-    } catch (error) {
-      console.error('Error fetching repository:', error);
-      throw new Error(
-        `Failed to fetch repository ${identifier}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
-    }
+    return getCached(
+      createCacheKey('gitlab', 'repo', identifier),
+      async () => {
+        try {
+          const projectData = await this.gitlab.Projects.show(identifier);
+
+          return {
+            ...projectData,
+            id: projectData.id,
+            name: projectData.name,
+            description: projectData.description ?? undefined,
+            url: projectData.web_url as string,
+          };
+        } catch (error) {
+          console.error('Error fetching repository:', error);
+          throw new Error(
+            `Failed to fetch repository ${identifier}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          );
+        }
+      },
+      { ttl: 5 * 60 },
+    );
   }
 
   async getRepoPermissions(identifier: string): Promise<any> {
@@ -128,49 +136,69 @@ export class GitlabManager implements GitManager {
   async getContributors(identifier: string): Promise<ContributorData[]> {
     this.parseRepoIdentifier(identifier);
 
-    const members = await this.gitlab.ProjectMembers.all(identifier, {
-      perPage: 100,
-      maxPages: 50,
-    });
+    return getCached(
+      createCacheKey('gitlab', 'contributors', identifier),
+      async () => {
+        const members = await this.gitlab.ProjectMembers.all(identifier, {
+          perPage: 100,
+          maxPages: 50,
+        });
 
-    return members.map((m: any) => ({
-      ...m,
-      id: m.id,
-      username: m.username,
-      avatarUrl: m.avatar_url,
-    }));
+        return members.map((m: any) => ({
+          ...m,
+          id: m.id,
+          username: m.username,
+          avatarUrl: m.avatar_url,
+        }));
+      },
+      { ttl: 60 * 60 },
+    );
   }
 
   async getIssues(identifier: string): Promise<IssueData[]> {
     this.parseRepoIdentifier(identifier);
-    const issues = await this.gitlab.Issues.all({
-      projectId: identifier,
-      state: 'opened',
-      perPage: 100,
-    });
-    return issues.map((i: any) => ({
-      id: i.id,
-      title: i.title,
-      state: i.state,
-      url: i.web_url,
-      ...i,
-    }));
+
+    return getCached(
+      createCacheKey('gitlab', 'issues', identifier),
+      async () => {
+        const issues = await this.gitlab.Issues.all({
+          projectId: identifier,
+          state: 'opened',
+          perPage: 100,
+        });
+        return issues.map((i: any) => ({
+          id: i.id,
+          title: i.title,
+          state: i.state,
+          url: i.web_url,
+          ...i,
+        }));
+      },
+      { ttl: 10 * 60 },
+    );
   }
 
   async getPullRequests(identifier: string): Promise<PullRequestData[]> {
     this.parseRepoIdentifier(identifier);
-    const mergeRequests = await this.gitlab.MergeRequests.all({
-      projectId: identifier,
-      state: 'opened',
-      perPage: 100,
-    });
-    return mergeRequests.map((mr: any) => ({
-      id: mr.id,
-      title: mr.title,
-      state: mr.state,
-      url: mr.web_url,
-      ...mr,
-    }));
+
+    return getCached(
+      createCacheKey('gitlab', 'pulls', identifier),
+      async () => {
+        const mergeRequests = await this.gitlab.MergeRequests.all({
+          projectId: identifier,
+          state: 'opened',
+          perPage: 100,
+        });
+        return mergeRequests.map((mr: any) => ({
+          id: mr.id,
+          title: mr.title,
+          state: mr.state,
+          url: mr.web_url,
+          ...mr,
+        }));
+      },
+      { ttl: 10 * 60 },
+    );
   }
 
   async getRepoData(identifier: string) {
@@ -359,46 +387,52 @@ export class GitlabManager implements GitManager {
   }
 
   async getUserDetails(username: string): Promise<UserData> {
-    try {
-      const users = await this.gitlab.Users.all({ username });
+    return getCached(
+      createCacheKey('gitlab', 'user', username),
+      async () => {
+        try {
+          const users = await this.gitlab.Users.all({ username });
 
-      if (!users || users.length === 0) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `GitLab user '${username}' not found`,
-        });
-      }
+          if (!users || users.length === 0) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `GitLab user '${username}' not found`,
+            });
+          }
 
-      const user = users[0];
+          const user = users[0];
 
-      const userDetails = await this.gitlab.Users.show(user!.id);
+          const userDetails = await this.gitlab.Users.show(user!.id);
 
-      return {
-        provider: 'gitlab',
-        login: userDetails.username,
-        id: userDetails.id,
-        avatarUrl: userDetails.avatar_url as string,
-        name: userDetails.name ?? undefined,
-        company: (userDetails as any).organization ?? undefined,
-        blog: (userDetails.website_url as string) ?? undefined,
-        location: (userDetails as any).location ?? undefined,
-        email: (userDetails as any).public_email ?? undefined,
-        bio: (userDetails as any).bio ?? undefined,
-        publicRepos: (userDetails as any).projects?.length || 0,
-        followers: (userDetails as any).followers || 0,
-        following: (userDetails as any).following || 0,
-        createdAt: userDetails.created_at as string,
-        htmlUrl: userDetails.web_url as string,
-      };
-    } catch (error) {
-      if (error instanceof TRPCError) {
-        throw error;
-      }
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitLab user details: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
+          return {
+            provider: 'gitlab',
+            login: userDetails.username,
+            id: userDetails.id,
+            avatarUrl: userDetails.avatar_url as string,
+            name: userDetails.name ?? undefined,
+            company: (userDetails as any).organization ?? undefined,
+            blog: (userDetails.website_url as string) ?? undefined,
+            location: (userDetails as any).location ?? undefined,
+            email: (userDetails as any).public_email ?? undefined,
+            bio: (userDetails as any).bio ?? undefined,
+            publicRepos: (userDetails as any).projects?.length || 0,
+            followers: (userDetails as any).followers || 0,
+            following: (userDetails as any).following || 0,
+            createdAt: userDetails.created_at as string,
+            htmlUrl: userDetails.web_url as string,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) {
+            throw error;
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch GitLab user details: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 30 * 60 },
+    );
   }
 
   getContributions(username: string): Promise<ContributionData[]> {
