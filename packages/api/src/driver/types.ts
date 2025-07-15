@@ -45,6 +45,7 @@ export interface ProjectWithRelations {
   isLookingForInvestors: boolean;
   isHiring: boolean;
   isPublic: boolean;
+  isRepoPrivate: boolean;
   acquiredBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +76,7 @@ export interface RepoData {
   name: string;
   description?: string;
   url: string;
+  isPrivate?: boolean;
   [key: string]: any;
 }
 

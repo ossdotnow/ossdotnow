@@ -47,6 +47,7 @@ export const project = pgTable(
     isPublic: boolean('is_public').notNull().default(false),
     hasBeenAcquired: boolean('has_been_acquired').notNull().default(false),
     isPinned: boolean('is_pinned').notNull().default(false),
+    isRepoPrivate: boolean('is_repo_private').notNull().default(false),
     acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
 
     deletedAt: timestamp('deleted_at', { mode: 'date' }),

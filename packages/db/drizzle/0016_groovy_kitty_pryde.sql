@@ -1,0 +1,1 @@
+ALTER TABLE "project" ADD COLUMN "is_repo_private" boolean DEFAULT false NOT NULL;

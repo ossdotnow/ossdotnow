@@ -240,7 +240,15 @@ function ActionButtons({
 
   return (
     <div className={className}>
-      {isOwner && <LaunchProjectDialog projectId={project.id} projectName={project.name} />}
+      {isOwner && (
+        <LaunchProjectDialog
+          projectId={project.id}
+          projectName={project.name}
+          isRepoPrivate={project.isRepoPrivate || repo?.isPrivate}
+          gitRepoUrl={project.gitRepoUrl || undefined}
+          gitHost={project.gitHost || undefined}
+        />
+      )}
       {repoUrl && (
         <Link
           href={repoUrl}

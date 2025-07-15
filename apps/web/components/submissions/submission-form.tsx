@@ -39,7 +39,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
-function useEarlySubmission() {
+function useEarlySubmission(onSuccess?: () => void) {
   const trpc = useTRPC();
   const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -61,6 +61,9 @@ function useEarlySubmission() {
         }
         vercelTrack('early_submission_success');
         databuddyTrack('early_submission_success');
+
+        // Call the callback if provided
+        onSuccess?.();
       },
       onError: (err) => {
         const errorMessage = err.message || 'Something went wrong. Please try again.';
@@ -83,7 +86,7 @@ function useEarlySubmission() {
   };
 }
 
-function useSubmission() {
+function useSubmission(onSuccess?: () => void) {
   const trpc = useTRPC();
   const [isMounted, setIsMounted] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -105,6 +108,9 @@ function useSubmission() {
         }
         vercelTrack('submission_success');
         databuddyTrack('submission_success');
+
+        // Call the callback if provided
+        onSuccess?.();
       },
       onError: (err) => {
         const errorMessage = err.message || 'Something went wrong. Please try again.';
@@ -129,8 +135,10 @@ function useSubmission() {
 
 export default function SubmissionForm({
   earlySubmission = false,
+  onSuccess,
 }: {
   earlySubmission?: boolean;
+  onSuccess?: () => void;
 } = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -146,9 +154,9 @@ export default function SubmissionForm({
   });
   const { mutate, success, error, isLoading, clearError } = earlySubmission
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useEarlySubmission()
+      useEarlySubmission(onSuccess)
     : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useSubmission();
+      useSubmission(onSuccess);
   const trpc = useTRPC();
   const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 
@@ -270,6 +278,8 @@ export default function SubmissionForm({
         );
 
         console.log('result', result);
+        console.log('result.isPrivate:', result.isPrivate);
+        console.log('typeof result.isPrivate:', typeof result.isPrivate);
 
         if (result) {
           try {
@@ -292,11 +302,20 @@ export default function SubmissionForm({
               return;
             }
 
-            setRepoValidation({
-              isValidating: false,
-              isValid: true,
-              message: 'Repository found and available!',
-            });
+            // Check if repository is private
+            if (result.isPrivate) {
+              setRepoValidation({
+                isValidating: false,
+                isValid: true,
+                message: 'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
+              });
+            } else {
+              setRepoValidation({
+                isValidating: false,
+                isValid: true,
+                message: 'Repository found and available!',
+              });
+            }
 
             if (result.name) {
               form.setValue('name', result.name, { shouldValidate: true });
@@ -324,21 +343,10 @@ export default function SubmissionForm({
         }
       } catch (error) {
         console.error('error', error);
-        let errorMessage = 'Repository not found or is private';
-
-        if (error instanceof Error) {
-          if (
-            error.message.includes('Private repositories cannot be submitted') ||
-            error.message.includes('Private or internal repositories cannot be submitted')
-          ) {
-            errorMessage = error.message;
-          }
-        }
-
         setRepoValidation({
           isValidating: false,
           isValid: false,
-          message: errorMessage,
+          message: 'Repository not found or unable to access',
         });
       }
     },
@@ -467,7 +475,7 @@ export default function SubmissionForm({
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const progress = ((currentStep + 1) / steps.length) * 100;
+    const progress = ((currentStep + 1) / steps.length) * 100;
   return success && env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
     // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">

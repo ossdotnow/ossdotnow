@@ -81,21 +81,16 @@ export const submissionRouter = createTRPCRouter({
       }
     }
 
-    // Validate that the repository is not private
+    // Validate repository and get privacy status
+    let isRepoPrivate = false;
     if (input.gitHost && input.gitRepoUrl) {
       try {
         const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
-        await driver.getRepo(input.gitRepoUrl);
+        const repoData = await driver.getRepo(input.gitRepoUrl);
+        isRepoPrivate = repoData.isPrivate || false;
       } catch (error) {
-        if (
-          error instanceof TRPCError &&
-          error.code === 'FORBIDDEN' &&
-          (error.message.includes('Private repositories cannot be submitted') ||
-            error.message.includes('Private or internal repositories cannot be submitted'))
-        ) {
-          throw error;
-        }
-        // If it's another error, continue with the flow
+        // If there's an error fetching the repo, we'll continue with the flow
+        // This allows for cases where the repo might be temporarily unavailable
       }
     }
 
@@ -118,11 +113,23 @@ export const submissionRouter = createTRPCRouter({
       const [newProject] = await tx
         .insert(project)
         .values({
-          ...input,
+          logoUrl: input.logoUrl,
+          gitRepoUrl: input.gitRepoUrl,
+          gitHost: input.gitHost,
+          name: input.name,
+          description: input.description,
+          socialLinks: input.socialLinks,
+          isLookingForContributors: input.isLookingForContributors,
+          isLookingForInvestors: input.isLookingForInvestors,
+          isHiring: input.isHiring,
+          isPublic: input.isPublic,
+          hasBeenAcquired: input.hasBeenAcquired,
+          acquiredBy: input.acquiredBy,
           ownerId,
           approvalStatus: APPROVAL_STATUS.PENDING,
           statusId,
           typeId,
+          isRepoPrivate,
         })
         .onConflictDoNothing({ target: project.gitRepoUrl })
         .returning();

@@ -12,10 +12,19 @@ import { track as trackVercel } from '@vercel/analytics/react';
 import { Button } from '@workspace/ui/components/button';
 import { track as trackDatabuddy } from '@databuddy/sdk';
 import SubmissionForm from './submission-form';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function SubmissionDialog() {
+  const [open, setOpen] = useState(false);
+
+  const handleSuccess = () => {
+    toast.success('Project submitted successfully! We\'ll review it and get back to you soon.');
+    setOpen(false);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           onClick={() => {
@@ -33,7 +42,7 @@ export default function SubmissionDialog() {
           <DialogTitle>Submit Project</DialogTitle>
           <DialogDescription>Submit an open source project.</DialogDescription>
         </DialogHeader>
-        <SubmissionForm />
+        <SubmissionForm onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );

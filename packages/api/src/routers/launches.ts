@@ -148,6 +148,7 @@ export const launchesRouter = createTRPCRouter({
         .where(
           and(
             eq(project.approvalStatus, 'approved'),
+            eq(project.isRepoPrivate, false),
             gte(projectLaunch.launchDate, startOfToday),
             lt(projectLaunch.launchDate, endOfToday),
           ),
@@ -271,6 +272,7 @@ export const launchesRouter = createTRPCRouter({
         .where(
           and(
             eq(project.approvalStatus, 'approved'),
+            eq(project.isRepoPrivate, false),
             gte(projectLaunch.launchDate, startOfYesterday),
             lt(projectLaunch.launchDate, endOfYesterday),
           ),
@@ -387,7 +389,7 @@ export const launchesRouter = createTRPCRouter({
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
-        .where(and(eq(project.approvalStatus, 'approved')))
+        .where(and(eq(project.approvalStatus, 'approved'), eq(project.isRepoPrivate, false)))
         .groupBy(
           project.id,
           projectLaunch.id,
@@ -592,6 +594,13 @@ export const launchesRouter = createTRPCRouter({
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'You can only launch your own projects',
+        });
+      }
+
+      if (foundProject.isRepoPrivate) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You cannot launch a project with a private repository. Please make your repository public first.',
         });
       }
 
