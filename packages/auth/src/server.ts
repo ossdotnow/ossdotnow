@@ -1,4 +1,5 @@
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { secondaryStorage } from './secondary-storage';
 import { env } from '@workspace/env/server';
 import { admin } from 'better-auth/plugins';
 import { betterAuth } from 'better-auth';
@@ -9,7 +10,9 @@ export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
   }),
+  secondaryStorage: secondaryStorage(),
   plugins: [admin()],
+
   socialProviders: {
     github: {
       clientId: env.GITHUB_CLIENT_ID,
