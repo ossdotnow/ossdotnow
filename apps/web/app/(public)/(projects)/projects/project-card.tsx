@@ -45,6 +45,7 @@ export default function ProjectCard({ project }: { project: Project }) {
               width={256}
               height={256}
               className="h-[78px] w-[78px] rounded-none"
+              loading="lazy"
             />
           ) : (
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
