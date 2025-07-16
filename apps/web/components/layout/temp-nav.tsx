@@ -19,6 +19,16 @@ export function TempNav() {
         asChild
       >
         <Link
+          href="https://l.oss.now/discord/"
+          target="_blank"
+          rel="noopener noreferrer"
+          event="discord_nav_click"
+        >
+          <Icons.discord className="size-4 fill-white sm:size-5" />
+        </Link>
+      </Button>
+      <Button variant="ghost" size="icon" className="rounded-none" asChild>
+        <Link
           href="https://l.oss.now/gh/"
           target="_blank"
           rel="noopener noreferrer"

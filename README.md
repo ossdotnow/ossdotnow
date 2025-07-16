@@ -4,6 +4,7 @@
   <h3>A platform for open source project discovery, collaboration, and growth</h3>
   <p>Connecting project owners with contributors</p>
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20now-yellow)](https://l.oss.now/discord)
 [![Website](https://img.shields.io/badge/Website-oss.now-blue)](https://l.oss.now)
 [![License](https://img.shields.io/badge/license-MIT-green)](#license)
 [![Powered by Turbo](https://img.shields.io/badge/Powered%20by-Turbo-red)](https://turbo.build)
@@ -224,10 +225,12 @@ For production deployments, ensure you:
 ### Common Issues
 
 1. **OAuth redirect issues**
+
    - Ensure no other Next.js apps are running on port 3000
    - Check that callback URLs match exactly
 
 2. **Database connection errors**
+
    - Make sure Docker is running
    - Check that PostgreSQL is accessible on port 5432
    - Verify DATABASE_URL is correct

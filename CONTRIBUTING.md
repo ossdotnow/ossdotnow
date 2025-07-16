@@ -14,6 +14,7 @@ Thank you for your interest in contributing to oss.now! This guide will help you
 
 1. Fork & Clone the repository:
    First, fork the repository on GitHub and then clone it to your local machine:
+
    ```bash
    git clone https://github.com/yourusername/ossdotnow.git
    cd ossdotnow
@@ -26,8 +27,6 @@ Thank you for your interest in contributing to oss.now! This guide will help you
    ```
 
 ### Starting the Development Environment
-
-
 
 1. Start the PostgreSQL database using Docker:
 
@@ -54,9 +53,9 @@ Thank you for your interest in contributing to oss.now! This guide will help you
 
 > Always branch off from the `dev` branch (not `main`).
 
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+```bash
+git checkout -b feature/your-feature-name
+```
 
 2. Make your changes and commit them with descriptive messages.
 
