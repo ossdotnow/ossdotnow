@@ -10,19 +10,26 @@ import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import ProjectCard from './project-card';
 import { useInView } from 'react-intersection-observer';
+import { project as projectSchema } from '@workspace/db/schema';
+type Project = typeof projectSchema.$inferSelect;
+import React from 'react';
 
-function VirtualizedProjectCard({ project }: { project: any }) {
+interface VirtualizedProjectCardProps {
+  project: Project;
+  height?: number;
+}
+
+const VirtualizedProjectCard = React.memo(function VirtualizedProjectCard({ project, height = 160 }: VirtualizedProjectCardProps) {
   const { ref, inView } = useInView({
     rootMargin: '400px 0px',
     triggerOnce: false,
   });
-  const CARD_HEIGHT = 160;
   return (
-    <div ref={ref} style={{ minHeight: CARD_HEIGHT }}>
-      {inView ? <ProjectCard project={project} /> : <div style={{ height: CARD_HEIGHT }} />}
+    <div ref={ref} style={{ minHeight: height }}>
+      {inView ? <ProjectCard project={project} /> : <div style={{ height }} />}
     </div>
   );
-}
+});
 
 export default function ProjectsPage() {
   const trpc = useTRPC();
