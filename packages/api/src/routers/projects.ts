@@ -55,6 +55,198 @@ export interface DebugPermissionsResult {
 }
 
 export const projectsRouter = createTRPCRouter({
+  getProjectsAdmin: adminProcedure
+    .input(
+      z.object({
+        approvalStatus: z.enum(['approved', 'rejected', 'pending', 'all']).optional(),
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(20),
+        searchQuery: z.string().optional(),
+        statusFilter: z.string().optional(),
+        typeFilter: z.string().optional(),
+        tagFilter: z.string().optional(),
+        providerFilter: z.string().optional(),
+        sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const {
+        page,
+        pageSize,
+        approvalStatus,
+        searchQuery,
+        statusFilter,
+        typeFilter,
+        tagFilter,
+        providerFilter,
+        sortBy,
+      } = input;
+      const offset = (page - 1) * pageSize;
+
+      const conditions = [];
+
+      if (approvalStatus && approvalStatus !== 'all') {
+        conditions.push(eq(project.approvalStatus, approvalStatus));
+      }
+
+      // Note: Admin version includes private projects, unlike public version
+
+      if (searchQuery) {
+        conditions.push(
+          or(
+            ilike(project.name, `%${searchQuery}%`),
+            ilike(project.gitRepoUrl, `%${searchQuery}%`),
+          ),
+        );
+      }
+
+      if (providerFilter && providerFilter !== 'all') {
+        conditions.push(
+          eq(project.gitHost, providerFilter as (typeof projectProviderEnum.enumValues)[number]),
+        );
+      }
+
+      const query = ctx.db
+        .select({
+          project: project,
+          status: categoryProjectStatuses,
+          type: categoryProjectTypes,
+          tagCount: sql<number>`count(distinct ${projectTagRelations.tagId})`.as('tagCount'),
+        })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+        .groupBy(project.id, categoryProjectStatuses.id, categoryProjectTypes.id);
+
+      if (statusFilter && statusFilter !== 'all') {
+        conditions.push(eq(categoryProjectStatuses.name, statusFilter));
+      }
+
+      if (typeFilter && typeFilter !== 'all') {
+        conditions.push(eq(categoryProjectTypes.name, typeFilter));
+      }
+
+      if (tagFilter && tagFilter !== 'all') {
+        conditions.push(eq(categoryTags.name, tagFilter));
+      }
+
+      if (conditions.length > 0) {
+        query.where(and(...conditions));
+      }
+
+      const countQuery = ctx.db
+        .select({ totalCount: sql<number>`count(distinct ${project.id})` })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id));
+
+      if (conditions.length > 0) {
+        countQuery.where(and(...conditions));
+      }
+
+      const [totalCountResult] = await countQuery;
+
+      const orderByClause = [];
+      if(!searchQuery){
+        orderByClause.push(desc(project.isPinned));
+      }
+
+      if (searchQuery) {
+        const lowerSearchQuery = searchQuery.toLowerCase();
+
+        orderByClause.push(
+          desc(ilike(project.name, searchQuery))
+        );
+
+        orderByClause.push(
+          desc(ilike(project.name, `${searchQuery}%`))
+        );
+
+        orderByClause.push(
+          desc(ilike(project.name, `%${searchQuery}%`))
+        );
+
+        orderByClause.push(
+          desc(ilike(project.gitRepoUrl, `%${searchQuery}%`))
+        );
+      }
+
+      switch (sortBy) {
+        case 'name':
+          orderByClause.push(asc(project.name));
+          break;
+        case 'stars':
+          // TODO: Implement stars sorting once project stars data is available
+          // This requires fetching stars count from GitHub/GitLab APIs and storing in database
+          // For now, fallback to recent
+          orderByClause.push(desc(project.createdAt));
+          break;
+        case 'forks':
+          // TODO: Implement forks sorting once project forks data is available
+          // This requires fetching forks count from GitHub/GitLab APIs and storing in database
+          // For now, fallback to recent
+          orderByClause.push(desc(project.createdAt));
+          break;
+        default:
+          orderByClause.push(desc(project.createdAt));
+          break;
+      }
+
+      const projectResults = await query
+        .orderBy(...orderByClause)
+        .limit(pageSize)
+        .offset(offset);
+
+      const projectIds = projectResults.map((r) => r.project.id);
+      const tagRelations =
+        projectIds.length > 0
+          ? await ctx.db.query.projectTagRelations.findMany({
+              where: inArray(projectTagRelations.projectId, projectIds),
+              with: {
+                tag: true,
+              },
+            })
+          : [];
+
+      const tagsByProject = tagRelations.reduce(
+        (acc, rel) => {
+          if (!acc[rel.projectId]) {
+            acc[rel.projectId] = [];
+          }
+          acc[rel.projectId]?.push(rel);
+          return acc;
+        },
+        {} as Record<string, typeof tagRelations>,
+      );
+
+      const projects = projectResults.map((r) => ({
+        ...r.project,
+        status: r.status,
+        type: r.type,
+        tagRelations: tagsByProject[r.project.id] || [],
+      }));
+
+      const totalCount = totalCountResult?.totalCount ?? 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+
+      return {
+        data: projects,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+      };
+    }),
   getProjects: publicProcedure
     .input(
       z.object({
@@ -88,6 +280,9 @@ export const projectsRouter = createTRPCRouter({
       if (approvalStatus && approvalStatus !== 'all') {
         conditions.push(eq(project.approvalStatus, approvalStatus));
       }
+
+      // Filter out private projects from public listings
+      conditions.push(eq(project.isRepoPrivate, false));
 
       if (searchQuery) {
         conditions.push(
@@ -256,7 +451,15 @@ export const projectsRouter = createTRPCRouter({
       const { page, pageSize, userId } = input;
       const offset = (page - 1) * pageSize;
 
-      const whereClause = eq(project.ownerId, userId);
+      // Build where conditions
+      const conditions = [eq(project.ownerId, userId)];
+
+      // If viewing another user's projects, hide private repositories
+      if (!ctx.session?.userId || ctx.session.userId !== userId) {
+        conditions.push(eq(project.isRepoPrivate, false));
+      }
+
+      const whereClause = and(...conditions);
 
       const [totalCountResult] = await ctx.db
         .select({ totalCount: count() })
@@ -737,6 +940,176 @@ export const projectsRouter = createTRPCRouter({
         return result;
       } catch (error) {
         return { error: error instanceof Error ? error.message : String(error) } as const;
+      }
+    }),
+
+  refreshRepoStatus: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const foundProject = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+      });
+
+      if (!foundProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      if (foundProject.ownerId !== ctx.session.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only refresh status of your own projects',
+        });
+      }
+
+      // Early validation: Check if project has required repository fields
+      if (!foundProject.gitHost || !foundProject.gitRepoUrl) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Project must have both gitHost and gitRepoUrl configured to refresh repository status',
+        });
+      }
+
+      // Validate gitHost is supported
+      const supportedHosts = ['github', 'gitlab'] as const;
+      if (!supportedHosts.includes(foundProject.gitHost as any)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Unsupported git host: ${foundProject.gitHost}. Supported hosts: ${supportedHosts.join(', ')}`,
+        });
+      }
+
+      // Validate repository URL format early
+      const urlPattern = PROVIDER_URL_PATTERNS[foundProject.gitHost as keyof typeof PROVIDER_URL_PATTERNS];
+      if (!urlPattern) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `No URL pattern configured for git host: ${foundProject.gitHost}`,
+        });
+      }
+
+      const match = foundProject.gitRepoUrl.match(urlPattern);
+      if (!match) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Invalid ${foundProject.gitHost} repository URL format. Expected format: ${foundProject.gitHost === 'github' ? 'https://github.com/owner/repo' : 'https://gitlab.com/owner/repo'}`,
+        });
+      }
+
+      const [, owner, repo] = match;
+      if (!owner || !repo) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Could not extract owner and repository name from URL',
+        });
+      }
+
+      const repoIdentifier = `${owner}/${repo}`;
+
+      try {
+        // Get the driver for the git host
+        const driver = await getActiveDriver(foundProject.gitHost as 'github' | 'gitlab', ctx as Context);
+
+        // Fetch repository data
+        const repoData = await driver.getRepo(repoIdentifier);
+        const isRepoPrivate = repoData.isPrivate || false;
+
+        // Update the project's privacy status if it has changed
+        if (foundProject.isRepoPrivate !== isRepoPrivate) {
+          await ctx.db
+            .update(project)
+            .set({
+              isRepoPrivate,
+              updatedAt: new Date(),
+            })
+            .where(eq(project.id, input.projectId));
+
+          return {
+            success: true,
+            wasPrivate: foundProject.isRepoPrivate,
+            isNowPrivate: isRepoPrivate,
+            statusChanged: true,
+          };
+        }
+
+        return {
+          success: true,
+          wasPrivate: foundProject.isRepoPrivate,
+          isNowPrivate: isRepoPrivate,
+          statusChanged: false,
+        };
+      } catch (error) {
+        // Log error details for debugging
+        console.error('Error refreshing repository status:', {
+          projectId: input.projectId,
+          gitHost: foundProject.gitHost,
+          gitRepoUrl: foundProject.gitRepoUrl,
+          repoIdentifier,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
+        // Handle specific error types
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        // Check for specific error conditions
+        if (error instanceof Error) {
+          // Repository not found or access denied
+          if (error.message.includes('Not Found') || error.message.includes('404')) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `Repository '${repoIdentifier}' not found or is inaccessible`,
+            });
+          }
+
+          // Authentication/authorization errors
+          if (error.message.includes('Unauthorized') || error.message.includes('401') || error.message.includes('403')) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: `Authentication failed for ${foundProject.gitHost}. Please check your credentials and permissions.`,
+            });
+          }
+
+          // Rate limiting errors
+          if (error.message.includes('rate limit') || error.message.includes('429')) {
+            throw new TRPCError({
+              code: 'TOO_MANY_REQUESTS',
+              message: `${foundProject.gitHost} rate limit exceeded. Please try again later.`,
+            });
+          }
+
+          // Network or connection errors
+          if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Network error connecting to ${foundProject.gitHost}. Please try again later.`,
+            });
+          }
+
+          // Driver initialization errors
+          if (error.message.includes('driver') || error.message.includes('Driver')) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Failed to initialize ${foundProject.gitHost} driver. Please contact support.`,
+            });
+          }
+
+          // Generic error with details
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to refresh repository status: ${error.message}`,
+          });
+        }
+
+        // Fallback for non-Error objects
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected error occurred while refreshing repository status',
+        });
       }
     }),
 });

@@ -79,7 +79,7 @@ export default function AdminProjectsDashboard() {
     isLoading,
     isError,
   } = useQuery(
-    trpc.projects.getProjects.queryOptions({
+    trpc.projects.getProjectsAdmin.queryOptions({
       approvalStatus,
       page,
       pageSize,
@@ -103,7 +103,7 @@ export default function AdminProjectsDashboard() {
     ...trpc.projects.acceptProject.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: trpc.projects.getProjects.queryKey({
+        queryKey: trpc.projects.getProjectsAdmin.queryKey({
           approvalStatus,
           page,
           pageSize,
@@ -121,7 +121,7 @@ export default function AdminProjectsDashboard() {
     ...trpc.projects.rejectProject.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: trpc.projects.getProjects.queryKey({
+        queryKey: trpc.projects.getProjectsAdmin.queryKey({
           approvalStatus,
           page,
           pageSize,
@@ -139,7 +139,7 @@ export default function AdminProjectsDashboard() {
     ...trpc.projects.pinProject.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: trpc.projects.getProjects.queryKey({
+        queryKey: trpc.projects.getProjectsAdmin.queryKey({
           approvalStatus,
           page,
           pageSize,
@@ -157,7 +157,7 @@ export default function AdminProjectsDashboard() {
     ...trpc.projects.unpinProject.mutationOptions(),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: trpc.projects.getProjects.queryKey({
+        queryKey: trpc.projects.getProjectsAdmin.queryKey({
           approvalStatus,
           page,
           pageSize,
@@ -207,17 +207,13 @@ export default function AdminProjectsDashboard() {
         <p className="text-muted-foreground">Review, approve, and manage project submissions</p>
       </div>
 
-      <Tabs className="space-y-4" defaultValue={approvalStatus}>
+      <Tabs className="space-y-4" value={approvalStatus} onValueChange={(value) => { setApprovalStatus(value as typeof approvalStatus); setPage(1); }}>
         <TabsList className="bg-muted/30">
           {tabs.map((tab) => (
             <TabsTrigger
               key={tab}
               value={tab}
               className="w-28"
-              onClick={() => {
-                setApprovalStatus(tab);
-                setPage(1);
-              }}
             >
               <span className="capitalize">{tab}</span>
             </TabsTrigger>

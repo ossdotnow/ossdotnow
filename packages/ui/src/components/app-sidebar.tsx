@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
 } from '@workspace/ui/components/sidebar';
 import { FolderOpen, LayoutDashboard, ListChecks, Tags, Users } from 'lucide-react';
 import { NavUser } from '@workspace/ui/components/nav-user';

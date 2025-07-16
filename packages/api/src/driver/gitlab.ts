@@ -56,13 +56,7 @@ export class GitlabManager implements GitManager {
         try {
           const projectData = await this.gitlab.Projects.show(identifier);
 
-          if (projectData.visibility === 'private' || projectData.visibility === 'internal') {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message:
-                'Private or internal repositories cannot be submitted. Please make your repository public first.',
-            });
-          }
+          const isPrivate = projectData.visibility === 'private' || projectData.visibility === 'internal';
 
           return {
             ...projectData,
@@ -70,6 +64,7 @@ export class GitlabManager implements GitManager {
             name: projectData.name,
             description: projectData.description ?? undefined,
             url: projectData.web_url as string,
+            isPrivate,
           };
         } catch (error) {
           if (error instanceof TRPCError) {
