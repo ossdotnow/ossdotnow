@@ -193,7 +193,7 @@ export default function ProjectPage({ id }: { id: string }) {
 
             <div className="">
               <Tabs defaultValue="readme" className="w-full">
-                <TabsList className="bg-neutral-900/0 p-0">
+                <TabsList className="bg-neutral-900/0 p-0 mb-2">
                   <TabsTrigger value="readme" className="rounded-none text-sm">
                     <FileText className="h-4 w-4" />
                     <span className="hidden sm:inline">README</span>
