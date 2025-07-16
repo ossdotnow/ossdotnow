@@ -103,7 +103,7 @@ export interface PullRequestData {
   [key: string]: any;
 }
 
-export interface ReadmeData {
+export interface FileData {
   content: string;
   encoding: 'base64' | 'utf8';
   name: string;
@@ -113,25 +113,9 @@ export interface ReadmeData {
   html_url?: string;
 }
 
-export interface ContributingData {
-  content: string;
-  encoding: 'base64' | 'utf8';
-  name: string;
-  path: string;
-  size: number;
-  download_url?: string;
-  html_url?: string;
-}
-
-export interface CodeOfConductData {
-  content: string;
-  encoding: 'base64' | 'utf8';
-  name: string;
-  path: string;
-  size: number;
-  download_url?: string;
-  html_url?: string;
-}
+export type ReadmeData = FileData;
+export type ContributingData = FileData;
+export type CodeOfConductData = FileData;
 
 export interface UserPullRequestData extends PullRequestData {
   repository: {
