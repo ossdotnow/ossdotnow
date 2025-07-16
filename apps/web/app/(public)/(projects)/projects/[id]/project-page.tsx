@@ -185,14 +185,6 @@ export default function ProjectPage({ id }: { id: string }) {
   const codeOfConduct = otherQueries[5].data;
   const otherDataLoading = otherQueries.some((query) => query.isLoading);
 
-  if (otherDataLoading) {
-    return (
-      <div className="flex min-h-[calc(100vh-200px)] w-full items-center justify-center px-4 sm:px-6 lg:px-8">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
     <div className="mt-4 px-6 md:mt-8">
       <div
@@ -262,9 +254,11 @@ export default function ProjectPage({ id }: { id: string }) {
                   )}
                 </TabsContent>
                 <TabsContent value="issues">
-                  {/* TODO: fix this */}
-                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
+                  {otherQueries[1].isLoading ? (
+                    <div className="flex w-full justify-center py-4">
+                      <LoadingSpinner />
+                    </div>
+                  ) : issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
                     <div className="space-y-3">
                       {issues
                         // TODO: fix this
@@ -362,9 +356,16 @@ export default function ProjectPage({ id }: { id: string }) {
                   ) : (
                     <p className="text-sm text-neutral-400">No issues found</p>
                   )}
+
+                  {/* TODO: fix this */}
+                  { }
                 </TabsContent>
                 <TabsContent value="pull-requests">
-                  {pullRequests && pullRequests.length > 0 ? (
+                  {otherQueries[2].isLoading ? (
+                                        <div className="flex w-full justify-center py-4">
+                      <LoadingSpinner className="w-16 h-16" />
+                    </div>
+                  ) : pullRequests && pullRequests.length > 0 ? (
                     <div className="space-y-3">
                       {/* TODO: fix this */}
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
