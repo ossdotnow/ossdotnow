@@ -175,20 +175,28 @@ export class GithubManager implements GitManager {
     return getCached(
       createCacheKey('github', 'readme', identifier),
       async () => {
-        const { data } = await this.octokit.rest.repos.getReadme({
-          owner,
-          repo,
-        });
-        
-        return {
-          content: data.content,
-          encoding: data.encoding as 'base64' | 'utf8',
-          name: data.name,
-          path: data.path,
-          size: data.size,
-          download_url: data.download_url || undefined,
-          html_url: data.html_url || undefined,
-        };
+        try {
+          const { data } = await this.octokit.rest.repos.getReadme({
+            owner,
+            repo,
+          });
+          
+          return {
+            content: data.content,
+            encoding: data.encoding as 'base64' | 'utf8',
+            name: data.name,
+            path: data.path,
+            size: data.size,
+            download_url: data.download_url || undefined,
+            html_url: data.html_url || undefined,
+          };
+        } catch (error) {
+          console.error('Error fetching GitHub README:', error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'README not found for this GitHub repository',
+          });
+        }
       },
       { ttl: 60 * 60 },
     );

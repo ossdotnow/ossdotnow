@@ -214,17 +214,49 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'readme', identifier),
       async () => {
-        const file = await this.gitlab.RepositoryFiles.show(identifier, 'README.md', 'main');
-        
-        return {
-          content: file.content,
-          encoding: file.encoding as 'base64' | 'utf8',
-          name: file.file_name || 'README.md',
-          path: file.file_path || 'README.md',
-          size: file.size,
-          download_url: undefined,
-          html_url: undefined,
-        };
+        try {
+          // Get project info first to find the default branch
+          const project = await this.gitlab.Projects.show(identifier);
+          const defaultBranch = project.default_branch || 'main';
+          
+          // Common README file names to try
+          const readmeFiles = ['README.md', 'README.rst', 'README.txt', 'README', 'readme.md', 'readme.rst', 'readme.txt', 'readme'];
+          
+          let file = null;
+          let fileName = '';
+          
+          // Try to find a README file
+          for (const filename of readmeFiles) {
+            try {
+              file = await this.gitlab.RepositoryFiles.show(identifier, filename, defaultBranch);
+              fileName = filename;
+              break;
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+              continue;
+            }
+          }
+          
+          if (!file) {
+            throw new Error('No README file found');
+          }
+          
+          return {
+            content: file.content,
+            encoding: file.encoding as 'base64' | 'utf8',
+            name: fileName,
+            path: fileName,
+            size: file.size,
+            download_url: undefined,
+            html_url: `${project.web_url}/-/blob/${defaultBranch}/${fileName}`,
+          };
+        } catch (error) {
+          console.error('Error fetching GitLab README:', error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'README not found for this GitLab project',
+          });
+        }
       },
       { ttl: 60 * 60 },
     );
