@@ -6,6 +6,8 @@ import {
   IssueData,
   PullRequestData,
   ReadmeData,
+  ContributingData,
+  CodeOfConductData,
   RepoData,
   UserData,
   UserPullRequestData,
@@ -255,6 +257,146 @@ export class GitlabManager implements GitManager {
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'README not found for this GitLab project',
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  async getContributing(identifier: string): Promise<ContributingData> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'contributing', identifier),
+      async () => {
+        try {
+          // Get project info first to find the default branch
+          const project = await this.gitlab.Projects.show(identifier);
+          const defaultBranch = project.default_branch || 'main';
+          
+          // Common contributing file names to try
+          const contributingFiles = [
+            'CONTRIBUTING.md',
+            'CONTRIBUTING.rst',
+            'CONTRIBUTING.txt',
+            'CONTRIBUTING',
+            'contributing.md',
+            'contributing.rst',
+            'contributing.txt',
+            'contributing',
+            '.gitlab/CONTRIBUTING.md',
+            'docs/CONTRIBUTING.md',
+          ];
+          
+          let file = null;
+          let fileName = '';
+          
+          // Try to find a contributing file
+          for (const filename of contributingFiles) {
+            try {
+              file = await this.gitlab.RepositoryFiles.show(identifier, filename, defaultBranch);
+              fileName = filename;
+              break;
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+              continue;
+            }
+          }
+          
+          if (!file) {
+            throw new Error('No contributing file found');
+          }
+          
+          return {
+            content: file.content,
+            encoding: file.encoding as 'base64' | 'utf8',
+            name: fileName,
+            path: fileName,
+            size: file.size,
+            download_url: undefined,
+            html_url: `${project.web_url}/-/blob/${defaultBranch}/${fileName}`,
+          };
+        } catch (error) {
+          console.error('Error fetching GitLab Contributing:', error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Contributing guidelines not found for this GitLab project',
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  async getCodeOfConduct(identifier: string): Promise<CodeOfConductData> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'codeofconduct', identifier),
+      async () => {
+        try {
+          // Get project info first to find the default branch
+          const project = await this.gitlab.Projects.show(identifier);
+          const defaultBranch = project.default_branch || 'main';
+          
+          // Common code of conduct file names to try
+          const cocFiles = [
+            'CODE_OF_CONDUCT.md',
+            'CODE_OF_CONDUCT.rst',
+            'CODE_OF_CONDUCT.txt',
+            'CODE_OF_CONDUCT',
+            'code_of_conduct.md',
+            'code_of_conduct.rst',
+            'code_of_conduct.txt',
+            'code_of_conduct',
+            'COC.md',
+            'COC.rst',
+            'COC.txt',
+            'COC',
+            'coc.md',
+            'coc.rst',
+            'coc.txt',
+            'coc',
+            '.gitlab/CODE_OF_CONDUCT.md',
+            '.gitlab/COC.md',
+            'docs/CODE_OF_CONDUCT.md',
+            'docs/COC.md',
+          ];
+          
+          let file = null;
+          let fileName = '';
+          
+          // Try to find a code of conduct file
+          for (const filename of cocFiles) {
+            try {
+              file = await this.gitlab.RepositoryFiles.show(identifier, filename, defaultBranch);
+              fileName = filename;
+              break;
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+              continue;
+            }
+          }
+          
+          if (!file) {
+            throw new Error('No code of conduct file found');
+          }
+          
+          return {
+            content: file.content,
+            encoding: file.encoding as 'base64' | 'utf8',
+            name: fileName,
+            path: fileName,
+            size: file.size,
+            download_url: undefined,
+            html_url: `${project.web_url}/-/blob/${defaultBranch}/${fileName}`,
+          };
+        } catch (error) {
+          console.error('Error fetching GitLab Code of Conduct:', error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Code of conduct not found for this GitLab project',
           });
         }
       },

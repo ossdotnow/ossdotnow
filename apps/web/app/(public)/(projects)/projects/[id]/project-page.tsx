@@ -12,6 +12,7 @@ import {
   GitFork,
   GitMerge,
   GitPullRequest,
+  Heart,
   Star,
   Tag,
   Users,
@@ -123,6 +124,26 @@ export default function ProjectPage({ id }: { id: string }) {
           retry: false,
         },
       ),
+      trpc.repository.getContributing.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
+      trpc.repository.getCodeOfConduct.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
     ],
   });
 
@@ -162,6 +183,8 @@ export default function ProjectPage({ id }: { id: string }) {
   const issues = otherQueries[1].data;
   const pullRequests = otherQueries[2].data;
   const readme = otherQueries[3].data;
+  const contributing = otherQueries[4].data;
+  const codeOfConduct = otherQueries[5].data;
   const otherDataLoading = otherQueries.some((query) => query.isLoading);
 
   if (otherDataLoading) {
@@ -208,6 +231,16 @@ export default function ProjectPage({ id }: { id: string }) {
                     <GitPullRequest className="h-4 w-4" />
                     <span className="hidden sm:inline">Pull Requests</span>
                     <span className="sm:hidden">PRs</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="contributing" className="rounded-none text-sm">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Contributing</span>
+                    <span className="sm:hidden">Contributing</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="code-of-conduct" className="rounded-none text-sm">
+                    <Heart className="h-4 w-4" />
+                    <span className="hidden sm:inline">Code of Conduct</span>
+                    <span className="sm:hidden">CoC</span>
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="readme">
@@ -534,6 +567,240 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No pull requests</p>
+                  )}
+                </TabsContent>
+                <TabsContent value="contributing">
+                  {contributing ? (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="prose prose-invert prose-neutral max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={{
+                            h1: ({ children }) => (
+                              <h1 className="text-2xl font-bold text-white mb-4 mt-0">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-xl font-semibold text-white mb-3 mt-6">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-lg font-medium text-white mb-2 mt-5">
+                                {children}
+                              </h3>
+                            ),
+                            h4: ({ children }) => (
+                              <h4 className="text-base font-medium text-white mb-2 mt-4">
+                                {children}
+                              </h4>
+                            ),
+                            p: ({ children }) => (
+                              <p className="text-neutral-300 mb-4 leading-relaxed">
+                                {children}
+                              </p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc list-inside text-neutral-300 mb-4 space-y-1">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside text-neutral-300 mb-4 space-y-1">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-neutral-300">
+                                {children}
+                              </li>
+                            ),
+                            a: ({ href, children }) => (
+                              <Link
+                                href={href || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline"
+                              >
+                                {children}
+                              </Link>
+                            ),
+                            img: ({ src, alt }) => (
+                              <img
+                                src={src}
+                                alt={alt}
+                                className="max-w-full h-auto rounded-lg border border-neutral-800 my-4"
+                              />
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-neutral-900 border border-neutral-700 p-4 rounded-lg overflow-x-auto my-4">
+                                {children}
+                              </pre>
+                            ),
+                            code: ({ children, className }) => {
+                              const isInline = !className;
+                              return isInline ? (
+                                <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-sm text-neutral-200 font-mono">
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className={className}>
+                                  {children}
+                                </code>
+                              );
+                            },
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-4 border-neutral-600 pl-4 my-4 text-neutral-400 italic">
+                                {children}
+                              </blockquote>
+                            ),
+                            table: ({ children }) => (
+                              <table className="w-full border-collapse border border-neutral-800 my-4">
+                                {children}
+                              </table>
+                            ),
+                            th: ({ children }) => (
+                              <th className="border border-neutral-800 px-4 py-2 bg-neutral-900 text-left text-white font-medium">
+                                {children}
+                              </th>
+                            ),
+                            td: ({ children }) => (
+                              <td className="border border-neutral-800 px-4 py-2 text-neutral-300">
+                                {children}
+                              </td>
+                            ),
+                            hr: () => (
+                              <hr className="border-neutral-700 my-6" />
+                            ),
+                          }}
+                        >
+                          {contributing.encoding === 'base64' ? atob(contributing.content) : contributing.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <p className="text-sm text-neutral-400">No contributing guidelines found</p>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="code-of-conduct">
+                  {codeOfConduct ? (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="prose prose-invert prose-neutral max-w-none">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                          components={{
+                            h1: ({ children }) => (
+                              <h1 className="text-2xl font-bold text-white mb-4 mt-0">
+                                {children}
+                              </h1>
+                            ),
+                            h2: ({ children }) => (
+                              <h2 className="text-xl font-semibold text-white mb-3 mt-6">
+                                {children}
+                              </h2>
+                            ),
+                            h3: ({ children }) => (
+                              <h3 className="text-lg font-medium text-white mb-2 mt-5">
+                                {children}
+                              </h3>
+                            ),
+                            h4: ({ children }) => (
+                              <h4 className="text-base font-medium text-white mb-2 mt-4">
+                                {children}
+                              </h4>
+                            ),
+                            p: ({ children }) => (
+                              <p className="text-neutral-300 mb-4 leading-relaxed">
+                                {children}
+                              </p>
+                            ),
+                            ul: ({ children }) => (
+                              <ul className="list-disc list-inside text-neutral-300 mb-4 space-y-1">
+                                {children}
+                              </ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside text-neutral-300 mb-4 space-y-1">
+                                {children}
+                              </ol>
+                            ),
+                            li: ({ children }) => (
+                              <li className="text-neutral-300">
+                                {children}
+                              </li>
+                            ),
+                            a: ({ href, children }) => (
+                              <Link
+                                href={href || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 underline"
+                              >
+                                {children}
+                              </Link>
+                            ),
+                            img: ({ src, alt }) => (
+                              <img
+                                src={src}
+                                alt={alt}
+                                className="max-w-full h-auto rounded-lg border border-neutral-800 my-4"
+                              />
+                            ),
+                            pre: ({ children }) => (
+                              <pre className="bg-neutral-900 border border-neutral-700 p-4 rounded-lg overflow-x-auto my-4">
+                                {children}
+                              </pre>
+                            ),
+                            code: ({ children, className }) => {
+                              const isInline = !className;
+                              return isInline ? (
+                                <code className="bg-neutral-800 px-1.5 py-0.5 rounded text-sm text-neutral-200 font-mono">
+                                  {children}
+                                </code>
+                              ) : (
+                                <code className={className}>
+                                  {children}
+                                </code>
+                              );
+                            },
+                            blockquote: ({ children }) => (
+                              <blockquote className="border-l-4 border-neutral-600 pl-4 my-4 text-neutral-400 italic">
+                                {children}
+                              </blockquote>
+                            ),
+                            table: ({ children }) => (
+                              <table className="w-full border-collapse border border-neutral-800 my-4">
+                                {children}
+                              </table>
+                            ),
+                            th: ({ children }) => (
+                              <th className="border border-neutral-800 px-4 py-2 bg-neutral-900 text-left text-white font-medium">
+                                {children}
+                              </th>
+                            ),
+                            td: ({ children }) => (
+                              <td className="border border-neutral-800 px-4 py-2 text-neutral-300">
+                                {children}
+                              </td>
+                            ),
+                            hr: () => (
+                              <hr className="border-neutral-700 my-6" />
+                            ),
+                          }}
+                        >
+                          {codeOfConduct.encoding === 'base64' ? atob(codeOfConduct.content) : codeOfConduct.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <p className="text-sm text-neutral-400">No code of conduct found</p>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>

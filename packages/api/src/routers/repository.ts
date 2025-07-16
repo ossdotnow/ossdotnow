@@ -22,6 +22,8 @@ export const repositoryRouter = createTRPCRouter({
   getIssues: createRepositoryProcedure('getIssues'),
   getPullRequests: createRepositoryProcedure('getPullRequests'),
   getReadme: createRepositoryProcedure('getReadme'),
+  getContributing: createRepositoryProcedure('getContributing'),
+  getCodeOfConduct: createRepositoryProcedure('getCodeOfConduct'),
   getRepoData: createRepositoryProcedure('getRepoData'),
 
   invalidateCache: protectedProcedure
@@ -29,7 +31,7 @@ export const repositoryRouter = createTRPCRouter({
       z.object({
         provider: z.enum(['github', 'gitlab']),
         identifier: z.string().optional(),
-        type: z.enum(['repo', 'contributors', 'issues', 'pulls', 'readme', 'user', 'all']).optional(),
+        type: z.enum(['repo', 'contributors', 'issues', 'pulls', 'readme', 'contributing', 'codeofconduct', 'user', 'all']).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -41,7 +43,7 @@ export const repositoryRouter = createTRPCRouter({
       };
 
       if (input.type === 'all') {
-        const types = ['repo', 'contributors', 'issues', 'pulls', 'readme', 'user'];
+        const types = ['repo', 'contributors', 'issues', 'pulls', 'readme', 'contributing', 'codeofconduct', 'user'];
         if (input.identifier) {
           for (const type of types) {
             if (type === 'user') {

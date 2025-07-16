@@ -113,6 +113,26 @@ export interface ReadmeData {
   html_url?: string;
 }
 
+export interface ContributingData {
+  content: string;
+  encoding: 'base64' | 'utf8';
+  name: string;
+  path: string;
+  size: number;
+  download_url?: string;
+  html_url?: string;
+}
+
+export interface CodeOfConductData {
+  content: string;
+  encoding: 'base64' | 'utf8';
+  name: string;
+  path: string;
+  size: number;
+  download_url?: string;
+  html_url?: string;
+}
+
 export interface UserPullRequestData extends PullRequestData {
   repository: {
     nameWithOwner: string;
@@ -181,6 +201,8 @@ export interface GitManager {
   getIssues(identifier: string): Promise<IssueData[]>;
   getPullRequests(identifier: string): Promise<PullRequestData[]>;
   getReadme(identifier: string): Promise<ReadmeData>;
+  getContributing(identifier: string): Promise<ContributingData>;
+  getCodeOfConduct(identifier: string): Promise<CodeOfConductData>;
   getUserPullRequests(
     username: string,
     options?: {
