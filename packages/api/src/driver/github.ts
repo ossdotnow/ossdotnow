@@ -4,6 +4,10 @@ import {
   ContributorData,
   IssueData,
   PullRequestData,
+  ReadmeData,
+  ContributingData,
+  CodeOfConductData,
+  FileData,
   GitManagerConfig,
   ContributionData,
   UserData,
@@ -165,6 +169,149 @@ export class GithubManager implements GitManager {
         }));
       },
       { ttl: 10 * 60 },
+    );
+  }
+
+  async getReadme(identifier: string): Promise<ReadmeData> {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('github', 'readme', identifier),
+      async () => {
+        try {
+          const { data } = await this.octokit.rest.repos.getReadme({
+            owner,
+            repo,
+          });
+          
+          return {
+            content: data.content,
+            encoding: data.encoding as 'base64' | 'utf8',
+            name: data.name,
+            path: data.path,
+            size: data.size,
+            download_url: data.download_url || undefined,
+            html_url: data.html_url || undefined,
+          };
+        } catch (error) {
+          console.error('Error fetching GitHub README:', error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'README not found for this GitHub repository',
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  private async fetchRepositoryFile(
+    identifier: string,
+    cacheType: string,
+    possibleFilenames: string[],
+    errorMessage: string,
+  ): Promise<FileData> {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('github', cacheType, identifier),
+      async () => {
+        try {
+          let data = null;
+          
+          // Try to find the file
+          for (const filename of possibleFilenames) {
+            try {
+              const response = await this.octokit.rest.repos.getContent({
+                owner,
+                repo,
+                path: filename,
+              });
+              
+              // Check if it's a file (not a directory)
+              if (!Array.isArray(response.data) && response.data.type === 'file') {
+                data = response.data;
+                break;
+              }
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+            }
+          }
+          
+          if (!data) {
+            throw new Error(`No ${cacheType} file found`);
+          }
+          
+          return {
+            content: data.content,
+            encoding: data.encoding as 'base64' | 'utf8',
+            name: data.name,
+            path: data.path,
+            size: data.size,
+            download_url: data.download_url || undefined,
+            html_url: data.html_url || undefined,
+          };
+        } catch (error) {
+          console.error(`Error fetching GitHub ${cacheType}:`, error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: errorMessage,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  async getContributing(identifier: string): Promise<ContributingData> {
+    const contributingFiles = [
+      'CONTRIBUTING.md',
+      'CONTRIBUTING.rst',
+      'CONTRIBUTING.txt',
+      'CONTRIBUTING',
+      'contributing.md',
+      'contributing.rst',
+      'contributing.txt',
+      'contributing',
+      '.github/CONTRIBUTING.md',
+      'docs/CONTRIBUTING.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'contributing',
+      contributingFiles,
+      'Contributing guidelines not found for this GitHub repository',
+    );
+  }
+
+  async getCodeOfConduct(identifier: string): Promise<CodeOfConductData> {
+    const cocFiles = [
+      'CODE_OF_CONDUCT.md',
+      'CODE_OF_CONDUCT.rst',
+      'CODE_OF_CONDUCT.txt',
+      'CODE_OF_CONDUCT',
+      'code_of_conduct.md',
+      'code_of_conduct.rst',
+      'code_of_conduct.txt',
+      'code_of_conduct',
+      'COC.md',
+      'COC.rst',
+      'COC.txt',
+      'COC',
+      'coc.md',
+      'coc.rst',
+      'coc.txt',
+      'coc',
+      '.github/CODE_OF_CONDUCT.md',
+      '.github/COC.md',
+      'docs/CODE_OF_CONDUCT.md',
+      'docs/COC.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'codeofconduct',
+      cocFiles,
+      'Code of conduct not found for this GitHub repository',
     );
   }
 

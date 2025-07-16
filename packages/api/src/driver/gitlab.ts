@@ -5,6 +5,10 @@ import {
   GitManagerConfig,
   IssueData,
   PullRequestData,
+  ReadmeData,
+  ContributingData,
+  CodeOfConductData,
+  FileData,
   RepoData,
   UserData,
   UserPullRequestData,
@@ -204,6 +208,123 @@ export class GitlabManager implements GitManager {
         }));
       },
       { ttl: 10 * 60 },
+    );
+  }
+
+  private async fetchRepositoryFile(
+    identifier: string,
+    cacheType: string,
+    possibleFilenames: string[],
+    errorMessage: string,
+  ): Promise<FileData> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', cacheType, identifier),
+      async () => {
+        try {
+          // Get project info first to find the default branch
+          const project = await this.gitlab.Projects.show(identifier);
+          const defaultBranch = project.default_branch || 'main';
+          
+          let file = null;
+          let fileName = '';
+          
+          // Try to find the file
+          for (const filename of possibleFilenames) {
+            try {
+              file = await this.gitlab.RepositoryFiles.show(identifier, filename, defaultBranch as string);
+              fileName = filename;
+              break;
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+            }
+          }
+          
+          if (!file) {
+            throw new Error(`No ${cacheType} file found`);
+          }
+          
+          return {
+            content: file.content,
+            encoding: file.encoding as 'base64' | 'utf8',
+            name: fileName,
+            path: fileName,
+            size: file.size,
+            download_url: undefined,
+            html_url: `${project.web_url}/-/blob/${defaultBranch}/${fileName}`,
+          };
+        } catch (error) {
+          console.error(`Error fetching GitLab ${cacheType}:`, error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: errorMessage,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  async getReadme(identifier: string): Promise<ReadmeData> {
+    const readmeFiles = ['README.md', 'README.rst', 'README.txt', 'README', 'readme.md', 'readme.rst', 'readme.txt', 'readme'];
+    return this.fetchRepositoryFile(
+      identifier,
+      'readme',
+      readmeFiles,
+      'README not found for this GitLab project',
+    );
+  }
+
+  async getContributing(identifier: string): Promise<ContributingData> {
+    const contributingFiles = [
+      'CONTRIBUTING.md',
+      'CONTRIBUTING.rst',
+      'CONTRIBUTING.txt',
+      'CONTRIBUTING',
+      'contributing.md',
+      'contributing.rst',
+      'contributing.txt',
+      'contributing',
+      '.gitlab/CONTRIBUTING.md',
+      'docs/CONTRIBUTING.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'contributing',
+      contributingFiles,
+      'Contributing guidelines not found for this GitLab project',
+    );
+  }
+
+  async getCodeOfConduct(identifier: string): Promise<CodeOfConductData> {
+    const cocFiles = [
+      'CODE_OF_CONDUCT.md',
+      'CODE_OF_CONDUCT.rst',
+      'CODE_OF_CONDUCT.txt',
+      'CODE_OF_CONDUCT',
+      'code_of_conduct.md',
+      'code_of_conduct.rst',
+      'code_of_conduct.txt',
+      'code_of_conduct',
+      'COC.md',
+      'COC.rst',
+      'COC.txt',
+      'COC',
+      'coc.md',
+      'coc.rst',
+      'coc.txt',
+      'coc',
+      '.gitlab/CODE_OF_CONDUCT.md',
+      '.gitlab/COC.md',
+      'docs/CODE_OF_CONDUCT.md',
+      'docs/COC.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'codeofconduct',
+      cocFiles,
+      'Code of conduct not found for this GitLab project',
     );
   }
 

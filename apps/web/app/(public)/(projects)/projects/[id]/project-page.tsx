@@ -8,9 +8,11 @@ import {
   Clock,
   DollarSign,
   ExternalLink,
+  FileText,
   GitFork,
   GitMerge,
   GitPullRequest,
+  Heart,
   Star,
   Tag,
   Users,
@@ -29,6 +31,7 @@ import Link from '@workspace/ui/components/link';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
+import { MarkdownContent } from './markdown-content';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -109,6 +112,36 @@ export default function ProjectPage({ id }: { id: string }) {
           retry: false,
         },
       ),
+      trpc.repository.getReadme.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
+      trpc.repository.getContributing.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
+      trpc.repository.getCodeOfConduct.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
     ],
   });
 
@@ -147,6 +180,9 @@ export default function ProjectPage({ id }: { id: string }) {
   const contributors = otherQueries[0].data;
   const issues = otherQueries[1].data;
   const pullRequests = otherQueries[2].data;
+  const readme = otherQueries[3].data;
+  const contributing = otherQueries[4].data;
+  const codeOfConduct = otherQueries[5].data;
   const otherDataLoading = otherQueries.some((query) => query.isLoading);
 
   if (otherDataLoading) {
@@ -177,8 +213,13 @@ export default function ProjectPage({ id }: { id: string }) {
             <ProjectDescription isOwner={isOwner} project={project} repo={repo} />
 
             <div className="">
-              <Tabs defaultValue="issues" className="w-full">
-                <TabsList className="bg-neutral-900/0 p-0">
+              <Tabs defaultValue="readme" className="w-full">
+                <TabsList className="bg-neutral-900/0 p-0 mb-2">
+                  <TabsTrigger value="readme" className="rounded-none text-sm">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">README</span>
+                    <span className="sm:hidden">README</span>
+                  </TabsTrigger>
                   <TabsTrigger value="issues" className="rounded-none text-sm">
                     <AlertCircle className="h-4 w-4" />
                     <span className="hidden sm:inline">Issues</span>
@@ -189,7 +230,37 @@ export default function ProjectPage({ id }: { id: string }) {
                     <span className="hidden sm:inline">Pull Requests</span>
                     <span className="sm:hidden">PRs</span>
                   </TabsTrigger>
+                  <TabsTrigger value="contributing" className="rounded-none text-sm">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Contributing</span>
+                    <span className="sm:hidden">Contributing</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="code-of-conduct" className="rounded-none text-sm">
+                    <Heart className="h-4 w-4" />
+                    <span className="hidden sm:inline">Code of Conduct</span>
+                    <span className="sm:hidden">CoC</span>
+                  </TabsTrigger>
                 </TabsList>
+                <TabsContent value="readme">
+                  {readme ? (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <MarkdownContent content={readme.content} encoding={readme.encoding} />
+                    </div>
+                  ) : (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No README found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          A README file typically contains information about the project, how to install and use it, and other important details for users and contributors.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: README.md, README.rst, README.txt
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
                 <TabsContent value="issues">
                   {/* TODO: fix this */}
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -397,6 +468,46 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <p className="text-sm text-neutral-400">No pull requests</p>
+                  )}
+                </TabsContent>
+                <TabsContent value="contributing">
+                  {contributing ? (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <MarkdownContent content={contributing.content} encoding={contributing.encoding} />
+                    </div>
+                  ) : (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="text-center py-8">
+                        <Users className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No contributing guidelines found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          Contributing guidelines help new contributors understand how to participate in the project, including coding standards, pull request processes, and community expectations.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md, docs/CONTRIBUTING.md
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="code-of-conduct">
+                  {codeOfConduct ? (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <MarkdownContent content={codeOfConduct.content} encoding={codeOfConduct.encoding} />
+                    </div>
+                  ) : (
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="text-center py-8">
+                        <Heart className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No code of conduct found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          A code of conduct establishes community standards, outlines expected behavior, and provides guidelines for creating a welcoming and inclusive environment for all contributors.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: CODE_OF_CONDUCT.md, COC.md, .github/CODE_OF_CONDUCT.md
+                        </p>
+                      </div>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>

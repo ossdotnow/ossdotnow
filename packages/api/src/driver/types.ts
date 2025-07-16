@@ -103,6 +103,20 @@ export interface PullRequestData {
   [key: string]: any;
 }
 
+export interface FileData {
+  content: string;
+  encoding: 'base64' | 'utf8';
+  name: string;
+  path: string;
+  size: number;
+  download_url?: string;
+  html_url?: string;
+}
+
+export type ReadmeData = FileData;
+export type ContributingData = FileData;
+export type CodeOfConductData = FileData;
+
 export interface UserPullRequestData extends PullRequestData {
   repository: {
     nameWithOwner: string;
@@ -170,6 +184,9 @@ export interface GitManager {
   getContributors(identifier: string): Promise<ContributorData[]>;
   getIssues(identifier: string): Promise<IssueData[]>;
   getPullRequests(identifier: string): Promise<PullRequestData[]>;
+  getReadme(identifier: string): Promise<ReadmeData>;
+  getContributing(identifier: string): Promise<ContributingData>;
+  getCodeOfConduct(identifier: string): Promise<CodeOfConductData>;
   getUserPullRequests(
     username: string,
     options?: {
