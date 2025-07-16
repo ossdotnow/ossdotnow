@@ -1,37 +1,34 @@
 'use client';
 
-import { Form, FormField } from '@workspace/ui/components/form';
-import { Separator } from '@workspace/ui/components/separator';
+import LoadingSpinner from '@/components/loading-spinner';
 import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
-import Link from '@workspace/ui/components/link';
+import { ComponentProps, useState } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
-import { env } from '@workspace/env/server';
-import { useForm } from 'react-hook-form';
-import { loginForm } from '@/forms/index';
-import { ComponentProps } from 'react';
+import { env } from '@workspace/env/client';
 import { toast } from 'sonner';
-import { z } from 'zod/v4';
 
 export function LoginForm({
   className,
   redirectUrl = '/',
   ...props
 }: ComponentProps<'div'> & { redirectUrl?: string }) {
-  const form = useForm<z.infer<typeof loginForm>>({
-    resolver: zodResolver(loginForm),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+  const [isLoading, setIsLoading] = useState({
+    loading: false,
+    provider: null as ProviderId | null,
   });
+  // const form = useForm<z.infer<typeof loginForm>>({
+  //   resolver: zodResolver(loginForm),
+  //   defaultValues: {
+  //     email: '',
+  //     password: '',
+  //   },
+  // });
 
   const signInWithProvider = async (providerId: ProviderId) => {
-    if (env.NODE_ENV === 'production') {
+    if (env.NEXT_PUBLIC_VERCEL_ENV === 'production') {
       toast.error('This feature is not available in production');
       return;
     }
@@ -43,10 +40,17 @@ export function LoginForm({
       },
       {
         onRequest: () => {
-          toast.loading(`Redirecting to ${providerId}...`);
+          setIsLoading({
+            loading: true,
+            provider: providerId,
+          });
         },
-        onResponse: () => {
-          toast.success('Signed in successfully');
+        onError: (error) => {
+          console.error(error);
+          setIsLoading({
+            loading: false,
+            provider: null,
+          });
         },
       },
     );
@@ -57,7 +61,7 @@ export function LoginForm({
       className={cn('z-10 flex w-full max-w-sm flex-col items-center gap-6', className)}
       {...props}
     >
-      <Form {...form}>
+      {/* <Form {...form}>
         <form
           className="flex min-w-sm flex-col gap-4"
           onSubmit={(e) => {
@@ -115,15 +119,36 @@ export function LoginForm({
           orientation="horizontal"
         />
       </div>
-
+*/}
       <div className="flex w-full flex-col gap-2">
         <Button
           type="button"
           className="border-border rounded-none border py-2 text-base transition-all"
           variant="outline"
           onClick={() => signInWithProvider('github')}
+          disabled={isLoading.loading}
         >
-          <Icons.github className="h-4 w-4 fill-white" /> Login with Github
+          {isLoading.loading && isLoading.provider === 'github' ? (
+            <LoadingSpinner className="h-4 w-4" />
+          ) : (
+            <Icons.github className="h-4 w-4" />
+          )}
+          Login with Github
+        </Button>
+
+        <Button
+          type="button"
+          className="border-border rounded-none border py-2 text-base transition-all"
+          variant="outline"
+          onClick={() => signInWithProvider('gitlab')}
+          disabled={isLoading.loading}
+        >
+          {isLoading.loading && isLoading.provider === 'gitlab' ? (
+            <LoadingSpinner className="h-4 w-4" />
+          ) : (
+            <Icons.gitlab className="h-4 w-4" />
+          )}
+          Login with Gitlab
         </Button>
       </div>
     </div>

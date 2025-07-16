@@ -1,5 +1,5 @@
 import { project, user, waitlist } from '@workspace/db/schema';
-import { createTRPCRouter, adminProcedure } from '../trpc';
+import { adminProcedure, createTRPCRouter } from '../trpc';
 import { count, desc, eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 

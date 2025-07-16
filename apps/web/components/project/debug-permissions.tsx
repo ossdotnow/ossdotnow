@@ -6,18 +6,29 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-export function DebugGitHubPermissions({ repoUrl }: { repoUrl: string }) {
+export function DebugGitHubPermissions({
+  repoUrl,
+  projectId,
+}: {
+  repoUrl: string;
+  projectId: string;
+}) {
   const [showDebug, setShowDebug] = useState(false);
   const trpc = useTRPC();
 
   const { data, isLoading, refetch, error } = useQuery({
-    ...trpc.projects.debugGitHubPermissions.queryOptions({ repoUrl }),
+    ...trpc.projects.debugRepositoryPermissions.queryOptions({ repoUrl, projectId }),
     enabled: showDebug,
   });
 
   if (!showDebug) {
     return (
-      <Button variant="outline" size="sm" onClick={() => setShowDebug(true)} className="mt-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setShowDebug(true)}
+        className="mt-2 rounded-none"
+      >
         Debug GitHub Permissions
       </Button>
     );
@@ -45,10 +56,15 @@ export function DebugGitHubPermissions({ repoUrl }: { repoUrl: string }) {
       ) : null}
 
       <div className="mt-2 flex gap-2">
-        <Button size="sm" variant="outline" onClick={() => refetch()}>
+        <Button size="sm" variant="outline" className="rounded-none" onClick={() => refetch()}>
           Refresh
         </Button>
-        <Button size="sm" variant="outline" onClick={() => setShowDebug(false)}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="rounded-none"
+          onClick={() => setShowDebug(false)}
+        >
           Hide
         </Button>
       </div>

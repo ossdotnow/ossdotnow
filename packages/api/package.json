@@ -12,13 +12,14 @@
   },
   "peerDependencies": {
     "@trpc/server": "^11.4.2",
-    "better-auth": "1.2.9-beta.8",
+    "better-auth": "^1.2.10",
     "next": "^15",
     "server-only": "^0.0.1",
     "superjson": "^2.2.2",
     "zod": "^3.24.4"
   },
   "dependencies": {
+    "@gitbeaker/rest": "^42.5.0",
     "@octokit/core": "^7.0.2",
     "@octokit/plugin-rest-endpoint-methods": "^16.0.0",
     "@upstash/ratelimit": "^2.0.5",

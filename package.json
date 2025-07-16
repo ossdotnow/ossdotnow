@@ -1,10 +1,11 @@
 {
-  "name": "shadcn-ui-monorepo",
+  "name": "ossdotnow",
   "version": "0.0.1",
   "private": true,
   "scripts": {
     "build": "dotenv -- turbo run build",
     "dev": "dotenv -- turbo run dev",
+    "start": "dotenv -- turbo run start",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "docker:up": "docker-compose up -d",
@@ -13,9 +14,12 @@
     "db:generate": "turbo run db:generate",
     "db:migrate": "dotenv -- turbo run db:migrate",
     "db:push": "dotenv -- turbo run db:push",
-    "db:studio": "dotenv -- turbo run db:studio"
+    "db:studio": "dotenv -- turbo run db:studio",
+    "db:seed": "dotenv -- turbo run db:seed",
+    "db:make-all-admin": "dotenv -- turbo run db:make-all-admin"
   },
   "devDependencies": {
+    "@types/minimatch": "^6.0.0",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "dotenv-cli": "^8.0.0",
