@@ -11,10 +11,19 @@ import {
 import { Button } from '@workspace/ui/components/button';
 import SubmissionForm from './submission-form';
 import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function EarlySubmissionDialog() {
+  const [open, setOpen] = useState(false);
+
+  const handleSuccess = () => {
+    toast.success('Project submitted successfully! We\'ll review it and get back to you soon.');
+    setOpen(false);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2 rounded-none">
           <span>Early Submission</span>
@@ -26,7 +35,7 @@ export default function EarlySubmissionDialog() {
           <DialogTitle>Early Submission</DialogTitle>
           <DialogDescription>Submit your open source project for early access.</DialogDescription>
         </DialogHeader>
-        <SubmissionForm />
+        <SubmissionForm earlySubmission={true} onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );

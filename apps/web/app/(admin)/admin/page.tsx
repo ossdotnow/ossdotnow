@@ -6,7 +6,6 @@ import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
 import { useQuery } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
-import NumberFlow from '@number-flow/react';
 import { useTRPC } from '@/hooks/use-trpc';
 
 function useDashboard() {
@@ -39,9 +38,7 @@ export default function AdminDashboard() {
             <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              <NumberFlow value={data?.counts.users || 0} />
-            </div>
+            <div className="text-2xl font-bold">{data?.counts.users || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -50,9 +47,7 @@ export default function AdminDashboard() {
             <Folder className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              <NumberFlow value={data?.counts.projects || 0} />
-            </div>
+            <div className="text-2xl font-bold">{data?.counts.projects || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -61,9 +56,7 @@ export default function AdminDashboard() {
             <Clock className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              <NumberFlow value={data?.counts.pendingProjects || 0} />
-            </div>
+            <div className="text-2xl font-bold">{data?.counts.pendingProjects || 0}</div>
           </CardContent>
         </Card>
         <Card>
@@ -72,9 +65,7 @@ export default function AdminDashboard() {
             <AlertCircle className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              <NumberFlow value={data?.counts.earlyAccess || 0} />
-            </div>
+            <div className="text-2xl font-bold">{data?.counts.earlyAccess || 0}</div>
           </CardContent>
         </Card>
       </div>

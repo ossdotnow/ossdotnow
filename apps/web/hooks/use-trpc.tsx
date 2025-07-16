@@ -3,13 +3,11 @@
 import { createTRPCClient, httpBatchStreamLink, loggerLink } from '@trpc/client';
 import { createTRPCContext } from '@trpc/tanstack-react-query';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { getQueryClient } from '@/lib/query-client';
 import { useState, type ReactNode } from 'react';
-import superjson from 'superjson';
-
 import type { AppRouter } from '@workspace/api';
 import { env } from '@workspace/env/client';
-
-import { getQueryClient } from '@/lib/query-client';
+import superjson from 'superjson';
 
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
@@ -34,7 +32,7 @@ export function TRPCReactProvider(props: Readonly<TRPCReactProviderProps>) {
       links: [
         loggerLink({
           enabled: (op) =>
-            env.NEXT_PUBLIC_ENV === 'development' ||
+            env.NEXT_PUBLIC_VERCEL_ENV === 'development' ||
             (op.direction === 'down' && op.result instanceof Error),
         }),
         httpBatchStreamLink({

@@ -1,4 +1,3 @@
-import { PoweredByNeon } from '@/components/layout/powered-by-neon';
 import { SiteHeader } from '@/components/layout/site-header';
 
 export default function RootLayout({
@@ -10,7 +9,6 @@ export default function RootLayout({
     <main>
       <SiteHeader />
       {children}
-      <PoweredByNeon />
     </main>
   );
 }

@@ -1,4 +1,4 @@
-name: ossdotnow
+version: '3.8'
 
 services:
   db:
@@ -20,6 +20,22 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+      - '6379:6379'
+
+  serverless-redis-http:
+    ports:
+      - '8079:80'
+    image: hiett/serverless-redis-http:latest
+    restart: always
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: password
+      SRH_CONNECTION_STRING: 'redis://redis:6379' # Using `redis` hostname since they're in the same Docker network.
 
 volumes:
   postgres_data:

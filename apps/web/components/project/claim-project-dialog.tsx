@@ -10,16 +10,24 @@ import {
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@workspace/ui/components/alert';
-import { Loader2, Shield, AlertCircle, CheckCircle, Github } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 import { DebugGitHubPermissions } from './debug-permissions';
+import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export function ClaimProjectDialog({ projectId }: { projectId: string }) {
+export function ClaimProjectDialog({
+  projectId,
+  provider,
+}: {
+  projectId: string;
+  provider: (typeof projectProviderEnum.enumValues)[number];
+}) {
   const [open, setOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -56,17 +64,31 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
   };
 
   if (!claimStatus?.canClaim) {
-    if (claimStatus?.needsGitHubAuth) {
+    if (claimStatus?.needsAuth) {
       return (
-        <Button variant="default" size="sm" className="gap-2" asChild>
+        <Button variant="default" size="sm" className="gap-2 rounded-none" asChild>
           <Link href="/login" event="claim_project_dialog_connect_github_button_clicked">
-            <Github className="h-4 w-4" />
-            Connect GitHub to Claim
+            {provider === 'github' ? (
+              <>
+                <Icons.github className="h-4 w-4" />
+                Connect GitHub to Claim
+              </>
+            ) : (
+              <>
+                <Icons.gitlab className="h-4 w-4" />
+                Connect GitLab to Claim
+              </>
+            )}
           </Link>
         </Button>
       );
     }
-    return null;
+    return (
+      <Button variant="outline" size="sm" className="gap-2 rounded-none">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading...
+      </Button>
+    );
   }
 
   return (
@@ -87,7 +109,7 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
 
         <div className="space-y-4 py-4">
           <Alert className="rounded-none">
-            <Github className="h-4 w-4" />
+            <Icons.github className="h-4 w-4" />
             <AlertTitle>Repository</AlertTitle>
             <AlertDescription>
               <code className="bg-muted rounded-none px-1 py-0.5 font-mono text-sm">
@@ -110,13 +132,13 @@ export function ClaimProjectDialog({ projectId }: { projectId: string }) {
 
           {error && (
             <>
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Verification Failed</AlertTitle>
-                <AlertDescription>{error.message}</AlertDescription>
+              <Alert variant="destructive" className="rounded-none">
+                <AlertCircle className="h-4 w-4 !text-red-500" />
+                <AlertTitle className="text-red-500">Verification Failed</AlertTitle>
+                <AlertDescription className="!text-red-500">{error.message}</AlertDescription>
               </Alert>
               {claimStatus.gitRepoUrl && (
-                <DebugGitHubPermissions repoUrl={claimStatus.gitRepoUrl} />
+                <DebugGitHubPermissions repoUrl={claimStatus.gitRepoUrl} projectId={projectId} />
               )}
             </>
           )}

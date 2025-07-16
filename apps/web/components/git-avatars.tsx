@@ -2,56 +2,39 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
 import Link from '@workspace/ui/components/link';
-import { motion } from 'motion/react';
-
-const MotionComponent = motion.create(TooltipTrigger);
 
 export default function GitAvatars() {
   return (
-    <motion.div
-      className="bg-background group mt-8 flex items-center rounded-full border p-2 shadow-sm"
-      whileHover="hover"
-    >
+    <div className="bg-background group mt-8 flex items-center rounded-none border p-2 shadow-sm">
       <div className="flex justify-center">
         {projects.map((project, index) => (
           <Tooltip key={project.name}>
-            <MotionComponent
-              initial={{
-                x: 0,
-                marginLeft: index === 0 ? '0rem' : '-0.6rem',
-                height: '32px',
-                width: '32px',
-              }}
-              variants={{
-                hover: { marginLeft: '0.2rem', height: '36px', width: '36px' },
-              }}
-              transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+            <div
+              className={`flex h-9 w-9 items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${
+                index === 0 ? 'ml-0' : '-ml-2.5'
+              } group-hover:ml-0.5`}
             >
-              <Link
-                href={project.url}
-                target="_blank"
-                rel="noreferrer noopener"
-                event={`${project.name}_clicked`}
-              >
-                <img className="ring-background rounded-full ring-1" src={project.avatar} />
-              </Link>
-            </MotionComponent>
+              <TooltipTrigger className="h-8 w-8 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:h-9 group-hover:w-9">
+                <Link
+                  href={project.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  event={`${project.name}_clicked`}
+                >
+                  <img className="ring-background rounded-full ring-1" src={project.avatar} />
+                </Link>
+              </TooltipTrigger>
+            </div>
             <TooltipContent>
               <p>{project.name}</p>
             </TooltipContent>
           </Tooltip>
         ))}
       </div>
-      <motion.span
-        className="text-muted-foreground pointer-events-none px-3 text-xs md:text-sm"
-        initial={{ opacity: 1 }}
-        variants={{
-          hover: { opacity: 0.7 },
-        }}
-      >
+      <span className="text-muted-foreground pointer-events-none px-3 text-xs opacity-100 transition-opacity duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:opacity-70 md:text-sm">
         Join these awesome oss projects
-      </motion.span>
-    </motion.div>
+      </span>
+    </div>
   );
 }
 
