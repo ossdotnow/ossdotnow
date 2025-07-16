@@ -180,16 +180,17 @@ export const projectsRouter = createTRPCRouter({
           orderByClause.push(asc(project.name));
           break;
         case 'stars':
-          // TODO: Add stars count to project data
+          // TODO: Implement stars sorting once project stars data is available
+          // This requires fetching stars count from GitHub/GitLab APIs and storing in database
           // For now, fallback to recent
           orderByClause.push(desc(project.createdAt));
           break;
         case 'forks':
-          // TODO: Add forks count to project data
+          // TODO: Implement forks sorting once project forks data is available
+          // This requires fetching forks count from GitHub/GitLab APIs and storing in database
           // For now, fallback to recent
           orderByClause.push(desc(project.createdAt));
           break;
-        case 'recent':
         default:
           orderByClause.push(desc(project.createdAt));
           break;

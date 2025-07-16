@@ -277,10 +277,6 @@ export default function SubmissionForm({
           }),
         );
 
-        console.log('result', result);
-        console.log('result.isPrivate:', result.isPrivate);
-        console.log('typeof result.isPrivate:', typeof result.isPrivate);
-
         if (result) {
           try {
             const duplicateCheck = await queryClient.fetchQuery(
