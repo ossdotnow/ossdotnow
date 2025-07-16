@@ -356,7 +356,16 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <p className="text-sm text-neutral-400">No README found</p>
+                      <div className="text-center py-8">
+                        <FileText className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No README found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          A README file typically contains information about the project, how to install and use it, and other important details for users and contributors.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: README.md, README.rst, README.txt
+                        </p>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -682,7 +691,16 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <p className="text-sm text-neutral-400">No contributing guidelines found</p>
+                      <div className="text-center py-8">
+                        <Users className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No contributing guidelines found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          Contributing guidelines help new contributors understand how to participate in the project, including coding standards, pull request processes, and community expectations.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md, docs/CONTRIBUTING.md
+                        </p>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -799,7 +817,16 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <p className="text-sm text-neutral-400">No code of conduct found</p>
+                      <div className="text-center py-8">
+                        <Heart className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No code of conduct found</h3>
+                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
+                          A code of conduct establishes community standards, outlines expected behavior, and provides guidelines for creating a welcoming and inclusive environment for all contributors.
+                        </p>
+                        <p className="text-xs text-neutral-500">
+                          Common filenames: CODE_OF_CONDUCT.md, COC.md, .github/CODE_OF_CONDUCT.md
+                        </p>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
