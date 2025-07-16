@@ -4,6 +4,7 @@ import {
   ContributorData,
   IssueData,
   PullRequestData,
+  ReadmeData,
   GitManagerConfig,
   ContributionData,
   UserData,
@@ -165,6 +166,31 @@ export class GithubManager implements GitManager {
         }));
       },
       { ttl: 10 * 60 },
+    );
+  }
+
+  async getReadme(identifier: string): Promise<ReadmeData> {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('github', 'readme', identifier),
+      async () => {
+        const { data } = await this.octokit.rest.repos.getReadme({
+          owner,
+          repo,
+        });
+        
+        return {
+          content: data.content,
+          encoding: data.encoding as 'base64' | 'utf8',
+          name: data.name,
+          path: data.path,
+          size: data.size,
+          download_url: data.download_url || undefined,
+          html_url: data.html_url || undefined,
+        };
+      },
+      { ttl: 60 * 60 },
     );
   }
 

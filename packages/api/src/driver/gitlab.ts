@@ -5,6 +5,7 @@ import {
   GitManagerConfig,
   IssueData,
   PullRequestData,
+  ReadmeData,
   RepoData,
   UserData,
   UserPullRequestData,
@@ -204,6 +205,28 @@ export class GitlabManager implements GitManager {
         }));
       },
       { ttl: 10 * 60 },
+    );
+  }
+
+  async getReadme(identifier: string): Promise<ReadmeData> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'readme', identifier),
+      async () => {
+        const file = await this.gitlab.RepositoryFiles.show(identifier, 'README.md', 'main');
+        
+        return {
+          content: file.content,
+          encoding: file.encoding as 'base64' | 'utf8',
+          name: file.file_name || 'README.md',
+          path: file.file_path || 'README.md',
+          size: file.size,
+          download_url: undefined,
+          html_url: undefined,
+        };
+      },
+      { ttl: 60 * 60 },
     );
   }
 

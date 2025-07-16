@@ -103,6 +103,16 @@ export interface PullRequestData {
   [key: string]: any;
 }
 
+export interface ReadmeData {
+  content: string;
+  encoding: 'base64' | 'utf8';
+  name: string;
+  path: string;
+  size: number;
+  download_url?: string;
+  html_url?: string;
+}
+
 export interface UserPullRequestData extends PullRequestData {
   repository: {
     nameWithOwner: string;
@@ -170,6 +180,7 @@ export interface GitManager {
   getContributors(identifier: string): Promise<ContributorData[]>;
   getIssues(identifier: string): Promise<IssueData[]>;
   getPullRequests(identifier: string): Promise<PullRequestData[]>;
+  getReadme(identifier: string): Promise<ReadmeData>;
   getUserPullRequests(
     username: string,
     options?: {
