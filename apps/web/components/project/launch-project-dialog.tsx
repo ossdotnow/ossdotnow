@@ -18,12 +18,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@workspace/ui/components/form';
+import { Rocket, Loader2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Rocket, Loader2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
@@ -53,7 +53,7 @@ export function LaunchProjectDialog({
   projectName,
   isRepoPrivate,
   gitRepoUrl,
-  gitHost
+  gitHost,
 }: LaunchProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
@@ -71,7 +71,7 @@ export function LaunchProjectDialog({
   const refreshRepoStatusMutation = useMutation(
     trpc.projects.refreshRepoStatus.mutationOptions({
       onSuccess: (data) => {
-                // Always invalidate queries to ensure fresh data
+        // Always invalidate queries to ensure fresh data
         queryClient.invalidateQueries({
           queryKey: trpc.projects.getProject.queryKey({ id: projectId }),
         });
@@ -124,7 +124,7 @@ export function LaunchProjectDialog({
     });
   };
 
-      const getRepoSettingsUrl = () => {
+  const getRepoSettingsUrl = () => {
     if (!gitRepoUrl || !gitHost) return '';
 
     try {
@@ -155,7 +155,9 @@ export function LaunchProjectDialog({
       console.error('Failed to parse repository URL:', e);
 
       // Fallback: try to extract owner/repo from the URL string
-      const match = gitRepoUrl.match(/(?:github\.com|gitlab\.com)[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/);
+      const match = gitRepoUrl.match(
+        /(?:github\.com|gitlab\.com)[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/,
+      );
       if (match) {
         const [, owner, repo] = match;
         if (gitHost === 'github') {
@@ -177,7 +179,7 @@ export function LaunchProjectDialog({
   // Private Repository Dialog
   const PrivateRepoDialog = () => (
     <Dialog open={privateRepoDialogOpen} onOpenChange={setPrivateRepoDialogOpen}>
-      <DialogContent className="sm:max-w-[500px] rounded-none">
+      <DialogContent className="rounded-none sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-yellow-500" />
@@ -189,24 +191,24 @@ export function LaunchProjectDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-none p-4">
-            <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+          <div className="rounded-none border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
+            <h4 className="mb-2 font-medium text-yellow-800 dark:text-yellow-200">
               Why does my repository need to be public?
             </h4>
-            <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+            <ul className="space-y-1 text-sm text-yellow-700 dark:text-yellow-300">
               <li>• Community members can discover and contribute to your project</li>
               <li>• Ensures transparency and builds trust with users</li>
-              <li>• Allows proper validation of your project's authenticity</li>
+              <li>• Allows proper validation of your project&apos;s authenticity</li>
             </ul>
           </div>
 
           <div className="space-y-2">
             <h4 className="font-medium">How to make your repository public:</h4>
-            <ol className="text-sm text-muted-foreground space-y-1">
+            <ol className="text-muted-foreground space-y-1 text-sm">
               <li>1. Go to your repository settings</li>
-              <li>2. Scroll down to the "Danger Zone" section</li>
-              <li>3. Click "Change visibility" and select "Public"</li>
-              <li>4. Come back here and click "Check Status" to retry</li>
+              <li>2. Scroll down to the &quot;Danger Zone&quot; section</li>
+              <li>3. Click &quot;Change visibility&quot; and select &quot;Public&quot;</li>
+              <li>4. Come back here and click &quot;Check Status&quot; to retry</li>
             </ol>
           </div>
         </div>
@@ -272,7 +274,7 @@ export function LaunchProjectDialog({
               Launch Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] rounded-none">
+          <DialogContent className="rounded-none sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Launch {projectName}</DialogTitle>
               <DialogDescription>
@@ -289,7 +291,11 @@ export function LaunchProjectDialog({
                     <FormItem>
                       <FormLabel>Tagline</FormLabel>
                       <FormControl>
-                        <Input placeholder="A short, catchy description of your project" {...field} className="rounded-none" />
+                        <Input
+                          placeholder="A short, catchy description of your project"
+                          {...field}
+                          className="rounded-none"
+                        />
                       </FormControl>
                       <FormDescription>
                         This will be the first thing people see about your project
@@ -321,10 +327,19 @@ export function LaunchProjectDialog({
                 />
 
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setOpen(false)} className="rounded-none">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setOpen(false)}
+                    className="rounded-none"
+                  >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={launchMutation.isPending} className="rounded-none">
+                  <Button
+                    type="submit"
+                    disabled={launchMutation.isPending}
+                    className="rounded-none"
+                  >
                     {launchMutation.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin rounded-none" />

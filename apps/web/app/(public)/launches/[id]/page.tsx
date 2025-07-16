@@ -5,7 +5,6 @@ import { ArrowUp, ExternalLink, Flag, Loader2, MessageCircle, Send, Share2 } fro
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Separator } from '@workspace/ui/components/separator';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
