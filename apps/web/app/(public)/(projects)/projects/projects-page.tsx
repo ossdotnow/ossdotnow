@@ -13,6 +13,20 @@ import { useQuery } from '@tanstack/react-query';
 import { Filter, Search } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import ProjectCard from './project-card';
+import { useInView } from 'react-intersection-observer';
+
+function VirtualizedProjectCard({ project }: { project: any }) {
+  const { ref, inView } = useInView({
+    rootMargin: '400px 0px',
+    triggerOnce: false,
+  });
+  const CARD_HEIGHT = 160;
+  return (
+    <div ref={ref} style={{ minHeight: CARD_HEIGHT }}>
+      {inView ? <ProjectCard project={project} /> : <div style={{ height: CARD_HEIGHT }} />}
+    </div>
+  );
+}
 
 export default function ProjectsPage() {
   const trpc = useTRPC();
@@ -67,7 +81,7 @@ export default function ProjectsPage() {
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <VirtualizedProjectCard key={project.id} project={project} />
           ))}
         </div>
       </div>

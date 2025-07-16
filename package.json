@@ -37,5 +37,8 @@
   "trustedDependencies": [
     "@tailwindcss/oxide",
     "core-js-pure"
-  ]
+  ],
+  "dependencies": {
+    "react-intersection-observer": "^9.16.0"
+  }
 }
