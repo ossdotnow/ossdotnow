@@ -1,0 +1,65 @@
+name: Bug Report
+description: Report a bug to help us improve
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this issue! Please provide as much detail as possible.
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen
+      placeholder: |
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we recreate this issue?
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. See error
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: How severe is this bug?
+      options:
+        - Minor (cosmetic issue)
+        - Moderate (feature partially broken)
+        - Major (feature completely broken)
+        - Critical (app crashes/data loss)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, or any other relevant info
+      placeholder: |
+        - Browser: Chrome 120
+        - OS: macOS 14.0
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs (if any)
+      description: Please paste any relevant error messages
+      render: shell
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots/Videos
+      description: Drag and drop images or videos here to help explain the issue
