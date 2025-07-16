@@ -964,60 +964,152 @@ export const projectsRouter = createTRPCRouter({
         });
       }
 
-      // Fetch current repository status
-      if (foundProject.gitHost && foundProject.gitRepoUrl) {
-        try {
-          const driver = await getActiveDriver(foundProject.gitHost as 'github' | 'gitlab', ctx as Context);
+      // Early validation: Check if project has required repository fields
+      if (!foundProject.gitHost || !foundProject.gitRepoUrl) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Project must have both gitHost and gitRepoUrl configured to refresh repository status',
+        });
+      }
 
-          // Extract owner/repo from the URL using the pattern
-          const match = foundProject.gitRepoUrl.match(PROVIDER_URL_PATTERNS[foundProject.gitHost as keyof typeof PROVIDER_URL_PATTERNS]);
-          if (!match) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Invalid ${foundProject.gitHost} repository URL format`,
-            });
-          }
+      // Validate gitHost is supported
+      const supportedHosts = ['github', 'gitlab'] as const;
+      if (!supportedHosts.includes(foundProject.gitHost as any)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Unsupported git host: ${foundProject.gitHost}. Supported hosts: ${supportedHosts.join(', ')}`,
+        });
+      }
 
-          const [, owner, repo] = match;
-          const repoIdentifier = `${owner}/${repo}`;
-          const repoData = await driver.getRepo(repoIdentifier);
-          const isRepoPrivate = repoData.isPrivate || false;
+      // Validate repository URL format early
+      const urlPattern = PROVIDER_URL_PATTERNS[foundProject.gitHost as keyof typeof PROVIDER_URL_PATTERNS];
+      if (!urlPattern) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `No URL pattern configured for git host: ${foundProject.gitHost}`,
+        });
+      }
 
-          // Update the project's privacy status if it has changed
-          if (foundProject.isRepoPrivate !== isRepoPrivate) {
-            await ctx.db
-              .update(project)
-              .set({
-                isRepoPrivate,
-                updatedAt: new Date(),
-              })
-              .where(eq(project.id, input.projectId));
+      const match = foundProject.gitRepoUrl.match(urlPattern);
+      if (!match) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Invalid ${foundProject.gitHost} repository URL format. Expected format: ${foundProject.gitHost === 'github' ? 'https://github.com/owner/repo' : 'https://gitlab.com/owner/repo'}`,
+        });
+      }
 
-            return {
-              success: true,
-              wasPrivate: foundProject.isRepoPrivate,
-              isNowPrivate: isRepoPrivate,
-              statusChanged: true,
-            };
-          }
+      const [, owner, repo] = match;
+      if (!owner || !repo) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Could not extract owner and repository name from URL',
+        });
+      }
+
+      const repoIdentifier = `${owner}/${repo}`;
+
+      try {
+        // Get the driver for the git host
+        const driver = await getActiveDriver(foundProject.gitHost as 'github' | 'gitlab', ctx as Context);
+
+        // Fetch repository data
+        const repoData = await driver.getRepo(repoIdentifier);
+        const isRepoPrivate = repoData.isPrivate || false;
+
+        // Update the project's privacy status if it has changed
+        if (foundProject.isRepoPrivate !== isRepoPrivate) {
+          await ctx.db
+            .update(project)
+            .set({
+              isRepoPrivate,
+              updatedAt: new Date(),
+            })
+            .where(eq(project.id, input.projectId));
 
           return {
             success: true,
             wasPrivate: foundProject.isRepoPrivate,
             isNowPrivate: isRepoPrivate,
-            statusChanged: false,
+            statusChanged: true,
           };
-        } catch (error) {
+        }
+
+        return {
+          success: true,
+          wasPrivate: foundProject.isRepoPrivate,
+          isNowPrivate: isRepoPrivate,
+          statusChanged: false,
+        };
+      } catch (error) {
+        // Log error details for debugging
+        console.error('Error refreshing repository status:', {
+          projectId: input.projectId,
+          gitHost: foundProject.gitHost,
+          gitRepoUrl: foundProject.gitRepoUrl,
+          repoIdentifier,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+
+        // Handle specific error types
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+
+        // Check for specific error conditions
+        if (error instanceof Error) {
+          // Repository not found or access denied
+          if (error.message.includes('Not Found') || error.message.includes('404')) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `Repository '${repoIdentifier}' not found or is inaccessible`,
+            });
+          }
+
+          // Authentication/authorization errors
+          if (error.message.includes('Unauthorized') || error.message.includes('401') || error.message.includes('403')) {
+            throw new TRPCError({
+              code: 'UNAUTHORIZED',
+              message: `Authentication failed for ${foundProject.gitHost}. Please check your credentials and permissions.`,
+            });
+          }
+
+          // Rate limiting errors
+          if (error.message.includes('rate limit') || error.message.includes('429')) {
+            throw new TRPCError({
+              code: 'TOO_MANY_REQUESTS',
+              message: `${foundProject.gitHost} rate limit exceeded. Please try again later.`,
+            });
+          }
+
+          // Network or connection errors
+          if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Network error connecting to ${foundProject.gitHost}. Please try again later.`,
+            });
+          }
+
+          // Driver initialization errors
+          if (error.message.includes('driver') || error.message.includes('Driver')) {
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Failed to initialize ${foundProject.gitHost} driver. Please contact support.`,
+            });
+          }
+
+          // Generic error with details
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to check repository status',
+            message: `Failed to refresh repository status: ${error.message}`,
           });
         }
-      }
 
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Project does not have repository information',
-      });
+        // Fallback for non-Error objects
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'An unexpected error occurred while refreshing repository status',
+        });
+      }
     }),
 });
