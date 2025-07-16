@@ -156,7 +156,7 @@ function ProjectItem({
       onClick={onClose}
       role="option"
       aria-label={project.name}
-      tabIndex={-1}
+      tabIndex={0}
       id={`project-${index}`}
     >
       <div className="relative h-8 w-8">

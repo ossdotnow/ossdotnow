@@ -1,7 +1,7 @@
 import React from 'react'
 import Search from '@/components/search-comp'
 
-const homepage = () => {
+const Homepage = () => {
   return (
     <div>
         <Search />
@@ -9,4 +9,4 @@ const homepage = () => {
   )
 }
 
-export default homepage
+export default Homepage
