@@ -38,6 +38,7 @@ export function MultiSelect({
   disabled = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const touchStartY = React.useRef<number | null>(null);
 
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
@@ -116,7 +117,36 @@ export function MultiSelect({
       >
         <Command className="w-full rounded-none">
           <CommandInput placeholder="Search..." />
-          <CommandList className="max-h-[200px] overflow-y-auto rounded-none">
+          <CommandList
+            className="max-h-[200px] overflow-y-auto rounded-none"
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              if (e.touches.length === 1 && e.touches[0]) {
+                touchStartY.current = e.touches[0].clientY;
+              }
+            }}
+            onTouchMove={(e) => {
+              if (
+                e.touches.length === 1 &&
+                e.touches[0] &&
+                touchStartY.current !== null
+              ) {
+                const el = e.currentTarget as HTMLDivElement;
+                const currentY = e.touches[0].clientY;
+                const diff = touchStartY.current - currentY;
+                const newScrollTop = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + diff));
+                el.scrollTop = newScrollTop;
+                touchStartY.current = currentY;
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            onTouchEnd={() => {
+              touchStartY.current = null;
+            }}
+          >
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
