@@ -29,6 +29,7 @@
     "better-auth": "^1.2.10",
     "date-fns": "^4.1.0",
     "drizzle-zod": "^0.8.2",
+    "js-base64": "^3.7.7",
     "lucide-react": "^0.518.0",
     "motion": "^12.18.1",
     "next": "^15.3.4",

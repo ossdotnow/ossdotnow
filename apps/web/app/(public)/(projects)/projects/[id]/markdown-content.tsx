@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize from 'rehype-sanitize';
 import Link from '@workspace/ui/components/link';
+import {Base64} from 'js-base64'
 
 interface MarkdownContentProps {
   content: string;
@@ -11,7 +12,7 @@ interface MarkdownContentProps {
 
 function decodeBase64Content(content: string): string {
   try {
-    return atob(content);
+    return Base64.decode(content);
   } catch (error) {
     console.error('Failed to decode base64 content:', error);
     return 'Error: Unable to decode content. The file may be corrupted or not properly encoded.';
@@ -40,7 +41,7 @@ const markdownComponents: Components = {
     </h4>
   ),
   p: ({ children }) => (
-    <p className="text-neutral-300 mb-4 leading-relaxed">
+    <p className="text-neutral-300  mb-4 inline leading-relaxed">
       {children}
     </p>
   ),
