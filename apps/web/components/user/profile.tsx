@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
+import ResponsiveNumber from '@/components/user/responsive-numbers';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -201,19 +202,21 @@ export default function ProfilePage({ id }: { id: string }) {
                           <div className="text-xs text-neutral-400">Projects</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">
-                            {(
+                          <ResponsiveNumber
+                            value={
                               projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
-                            ).toLocaleString()}
-                          </div>
+                            }
+                            className="text-2xl font-bold"
+                          />
                           <div className="text-xs text-neutral-400">Total Stars</div>
                         </div>
                         <div>
-                          <div className="text-2xl font-bold">
-                            {(
+                          <ResponsiveNumber
+                            value={
                               projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
-                            ).toLocaleString()}
-                          </div>
+                            }
+                            className="text-2xl font-bold"
+                          />
                           <div className="text-xs text-neutral-400">Total Forks</div>
                         </div>
                       </div>
