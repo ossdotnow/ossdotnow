@@ -131,14 +131,15 @@ export function MultiSelect({
               if (
                 e.touches.length === 1 &&
                 e.touches[0] &&
-                touchStartY.current !== null &&
-                typeof touchStartY.current === 'number'
+                touchStartY.current !== null
               ) {
                 const el = e.currentTarget as HTMLDivElement;
                 const currentY = e.touches[0].clientY;
                 const diff = touchStartY.current - currentY;
-                el.scrollTop += diff;
+                const newScrollTop = Math.max(0, Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + diff));
+                el.scrollTop = newScrollTop;
                 touchStartY.current = currentY;
+                e.preventDefault();
                 e.stopPropagation();
               }
             }}
