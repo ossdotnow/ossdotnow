@@ -38,6 +38,7 @@ export function MultiSelect({
   disabled = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const touchStartY = React.useRef<number | null>(null);
 
   const handleUnselect = (item: string) => {
     onChange(selected.filter((i) => i !== item));
@@ -120,6 +121,29 @@ export function MultiSelect({
             className="max-h-[200px] overflow-y-auto rounded-none"
             onWheel={(e) => {
               e.stopPropagation();
+            }}
+            onTouchStart={(e) => {
+              if (e.touches.length === 1 && e.touches[0]) {
+                touchStartY.current = e.touches[0].clientY;
+              }
+            }}
+            onTouchMove={(e) => {
+              if (
+                e.touches.length === 1 &&
+                e.touches[0] &&
+                touchStartY.current !== null &&
+                typeof touchStartY.current === 'number'
+              ) {
+                const el = e.currentTarget as HTMLDivElement;
+                const currentY = e.touches[0].clientY;
+                const diff = touchStartY.current - currentY;
+                el.scrollTop += diff;
+                touchStartY.current = currentY;
+                e.stopPropagation();
+              }
+            }}
+            onTouchEnd={() => {
+              touchStartY.current = null;
             }}
           >
             <CommandEmpty>No item found.</CommandEmpty>
