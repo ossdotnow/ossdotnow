@@ -116,7 +116,12 @@ export function MultiSelect({
       >
         <Command className="w-full rounded-none">
           <CommandInput placeholder="Search..." />
-          <CommandList className="max-h-[200px] overflow-y-auto rounded-none">
+          <CommandList
+            className="max-h-[200px] overflow-y-auto rounded-none"
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
+          >
             <CommandEmpty>No item found.</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
