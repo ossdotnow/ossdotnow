@@ -19,7 +19,7 @@ export default function SubmissionDialog() {
   const [open, setOpen] = useState(false);
 
   const handleSuccess = () => {
-    toast.success('Project submitted successfully! We\'ll review it and get back to you soon.');
+    toast.success("Project submitted successfully! We'll review it and get back to you soon.");
     setOpen(false);
   };
 

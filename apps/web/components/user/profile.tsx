@@ -222,7 +222,11 @@ export default function ProfilePage({ id }: { id: string }) {
                 </Card>
               )}
 
-              {profile?.id && <RecentActivity userId={profile.id} />}
+              {profile?.id && (
+                <div className="hidden lg:block">
+                  <RecentActivity userId={profile.id} />
+                </div>
+              )}
             </div>
 
             <div className="lg:col-span-8">
@@ -321,6 +325,11 @@ export default function ProfilePage({ id }: { id: string }) {
                 </TabsContent>
               </Tabs>
             </div>
+            {profile?.id && (
+              <div className="block lg:hidden">
+                <RecentActivity userId={profile.id} />
+              </div>
+            )}
           </div>
         </div>
       </div>
