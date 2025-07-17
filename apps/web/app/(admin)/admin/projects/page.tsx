@@ -171,7 +171,7 @@ export default function AdminProjectsDashboard() {
     },
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <div>Loading (Iza is best)...</div>;
   if (isError) return <div>Error</div>;
   if (!projectsData) return <div>No projects found</div>;
 

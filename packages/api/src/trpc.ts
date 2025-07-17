@@ -4,7 +4,6 @@ import { ZodError } from 'zod/v4';
 import 'server-only';
 
 import { auth } from '@workspace/auth/server';
-import { env } from '@workspace/env/server';
 import { db } from '@workspace/db';
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
