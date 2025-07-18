@@ -305,7 +305,6 @@ export default function ProfilePage({ id }: { id: string }) {
                   ) : null}
 
                   <div>
-                    <h2 className="mb-4 text-xl font-semibold">All Projects</h2>
                     <div className="space-y-4">
                       {projectsWithGithubData?.map((project) => (
                         <ProjectCard key={project.id} project={project} />

@@ -51,13 +51,10 @@ export default function ProjectCard({ project }: { project: Project }) {
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
           )}
           <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
             <h3 className="truncate text-sm font-semibold text-white md:text-base">
               {project.name}
             </h3>
-            <p className="mb-2 line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
-              {project.gitRepoUrl}
-            </p>
-
             {(project.isLookingForContributors || project.hasBeenAcquired) && (
               <div className="flex flex-wrap gap-1 md:gap-1.5">
                 {project.isLookingForContributors && (
@@ -72,12 +69,12 @@ export default function ProjectCard({ project }: { project: Project }) {
                 )}
               </div>
             )}
+            </div>
+            <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
+              {project.description}
+            </p>
           </div>
         </div>
-
-        <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
-          {project.description}
-        </p>
       </div>
 
       <div>
