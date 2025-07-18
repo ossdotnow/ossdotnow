@@ -26,7 +26,6 @@ import { Skeleton } from '@workspace/ui/components/skeleton';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Button } from '@workspace/ui/components/button';
 import { Badge } from '@workspace/ui/components/badge';
-import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';

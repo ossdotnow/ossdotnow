@@ -5,14 +5,12 @@ import {
   categoryProjectTypes,
   categoryTags,
   project,
-  projectApprovalStatusEnum,
 } from '@workspace/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { ArrowUpDown, CheckCircle, Edit, Eye, Pin, PinOff, XCircle } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '@/components/admin/projects-data-table';
 import { Button } from '@workspace/ui/components/button';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
@@ -26,13 +24,9 @@ type Project = typeof project.$inferSelect & {
   }>;
 };
 
-const approvalStatusTabs = [...projectApprovalStatusEnum.enumValues, 'all'] as const;
-const approvalStatusParser = parseAsStringEnum([...approvalStatusTabs]).withDefault('all');
-
 export default function AdminProjectsDashboard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [approvalStatus, setApprovalStatus] = useQueryState('approvalStatus', approvalStatusParser);
 
   const {
     data: projectsData,
