@@ -11,7 +11,11 @@ export const auth = betterAuth({
     provider: 'pg',
   }),
   secondaryStorage: secondaryStorage(),
-  plugins: [admin()],
+  plugins: [
+    admin({
+      adminRoles: ['admin', 'moderator'],
+    }),
+  ],
 
   socialProviders: {
     github: {

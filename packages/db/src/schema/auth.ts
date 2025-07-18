@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, boolean, integer } from 'drizzle-orm/pg-core';
+import { boolean, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { userRoleEnum } from './shared-enums';
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -14,7 +15,7 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at')
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
-  role: text('role'),
+  role: userRoleEnum('role').notNull().default('user'),
   banned: boolean('banned'),
   banReason: text('ban_reason'),
   banExpires: timestamp('ban_expires'),

@@ -1,30 +1,31 @@
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@workspace/ui/components/card';
-import { Edit, FolderPlus, Trash2, Search, Tag, Folder, Activity } from 'lucide-react';
+import { Edit, FolderPlus, Trash2, Tag, Folder, Activity, ArrowUpDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@workspace/ui/components/card';
 import { DeleteCategoryDialog } from '@/components/admin/delete-category-dialog';
+import { CategoriesDataTable } from '@/components/admin/categories-data-table';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { EditCategoryDialog } from '@/components/admin/edit-category-dialog';
 import { AddCategoryDialog } from '@/components/admin/add-category-dialog';
 import { Switch } from '@workspace/ui/components/switch';
 import { Button } from '@workspace/ui/components/button';
-import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
+import { ColumnDef } from '@tanstack/react-table';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
+
+type CategoryItem = {
+  id: string;
+  name: string;
+  displayName: string;
+  isActive: boolean;
+  sortOrder: number;
+};
 
 export default function AdminCategoriesDashboard() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const [searchTypes, setSearchTypes] = useState('');
-  const [searchTags, setSearchTags] = useState('');
-  const [searchStatuses, setSearchStatuses] = useState('');
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -165,18 +166,102 @@ export default function AdminCategoriesDashboard() {
     isError: statusesError,
   } = useQuery(trpc.categories.getProjectStatuses.queryOptions());
 
-  // Filter data based on search
-  const filteredTypes = (projectTypesData || []).filter((type) =>
-    type.name.toLowerCase().includes(searchTypes.toLowerCase()),
-  );
-
-  const filteredTags = (tagsData || []).filter((tag) =>
-    tag.name.toLowerCase().includes(searchTags.toLowerCase()),
-  );
-
-  const filteredStatuses = (projectStatusesData || []).filter((status) =>
-    status.name.toLowerCase().includes(searchStatuses.toLowerCase()),
-  );
+  const createColumns = (
+    type: 'tag' | 'projectType' | 'projectStatus',
+  ): ColumnDef<CategoryItem>[] => [
+    {
+      accessorKey: 'displayName',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Display Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        const icon =
+          type === 'tag' ? (
+            <Tag className="mr-2 h-4 w-4" />
+          ) : type === 'projectType' ? (
+            <Folder className="mr-2 h-4 w-4" />
+          ) : (
+            <Activity className="mr-2 h-4 w-4" />
+          );
+        return (
+          <div className="flex items-center">
+            {icon}
+            <span className="font-medium">{row.getValue('displayName')}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'name',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Internal Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => {
+        return <span className="text-muted-foreground text-sm">{row.getValue('name')}</span>;
+      },
+    },
+    {
+      accessorKey: 'isActive',
+      header: 'Status',
+      cell: ({ row }) => {
+        return (
+          <Badge variant={row.getValue('isActive') ? 'default' : 'secondary'}>
+            {row.getValue('isActive') ? 'Active' : 'Inactive'}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: 'sortOrder',
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          >
+            Sort Order
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center justify-end space-x-2">
+            <Switch
+              checked={row.original.isActive}
+              onCheckedChange={() => handleToggleStatus(row.original, type)}
+            />
+            <Button variant="ghost" size="sm" onClick={() => openEditDialog(row.original, type)}>
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => openDeleteDialog(row.original, type)}>
+              <Trash2 className="h-4 w-4 text-red-600" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -185,32 +270,34 @@ export default function AdminCategoriesDashboard() {
         <p className="text-muted-foreground">Manage project categories, types, and statuses</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {/* Project Types Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+      <Tabs defaultValue="types" className="space-y-4">
+        <TabsList className="bg-muted/30 grid w-full grid-cols-3">
+          <TabsTrigger value="types">
+            <Folder className="mr-2 h-4 w-4" />
+            Project Types
+          </TabsTrigger>
+          <TabsTrigger value="tags">
+            <Tag className="mr-2 h-4 w-4" />
+            Tags
+          </TabsTrigger>
+          <TabsTrigger value="statuses">
+            <Activity className="mr-2 h-4 w-4" />
+            Project Statuses
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="types" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle>Project Types</CardTitle>
-                <CardDescription>Manage project type categories</CardDescription>
+                <Button onClick={() => openAddDialog('projectType')}>
+                  <FolderPlus className="mr-2 h-4 w-4" />
+                  Add Project Type
+                </Button>
               </div>
-              <Badge variant="outline" className="text-blue-600">
-                <Folder className="mr-1 h-3 w-3" />
-                {typesLoading ? '...' : filteredTypes.length} Types
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex items-center space-x-2">
-              <Search className="text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search types..."
-                value={searchTypes}
-                onChange={(e) => setSearchTypes(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="space-y-4">
+            </CardHeader>
+            <CardContent>
               {typesLoading ? (
                 <div className="py-4 text-center">
                   <span className="text-muted-foreground">Loading types...</span>
@@ -220,74 +307,28 @@ export default function AdminCategoriesDashboard() {
                   <span className="text-red-600">Error loading types</span>
                 </div>
               ) : (
-                <>
-                  {filteredTypes.map((type) => (
-                    <div key={type.id} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{type.displayName}</span>
-                        <span className="text-muted-foreground text-sm">({type.name})</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={type.isActive}
-                          onCheckedChange={() => handleToggleStatus(type, 'projectType')}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(type, 'projectType')}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openDeleteDialog(type, 'projectType')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openAddDialog('projectType')}
-                  >
-                    <FolderPlus className="mr-2 h-4 w-4" />
-                    Add Project Type
-                  </Button>
-                </>
+                <CategoriesDataTable
+                  columns={createColumns('projectType')}
+                  data={projectTypesData || []}
+                  searchPlaceholder="Search project types..."
+                />
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* Tags Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+        <TabsContent value="tags" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle>Tags</CardTitle>
-                <CardDescription>Manage available project tags</CardDescription>
+                <Button onClick={() => openAddDialog('tag')}>
+                  <Tag className="mr-2 h-4 w-4" />
+                  Add Tag
+                </Button>
               </div>
-              <Badge variant="outline" className="text-green-600">
-                <Tag className="mr-1 h-3 w-3" />
-                {tagsLoading ? '...' : filteredTags.length} Tags
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex items-center space-x-2">
-              <Search className="text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search tags..."
-                value={searchTags}
-                onChange={(e) => setSearchTags(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="space-y-4">
+            </CardHeader>
+            <CardContent>
               {tagsLoading ? (
                 <div className="py-4 text-center">
                   <span className="text-muted-foreground">Loading tags...</span>
@@ -297,70 +338,28 @@ export default function AdminCategoriesDashboard() {
                   <span className="text-red-600">Error loading tags</span>
                 </div>
               ) : (
-                <>
-                  {filteredTags.map((tag) => (
-                    <div key={tag.id} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Badge>{tag.displayName}</Badge>
-                        <span className="text-muted-foreground text-sm">({tag.name})</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={tag.isActive}
-                          onCheckedChange={() => handleToggleStatus(tag, 'tag')}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(tag, 'tag')}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openDeleteDialog(tag, 'tag')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <Button variant="outline" className="w-full" onClick={() => openAddDialog('tag')}>
-                    <Tag className="mr-2 h-4 w-4" />
-                    Add New Tag
-                  </Button>
-                </>
+                <CategoriesDataTable
+                  columns={createColumns('tag')}
+                  data={tagsData || []}
+                  searchPlaceholder="Search tags..."
+                />
               )}
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* Project Statuses Card */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+        <TabsContent value="statuses" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle>Project Statuses</CardTitle>
-                <CardDescription>Manage project status options</CardDescription>
+                <Button onClick={() => openAddDialog('projectStatus')}>
+                  <Activity className="mr-2 h-4 w-4" />
+                  Add Status
+                </Button>
               </div>
-              <Badge variant="outline" className="text-purple-600">
-                <Activity className="mr-1 h-3 w-3" />
-                {statusesLoading ? '...' : filteredStatuses.length} Statuses
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex items-center space-x-2">
-              <Search className="text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search statuses..."
-                value={searchStatuses}
-                onChange={(e) => setSearchStatuses(e.target.value)}
-                className="flex-1"
-              />
-            </div>
-            <div className="space-y-4">
+            </CardHeader>
+            <CardContent>
               {statusesLoading ? (
                 <div className="py-4 text-center">
                   <span className="text-muted-foreground">Loading statuses...</span>
@@ -370,49 +369,16 @@ export default function AdminCategoriesDashboard() {
                   <span className="text-red-600">Error loading statuses</span>
                 </div>
               ) : (
-                <>
-                  {filteredStatuses.map((status) => (
-                    <div key={status.id} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary">{status.displayName}</Badge>
-                        <span className="text-muted-foreground text-sm">({status.name})</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch
-                          checked={status.isActive}
-                          onCheckedChange={() => handleToggleStatus(status, 'projectStatus')}
-                        />
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(status, 'projectStatus')}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openDeleteDialog(status, 'projectStatus')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => openAddDialog('projectStatus')}
-                  >
-                    <Activity className="mr-2 h-4 w-4" />
-                    Add New Status
-                  </Button>
-                </>
+                <CategoriesDataTable
+                  columns={createColumns('projectStatus')}
+                  data={projectStatusesData || []}
+                  searchPlaceholder="Search statuses..."
+                />
               )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Dialog */}
       <AddCategoryDialog

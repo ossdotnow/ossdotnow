@@ -25,7 +25,7 @@ const legalLinks = [
 
 export default function Footer() {
   const pathname = usePathname();
-  return pathname.includes('login') ? null : (
+  return pathname.includes('login') || pathname.includes('admin') ? null : (
     <footer className="w-full border-t border-gray-800 bg-black text-gray-400">
       <div className="mx-auto max-w-[1080px] px-4 py-8 sm:py-12">
         <div className="mb-8 grid grid-cols-2 gap-8 md:grid-cols-4">
