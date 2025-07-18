@@ -1,6 +1,6 @@
 import { categoryProjectStatuses, categoryProjectTypes } from '../../schema';
+import { eq, inArray } from 'drizzle-orm';
 import { project } from '../../schema';
-import { eq } from 'drizzle-orm';
 import { db } from '../..';
 
 export const projectsData = {
@@ -41,8 +41,18 @@ export const projectsData = {
       .from(categoryProjectTypes)
       .where(eq(categoryProjectTypes.name, 'entertainment'));
 
-    if (!productionReadyStatus?.id || !devtoolsType?.id || !productivityType?.id || !contentManagementType?.id || !analyticsType?.id || !socialType?.id || !entertainmentType?.id) {
-      throw new Error('One or more required category/status/type IDs are missing from the database.');
+    if (
+      !productionReadyStatus?.id ||
+      !devtoolsType?.id ||
+      !productivityType?.id ||
+      !contentManagementType?.id ||
+      !analyticsType?.id ||
+      !socialType?.id ||
+      !entertainmentType?.id
+    ) {
+      throw new Error(
+        'One or more required category/status/type IDs are missing from the database.',
+      );
     }
 
     const projectsToInsert = [
@@ -709,8 +719,7 @@ export const projectsData = {
         gitRepoUrl: 'inkscape/inkscape',
         gitHost: 'gitlab' as const,
         name: 'Inkscape',
-        description:
-          'Professional vector graphics editor for Windows, macOS & Linux',
+        description: 'Professional vector graphics editor for Windows, macOS & Linux',
         socialLinks: {
           website: 'https://inkscape.org',
           twitter: 'https://twitter.com/inkscape',
@@ -731,8 +740,7 @@ export const projectsData = {
         gitRepoUrl: 'CalcProgrammer1/OpenRGB',
         gitHost: 'gitlab' as const,
         name: 'OpenRGB',
-        description:
-          'Cross-platform RGB lighting control that works vendor-independently',
+        description: 'Cross-platform RGB lighting control that works vendor-independently',
         socialLinks: {
           website: 'https://openrgb.org',
         },
@@ -752,8 +760,7 @@ export const projectsData = {
         gitRepoUrl: 'gitlab-org/gitlab-runner',
         gitHost: 'gitlab' as const,
         name: 'GitLab Runner',
-        description:
-          'Lightweight agent that executes GitLab CI/CD jobs and reports results',
+        description: 'Lightweight agent that executes GitLab CI/CD jobs and reports results',
         socialLinks: {
           website: 'https://docs.gitlab.com/runner/',
         },
@@ -794,8 +801,7 @@ export const projectsData = {
         gitRepoUrl: 'AuroraOSS/AuroraStore',
         gitHost: 'gitlab' as const,
         name: 'Aurora Store',
-        description:
-          'Unofficial, privacy-respecting Google Play client for Android',
+        description: 'Unofficial, privacy-respecting Google Play client for Android',
         socialLinks: {
           website: 'https://auroraoss.com',
         },
@@ -831,7 +837,25 @@ export const projectsData = {
       },
     ];
 
-    await database.insert(project).values(projectsToInsert);
-    console.log(`✅ Seeded projects with ${projectsToInsert.length} records`);
+    const gitRepoUrls = projectsToInsert.map((p) => p.gitRepoUrl);
+
+    const existingProjects = await database
+      .select({ gitRepoUrl: project.gitRepoUrl })
+      .from(project)
+      .where(inArray(project.gitRepoUrl, gitRepoUrls));
+
+    const existingGitRepoUrls = new Set(existingProjects.map((p) => p.gitRepoUrl));
+
+    const newProjects = projectsToInsert.filter((p) => !existingGitRepoUrls.has(p.gitRepoUrl));
+
+    if (newProjects.length > 0) {
+      await database.insert(project).values(newProjects);
+      console.log(`✅ Seeded projects with ${newProjects.length} new records`);
+      if (existingGitRepoUrls.size > 0) {
+        console.log(`⏭️  Skipped ${existingGitRepoUrls.size} existing projects`);
+      }
+    } else {
+      console.log(`⏭️  All projects already exist, skipping...`);
+    }
   },
 };
