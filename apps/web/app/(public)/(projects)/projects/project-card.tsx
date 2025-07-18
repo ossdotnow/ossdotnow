@@ -51,7 +51,7 @@ export default function ProjectCard({ project }: { project: Project }) {
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
           )}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2 mb-1`">
+            <div className="flex items-center justify-between gap-2 mb-1">
             <h3 className="truncate text-sm font-semibold text-white md:text-base">
               {project.name}
             </h3>

@@ -246,7 +246,7 @@ export default function ProfilePage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="projects" className="mt-4">
+                <TabsContent value="projects" className="mt-6">
                   {featuredProjects.length > 0 ? (
                     <div className="mb-8">
                       <div className="mb-4 flex items-center justify-between">
