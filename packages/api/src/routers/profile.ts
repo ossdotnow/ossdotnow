@@ -39,7 +39,7 @@ export const profileRouter = createTRPCRouter({
         targetId = ctx.user.id;
         profileUser = {
           ...ctx.user,
-          role: ctx.user.role ?? null,
+          role: ctx.user.role as 'user' | 'admin' | 'moderator',
           banned: ctx.user.banned ?? null,
           banReason: ctx.user.banReason ?? null,
           banExpires: ctx.user.banExpires ?? null,
