@@ -246,7 +246,7 @@ export default function ProfilePage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="projects" className="mt-6">
+                <TabsContent value="projects" className="mt-4">
                   {featuredProjects.length > 0 ? (
                     <div className="mb-8">
                       <div className="mb-4 flex items-center justify-between">
@@ -305,7 +305,6 @@ export default function ProfilePage({ id }: { id: string }) {
                   ) : null}
 
                   <div>
-                    <h2 className="mb-4 text-xl font-semibold">All Projects</h2>
                     <div className="space-y-4">
                       {projectsWithGithubData?.map((project) => (
                         <ProjectCard key={project.id} project={project} />
