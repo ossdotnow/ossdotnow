@@ -92,24 +92,6 @@ export default function AdminProjectsDashboard() {
         <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
         <p className="text-muted-foreground">Review, approve, and manage project submissions</p>
       </div>
-      {/*
-      <Tabs
-        className="space-y-4"
-        value={approvalStatus}
-        onValueChange={(value) => {
-          setApprovalStatus(value as typeof approvalStatus);
-        }}
-      >
-        <TabsList className="bg-muted/30">
-          {approvalStatusTabs.map((tab) => (
-            <TabsTrigger key={tab} value={tab} className="w-28">
-              <span className="capitalize">{tab}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList> */}
-
-      {/* {approvalStatusTabs.map((tab) => (
-          <TabsContent key={tab} value={tab} className="space-y-4"> */}
       <Card>
         <CardHeader>
           <CardTitle>Projects Management</CardTitle>
@@ -132,9 +114,6 @@ export default function AdminProjectsDashboard() {
           )}
         </CardContent>
       </Card>
-      {/* </TabsContent>
-        ))}
-      </Tabs> */}
     </div>
   );
 }
@@ -182,9 +161,9 @@ function ProjectsTable({
           cell: ({ row }) => {
             return (
               <Badge
-                variant="default"
+                variant="outline"
                 className={cn(
-                  row.original.ownerId ? 'bg-green-600 text-green-200' : 'bg-red-600 text-red-200',
+                  row.original.ownerId ? 'text-green-500' : 'text-red-500',
                   'capitalize',
                 )}
               >
@@ -247,14 +226,18 @@ function ProjectsTable({
           id: 'approvalStatus',
           accessorKey: 'approvalStatus',
           header: 'Approval',
+          filterFn: (row, columnId, filterValue) => {
+            if (filterValue === 'all') return true;
+            return row.original.approvalStatus === filterValue;
+          },
           cell: ({ row }) => {
             return (
               <Badge
-                variant="default"
+                variant="outline"
                 className={cn(
-                  row.original.approvalStatus === 'approved' && 'bg-green-500',
-                  row.original.approvalStatus === 'rejected' && 'bg-red-500',
-                  row.original.approvalStatus === 'pending' && 'bg-yellow-500',
+                  row.original.approvalStatus === 'approved' && 'text-green-500',
+                  row.original.approvalStatus === 'rejected' && 'text-red-500',
+                  row.original.approvalStatus === 'pending' && 'text-yellow-500',
                 )}
               >
                 {row.original.approvalStatus}

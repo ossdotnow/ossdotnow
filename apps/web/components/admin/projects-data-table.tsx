@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@workspace/ui/components/select';
-import { projectProviderEnum } from '@workspace/db/schema';
+import { projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { useQuery } from '@tanstack/react-query';
@@ -48,6 +48,10 @@ interface DataTableProps<TData, TValue> {
 const defaultColumnFilters: ColumnFiltersState = [
   {
     id: 'status',
+    value: 'all',
+  },
+  {
+    id: 'approvalStatus',
     value: 'all',
   },
   {
@@ -139,6 +143,24 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             {projectProviderEnum.enumValues.map((provider) => (
               <SelectItem key={provider} value={provider}>
                 {provider.charAt(0).toUpperCase() + provider.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={(table.getColumn('approvalStatus')?.getFilterValue() as string) ?? ''}
+          onValueChange={(value) => {
+            table.getColumn('approvalStatus')?.setFilterValue(value);
+          }}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {projectApprovalStatusEnum.enumValues.map((status) => (
+              <SelectItem key={status} value={status}>
+                {status.charAt(0).toUpperCase() + status.slice(1)}
               </SelectItem>
             ))}
           </SelectContent>
