@@ -29,9 +29,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
     redirect('/login');
   }
 
-  const isAdmin = user.role === 'admin';
+  const isAdminOrModerator = user.role === 'admin' || user.role === 'moderator';
 
-  if (!isAdmin) {
+  if (!isAdminOrModerator) {
     notFound();
   }
 

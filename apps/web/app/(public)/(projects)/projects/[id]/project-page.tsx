@@ -26,12 +26,12 @@ import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import ProjectDescription from './project-description';
 import ProjectErrorPage from '../project-error-page';
+import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
-import { MarkdownContent } from './markdown-content';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -183,7 +183,6 @@ export default function ProjectPage({ id }: { id: string }) {
   const readme = otherQueries[3].data;
   const contributing = otherQueries[4].data;
   const codeOfConduct = otherQueries[5].data;
-  const otherDataLoading = otherQueries.some((query) => query.isLoading);
 
   return (
     <div className="mt-4 px-6 md:mt-8">
@@ -206,7 +205,7 @@ export default function ProjectPage({ id }: { id: string }) {
 
             <div className="">
               <Tabs defaultValue="readme" className="w-full">
-                <TabsList className="bg-neutral-900/0 p-0 mb-2">
+                <TabsList className="mb-2 bg-neutral-900/0 p-0">
                   <TabsTrigger value="readme" className="rounded-none text-sm">
                     <FileText className="h-4 w-4" />
                     <span className="hidden sm:inline">README</span>
@@ -240,11 +239,15 @@ export default function ProjectPage({ id }: { id: string }) {
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="text-center py-8">
-                        <FileText className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No README found</h3>
-                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
-                          A README file typically contains information about the project, how to install and use it, and other important details for users and contributors.
+                      <div className="py-8 text-center">
+                        <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                          No README found
+                        </h3>
+                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                          A README file typically contains information about the project, how to
+                          install and use it, and other important details for users and
+                          contributors.
                         </p>
                         <p className="text-xs text-neutral-500">
                           Common filenames: README.md, README.rst, README.txt
@@ -358,12 +361,12 @@ export default function ProjectPage({ id }: { id: string }) {
                   )}
 
                   {/* TODO: fix this */}
-                  { }
+                  {}
                 </TabsContent>
                 <TabsContent value="pull-requests">
                   {otherQueries[2].isLoading ? (
-                                        <div className="flex w-full justify-center py-4">
-                      <LoadingSpinner className="w-16 h-16" />
+                    <div className="flex w-full justify-center py-4">
+                      <LoadingSpinner className="h-16 w-16" />
                     </div>
                   ) : pullRequests && pullRequests.length > 0 ? (
                     <div className="space-y-3">
@@ -474,18 +477,26 @@ export default function ProjectPage({ id }: { id: string }) {
                 <TabsContent value="contributing">
                   {contributing ? (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <MarkdownContent content={contributing.content} encoding={contributing.encoding} />
+                      <MarkdownContent
+                        content={contributing.content}
+                        encoding={contributing.encoding}
+                      />
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="text-center py-8">
-                        <Users className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No contributing guidelines found</h3>
-                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
-                          Contributing guidelines help new contributors understand how to participate in the project, including coding standards, pull request processes, and community expectations.
+                      <div className="py-8 text-center">
+                        <Users className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                          No contributing guidelines found
+                        </h3>
+                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                          Contributing guidelines help new contributors understand how to
+                          participate in the project, including coding standards, pull request
+                          processes, and community expectations.
                         </p>
                         <p className="text-xs text-neutral-500">
-                          Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md, docs/CONTRIBUTING.md
+                          Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md,
+                          docs/CONTRIBUTING.md
                         </p>
                       </div>
                     </div>
@@ -494,15 +505,22 @@ export default function ProjectPage({ id }: { id: string }) {
                 <TabsContent value="code-of-conduct">
                   {codeOfConduct ? (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <MarkdownContent content={codeOfConduct.content} encoding={codeOfConduct.encoding} />
+                      <MarkdownContent
+                        content={codeOfConduct.content}
+                        encoding={codeOfConduct.encoding}
+                      />
                     </div>
                   ) : (
                     <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="text-center py-8">
-                        <Heart className="h-12 w-12 text-neutral-600 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-neutral-300 mb-2">No code of conduct found</h3>
-                        <p className="text-sm text-neutral-400 mb-4 max-w-md mx-auto">
-                          A code of conduct establishes community standards, outlines expected behavior, and provides guidelines for creating a welcoming and inclusive environment for all contributors.
+                      <div className="py-8 text-center">
+                        <Heart className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                          No code of conduct found
+                        </h3>
+                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                          A code of conduct establishes community standards, outlines expected
+                          behavior, and provides guidelines for creating a welcoming and inclusive
+                          environment for all contributors.
                         </p>
                         <p className="text-xs text-neutral-500">
                           Common filenames: CODE_OF_CONDUCT.md, COC.md, .github/CODE_OF_CONDUCT.md
