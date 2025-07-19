@@ -9,6 +9,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 const isValidProvider = (
   provider: string | null,
@@ -30,6 +31,10 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+
+  const [localHasVoted, setLocalHasVoted] = useState(project.hasVoted);
+  const [localVoteCount, setLocalVoteCount] = useState(project.voteCount);
+
   const { data: repo, isError } = useQuery({
     ...trpc.repository.getRepo.queryOptions({
       url: project.gitRepoUrl,
@@ -52,6 +57,9 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
       });
     },
     onError: () => {
+
+      setLocalHasVoted(project.hasVoted);
+      setLocalVoteCount(project.voteCount);
       toast.error('Failed to vote. Please try again.');
     },
   });
@@ -61,6 +69,10 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
       toast.error('Please login to vote');
       return;
     }
+
+    setLocalHasVoted(!localHasVoted);
+    setLocalVoteCount(localHasVoted ? localVoteCount - 1 : localVoteCount + 1);
+
     voteMutation.mutate({ projectId });
   };
 
@@ -184,7 +196,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                   disabled={voteMutation.isPending}
                 >
                   <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs font-semibold tabular-nums">{project.voteCount}</span>
+                  <span className="text-xs font-semibold tabular-nums">{localVoteCount}</span>
                 </Button>
               </div>
             </div>
