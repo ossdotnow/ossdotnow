@@ -35,6 +35,9 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   const [localHasVoted, setLocalHasVoted] = useState(project.hasVoted);
   const [localVoteCount, setLocalVoteCount] = useState(project.voteCount);
 
+  const [originalHasVoted, setOriginalHasVoted] = useState(project.hasVoted);
+  const [originalVoteCount, setOriginalVoteCount] = useState(project.voteCount);
+
   const { data: repo, isError } = useQuery({
     ...trpc.repository.getRepo.queryOptions({
       url: project.gitRepoUrl,
@@ -58,8 +61,8 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
     },
     onError: () => {
 
-      setLocalHasVoted(project.hasVoted);
-      setLocalVoteCount(project.voteCount);
+      setLocalHasVoted(originalHasVoted);
+      setLocalVoteCount(originalVoteCount);
       toast.error('Failed to vote. Please try again.');
     },
   });
@@ -69,6 +72,13 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
       toast.error('Please login to vote');
       return;
     }
+
+    if (voteMutation.isPending) {
+      return;
+    }
+
+    setOriginalHasVoted(localHasVoted);
+    setOriginalVoteCount(localVoteCount);
 
     setLocalHasVoted(!localHasVoted);
     setLocalVoteCount(localHasVoted ? localVoteCount - 1 : localVoteCount + 1);
