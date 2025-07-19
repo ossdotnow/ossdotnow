@@ -10,6 +10,7 @@ import {
   FileData,
   GitManagerConfig,
   ContributionData,
+  ContributionDay,
   UserData,
   UserPullRequestData,
 } from './types';
@@ -576,8 +577,70 @@ export class GithubManager implements GitManager {
     );
   }
 
-  getContributions(username: string): Promise<ContributionData[]> {
-    throw new Error('Method not implemented.');
+  async getContributions(username: string): Promise<ContributionData> {
+    return getCached(
+      createCacheKey('github', 'contributions', username),
+      async () => {
+        const query = `
+          query GetUserContributions($username: String!) {
+            user(login: $username) {
+              contributionsCollection {
+                contributionCalendar {
+                  totalContributions
+                  weeks {
+                    contributionDays {
+                      date
+                      contributionCount
+                      contributionLevel
+                      color
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+
+        try {
+          const response: any = await this.octokit.graphql(query, { username });
+
+          if (!response.user) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `GitHub user '${username}' not found`,
+            });
+          }
+
+          const calendar = response.user.contributionsCollection.contributionCalendar;
+          const days: ContributionDay[] = [];
+
+          calendar.weeks.forEach((week: any) => {
+            week.contributionDays.forEach((day: any) => {
+              days.push({
+                date: day.date,
+                contributionCount: day.contributionCount,
+                contributionLevel: day.contributionLevel,
+                color: day.color,
+              });
+            });
+          });
+
+          return {
+            totalContributions: calendar.totalContributions,
+            days,
+          };
+        } catch (error) {
+          if (error instanceof TRPCError) {
+            throw error;
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch contributions: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
   }
 
   async getUserPullRequests(
