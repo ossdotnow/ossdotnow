@@ -171,18 +171,37 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'issues', identifier),
       async () => {
-        const issues = await this.gitlab.Issues.all({
-          projectId: identifier,
-          state: 'opened',
-          perPage: 100,
-        });
-        return issues.map((i: any) => ({
-          id: i.id,
-          title: i.title,
-          state: i.state,
-          url: i.web_url,
-          ...i,
-        }));
+        try {
+          // GitLab API doesn't support 'all' as a state, lol
+          const openIssues = await this.gitlab.Issues.all({
+            projectId: identifier,
+            state: 'opened',
+            perPage: 100,
+          });
+
+          const closedIssues = await this.gitlab.Issues.all({
+            projectId: identifier,
+            state: 'closed',
+            perPage: 100,
+          });
+
+          const issues = [...openIssues, ...closedIssues];
+          return issues.map((i: any) => ({
+            id: i.id,
+            title: i.title,
+            state: i.state === 'opened' ? 'open' : i.state, // to match github format
+            url: i.web_url,
+            number: i.iid, // adding to match github format
+            pull_request: null, // adding to match github format
+            user: {
+              login: i.author?.username,
+            },
+            ...i,
+          }));
+        } catch (error) {
+          console.error('Error fetching GitLab issues:', error);
+          return [];
+        }
       },
       { ttl: 10 * 60 },
     );
@@ -194,20 +213,108 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'pulls', identifier),
       async () => {
-        const mergeRequests = await this.gitlab.MergeRequests.all({
-          projectId: identifier,
-          state: 'opened',
-          perPage: 100,
-        });
-        return mergeRequests.map((mr: any) => ({
-          id: mr.id,
-          title: mr.title,
-          state: mr.state,
-          url: mr.web_url,
-          ...mr,
-        }));
+        try {
+          // GitLab API doesn't support 'all' as a state
+          const openMRs = await this.gitlab.MergeRequests.all({
+            projectId: identifier,
+            state: 'opened',
+            perPage: 100,
+          });
+
+          const closedMRs = await this.gitlab.MergeRequests.all({
+            projectId: identifier,
+            state: 'closed',
+            perPage: 100,
+          });
+
+
+          const mergedMRs = await this.gitlab.MergeRequests.all({
+            projectId: identifier,
+            state: 'merged',
+            perPage: 100,
+          });
+
+          const mergeRequests = [...openMRs, ...closedMRs, ...mergedMRs];
+          return mergeRequests.map((mr: any) => ({
+            id: mr.id,
+            title: mr.title,
+            state: mr.state === 'opened' ? 'open' : mr.state, // same
+            url: mr.web_url,
+            merged_at: mr.merged_at || null, // same
+            number: mr.iid, // same
+            user: {
+              login: mr.author?.username,
+            },
+            draft: mr.work_in_progress || false, // same
+            ...mr,
+          }));
+        } catch (error) {
+          console.error('Error fetching GitLab pull requests:', error);
+          return [];
+        }
       },
       { ttl: 10 * 60 },
+    );
+  }
+
+  async getIssuesCount(identifier: string): Promise<number> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'open_issues_count', identifier),
+      async () => {
+        try {
+          // Getting only open issues count
+          const issues = await this.gitlab.Issues.all({
+            projectId: identifier,
+            state: 'opened',
+            perPage: 1,
+          });
+
+          // GitLab API doesn't provide pagination info directly on the array
+          // We need to check if the response has pagination metadata
+          // @ts-ignore - The GitLab API types don't include the pagination property
+          const paginationInfo = issues.pagination || (issues as any)._paginationInfo;
+          return paginationInfo?.total || issues.length || 0;
+        } catch (error) {
+          console.error('Error fetching GitLab issues count:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve issues count for this GitLab repository',
+          });
+        }
+      },
+      { ttl: 10 * 60 },
+    );
+  }
+
+  async getPullRequestsCount(identifier: string): Promise<number> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'open_pull_requests_count', identifier),
+      async () => {
+        try {
+          const mergeRequests = await this.gitlab.MergeRequests.all({
+            projectId: identifier,
+            state: 'opened',
+            perPage: 1,
+          });
+
+          // GitLab API doesn't provide pagination info directly on the array
+          // We need to check if the response has pagination metadata
+          // @ts-ignore - The GitLab API types don't include the pagination property
+          const paginationInfo = mergeRequests.pagination || (mergeRequests as any)._paginationInfo;
+          return paginationInfo?.total || mergeRequests.length || 0;
+        } catch (error) {
+          console.error('Error fetching GitLab pull requests count:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve pull requests count for this GitLab repository',
+          });
+        }
+      },
+      { ttl: 10 * 60 }, // Cache for 10 minutes as per requirements
     );
   }
 
@@ -226,25 +333,25 @@ export class GitlabManager implements GitManager {
           // Get project info first to find the default branch
           const project = await this.gitlab.Projects.show(identifier);
           const defaultBranch = project.default_branch || 'main';
-          
           let file = null;
           let fileName = '';
-          
           // Try to find the file
           for (const filename of possibleFilenames) {
             try {
-              file = await this.gitlab.RepositoryFiles.show(identifier, filename, defaultBranch as string);
+              file = await this.gitlab.RepositoryFiles.show(
+                identifier,
+                filename,
+                defaultBranch as string,
+              );
               fileName = filename;
               break;
             } catch (error) {
               // Continue to next filename if this one doesn't exist
             }
           }
-          
           if (!file) {
             throw new Error(`No ${cacheType} file found`);
           }
-          
           return {
             content: file.content,
             encoding: file.encoding as 'base64' | 'utf8',
@@ -267,7 +374,16 @@ export class GitlabManager implements GitManager {
   }
 
   async getReadme(identifier: string): Promise<ReadmeData> {
-    const readmeFiles = ['README.md', 'README.rst', 'README.txt', 'README', 'readme.md', 'readme.rst', 'readme.txt', 'readme'];
+    const readmeFiles = [
+      'README.md',
+      'README.rst',
+      'README.txt',
+      'README',
+      'readme.md',
+      'readme.rst',
+      'readme.txt',
+      'readme',
+    ];
     return this.fetchRepositoryFile(
       identifier,
       'readme',
@@ -329,18 +445,18 @@ export class GitlabManager implements GitManager {
   }
 
   async getRepoData(identifier: string) {
-    const [repo, contributors, issues, pullRequests] = await Promise.all([
+    const [repo, contributors, issuesCount, pullRequestsCount] = await Promise.all([
       this.getRepo(identifier),
       this.getContributors(identifier),
-      this.getIssues(identifier),
-      this.getPullRequests(identifier),
+      this.getIssuesCount(identifier),
+      this.getPullRequestsCount(identifier),
     ]);
 
     return {
       repo,
       contributors,
-      issues,
-      pullRequests,
+      issuesCount,
+      pullRequestsCount,
     };
   }
 
@@ -482,7 +598,9 @@ export class GitlabManager implements GitManager {
       // In GitLab, organizations are called "Groups"
       // First, get the user ID from username
       const users = await this.gitlab.Users.all({ username });
-      const user = users.find((u: any) => u.username === username);
+      const user = users.find(
+        (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
+      );
 
       if (!user) {
         throw new Error('User not found');
@@ -527,7 +645,11 @@ export class GitlabManager implements GitManager {
             });
           }
 
-          const user = users[0];
+          // Find exact match first, then case-insensitive match
+          const user =
+            users.find((u: any) => u.username === username) ||
+            users.find((u: any) => u.username.toLowerCase() === username.toLowerCase()) ||
+            users[0];
 
           const userDetails = await this.gitlab.Users.show(user!.id);
 
@@ -583,7 +705,9 @@ export class GitlabManager implements GitManager {
 
     try {
       const users = await this.gitlab.Users.all({ username });
-      const user = users.find((u: any) => u.username === username);
+      const user = users.find(
+        (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
+      );
 
       if (!user) {
         throw new TRPCError({

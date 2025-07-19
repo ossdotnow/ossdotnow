@@ -25,6 +25,7 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import ProjectDescription from './project-description';
+import { ProjectWithRelations } from '@workspace/api';
 import ProjectErrorPage from '../project-error-page';
 import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
@@ -32,6 +33,121 @@ import Link from '@workspace/ui/components/link';
 import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
+
+// Define types for repository data
+interface RepoContent {
+  content: string;
+  encoding: 'base64' | 'utf8';
+}
+
+interface Label {
+  id: string | number;
+  name: string;
+  color: string;
+}
+
+interface User {
+  login?: string;
+  username?: string;
+}
+
+interface Issue {
+  id: string | number;
+  number?: number;
+  iid?: number;
+  title: string;
+  state: string;
+  created_at: string;
+  html_url?: string;
+  web_url?: string;
+  user?: User;
+  author?: User;
+  labels?: Array<Label | string>;
+  pull_request?: unknown;
+}
+
+interface PullRequest {
+  id: string | number;
+  number?: number;
+  iid?: number;
+  title: string;
+  state: string;
+  created_at: string;
+  merged_at?: string;
+  html_url?: string;
+  web_url?: string;
+  user?: User;
+  author?: User;
+  labels?: Array<Label | string>;
+  draft?: boolean;
+}
+
+interface Repository {
+  html_url?: string;
+  web_url?: string;
+  stargazers_count?: number;
+  star_count?: number;
+  forks_count?: number;
+  created_at?: string;
+  updated_at?: string;
+  id?: string;
+  name?: string;
+  url?: string;
+}
+
+interface RepoData {
+  contributors?: Array<unknown>;
+  issuesCount?: number;
+  pullRequestsCount?: number;
+}
+
+interface Project {
+  id: string;
+  ownerId: string | null;
+  logoUrl: string | null;
+  gitRepoUrl: string | null;
+  gitHost: string | null;
+  name: string;
+  description: string | null;
+  socialLinks: {
+    twitter?: string;
+    discord?: string;
+    linkedin?: string;
+    website?: string;
+    [key: string]: string | undefined;
+  } | null;
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+  isPinned: boolean;
+  hasBeenAcquired: boolean;
+  isLookingForContributors: boolean;
+  isLookingForInvestors: boolean;
+  isHiring: boolean;
+  isPublic: boolean;
+  isRepoPrivate: boolean;
+  acquiredBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  statusId: string;
+  typeId: string;
+  deletedAt: Date | null;
+  status?: {
+    id: string;
+    name: string;
+    displayName?: string;
+  };
+  type?: {
+    id: string;
+    name: string;
+    displayName?: string;
+  };
+  tagRelations?: Array<{
+    tag?: {
+      id?: string;
+      name: string;
+      displayName?: string;
+    };
+  }>;
+}
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -44,7 +160,7 @@ function useProject(id: string) {
   const query = useQuery(trpc.projects.getProject.queryOptions({ id }, { retry: false }));
 
   return {
-    project: query.data,
+    project: query.data as ProjectWithRelations | undefined,
     isLoading: query.isLoading,
     error: query.error,
   };
@@ -80,18 +196,21 @@ export default function ProjectPage({ id }: { id: string }) {
     ),
   );
 
+  const repoDataQuery = useQuery(
+    trpc.repository.getRepoData.queryOptions(
+      {
+        url: project?.gitRepoUrl as string,
+        provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+      },
+      {
+        enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        retry: false,
+      },
+    ),
+  );
+
   const otherQueries = useQueries({
     queries: [
-      trpc.repository.getContributors.queryOptions(
-        {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
-        },
-        {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
-          retry: false,
-        },
-      ),
       trpc.repository.getIssues.queryOptions(
         {
           url: project?.gitRepoUrl as string,
@@ -175,14 +294,22 @@ export default function ProjectPage({ id }: { id: string }) {
 
   const isUnclaimed = !project.ownerId;
   const isOwner = user?.id === project.ownerId;
-
-  const repo = repoQuery.data;
-  const contributors = otherQueries[0].data;
-  const issues = otherQueries[1].data;
-  const pullRequests = otherQueries[2].data;
-  const readme = otherQueries[3].data;
-  const contributing = otherQueries[4].data;
-  const codeOfConduct = otherQueries[5].data;
+  const repoData = repoQuery.data as Repository;
+  const repo = {
+    ...repoData,
+    id: repoData.html_url || repoData.web_url || '',
+    name: project.gitRepoUrl?.split('/').pop() || '',
+    url: repoData.html_url || repoData.web_url || project.gitRepoUrl || '',
+  };
+  const repoStats = repoDataQuery.data as RepoData | undefined;
+  const contributors = repoStats?.contributors;
+  const issuesCount = repoStats?.issuesCount || 0;
+  const pullRequestsCount = repoStats?.pullRequestsCount || 0;
+  const issues = (otherQueries[0].data as Issue[] | undefined) || [];
+  const pullRequests = (otherQueries[1].data as PullRequest[] | undefined) || [];
+  const readme = otherQueries[2].data as RepoContent | undefined;
+  const contributing = otherQueries[3].data as RepoContent | undefined;
+  const codeOfConduct = otherQueries[4].data as RepoContent | undefined;
 
   return (
     <div className="mt-4 px-6 md:mt-8">
@@ -247,7 +374,14 @@ export default function ProjectPage({ id }: { id: string }) {
                   <TabsContent value="readme">
                     {readme ? (
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                        <MarkdownContent content={readme.content} encoding={readme.encoding} />
+                        <MarkdownContent
+                          content={readme.content}
+                          encoding={
+                            readme.encoding === 'base64' || readme.encoding === 'utf8'
+                              ? readme.encoding
+                              : 'base64'
+                          }
+                        />
                       </div>
                     ) : (
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
@@ -269,223 +403,264 @@ export default function ProjectPage({ id }: { id: string }) {
                     )}
                   </TabsContent>
                   <TabsContent value="issues">
-                    {otherQueries[1].isLoading ? (
+                    {otherQueries[0].isLoading ? (
                       <div className="flex w-full justify-center py-4">
                         <LoadingSpinner />
                       </div>
-                    ) : issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
-                      <div className="space-y-3">
-                        {issues
-                          // TODO: fix this
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          .filter((issue: any) => !issue.pull_request)
-                          .slice(0, 10)
-                          // TODO: fix this
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          .map((issue: any) => (
-                            <div
-                              key={issue.id}
-                              className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    {issue.state === 'open' ? (
-                                      <div className="flex items-center gap-1 text-emerald-400">
-                                        <AlertCircle className="h-4 w-4" />
-                                        <span className="text-xs font-medium">Open</span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-1 text-purple-400">
-                                        <CheckCircle className="h-4 w-4" />
-                                        <span className="text-xs font-medium">Closed</span>
+                    ) : issues ? (
+                      issues.length === 0 ? (
+                        <p className="text-sm text-neutral-400">No issues found</p>
+                      ) : issues.filter(
+                          (issue) =>
+                            issue &&
+                            (!issue.pull_request || issue.pull_request === null) &&
+                            issue.state === 'open',
+                        ).length > 0 ? (
+                        <div className="space-y-3">
+                          {issues
+                            .filter(
+                              (issue) =>
+                                issue &&
+                                (!issue.pull_request || issue.pull_request === null) &&
+                                issue.state === 'open',
+                            )
+                            .slice(0, 10)
+                            .map((issue) => (
+                              <div
+                                key={issue.id}
+                                className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      {issue.state === 'open' ? (
+                                        <div className="flex items-center gap-1 text-emerald-400">
+                                          <AlertCircle className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Open</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1 text-purple-400">
+                                          <CheckCircle className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Closed</span>
+                                        </div>
+                                      )}
+                                      <span className="text-xs text-neutral-500">
+                                        #{issue.number || issue.iid}
+                                      </span>
+                                    </div>
+                                    <Link
+                                      href={issue.html_url || issue.web_url || '#'}
+                                      event="project_page_issue_link_clicked"
+                                      eventObject={{ projectId: project.id }}
+                                      target="_blank"
+                                      className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
+                                    >
+                                      {issue.title}
+                                    </Link>
+                                    {issue.labels && issue.labels.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {issue.labels.map((label, idx) => {
+                                          if (typeof label === 'string') {
+                                            return (
+                                              <span
+                                                key={idx}
+                                                className="rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-200"
+                                              >
+                                                {label}
+                                              </span>
+                                            );
+                                          }
+
+                                          return (
+                                            <span
+                                              key={label.id || idx}
+                                              className="rounded-full px-2 py-0.5 text-xs"
+                                              style={{
+                                                backgroundColor: `#${label.color}20`,
+                                                color: `#${label.color}`,
+                                                border: `1px solid #${label.color}40`,
+                                              }}
+                                            >
+                                              {label.name}
+                                            </span>
+                                          );
+                                        })}
                                       </div>
                                     )}
-                                    <span className="text-xs text-neutral-500">
-                                      #{issue.number || issue.iid}
-                                    </span>
+                                    <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>{formatDate(new Date(issue.created_at))}</span>
+                                      </div>
+                                      <span>by {issue.user?.login || issue.author?.username}</span>
+                                    </div>
                                   </div>
                                   <Link
-                                    href={issue.html_url || issue.web_url}
-                                    event="project_page_issue_link_clicked"
-                                    eventObject={{ projectId: project.id }}
+                                    href={issue.html_url || issue.web_url || '#'}
                                     target="_blank"
-                                    className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
+                                    className="text-neutral-400 transition-colors hover:text-white"
                                   >
-                                    {issue.title}
+                                    <ExternalLink className="h-4 w-4" />
                                   </Link>
-                                  {issue.labels && issue.labels.length > 0 && (
-                                    <div className="mt-2 flex flex-wrap gap-1">
-                                      {/* TODO: fix this */}
-                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                      {issue.labels.map((label: any) => (
-                                        <span
-                                          key={label.id || label}
-                                          className="rounded-full px-2 py-0.5 text-xs"
-                                          style={{
-                                            backgroundColor: `#${label.color}20`,
-                                            color: `#${label.color}`,
-                                            border: `1px solid #${label.color}40`,
-                                          }}
-                                        >
-                                          {label.name}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
-                                    <div className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      <span>{formatDate(new Date(issue.created_at))}</span>
-                                    </div>
-                                    <span>by {issue.user?.login || issue.author?.username}</span>
-                                  </div>
                                 </div>
-                                <Link
-                                  href={issue.html_url || issue.web_url}
-                                  target="_blank"
-                                  className="text-neutral-400 transition-colors hover:text-white"
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Link>
                               </div>
-                            </div>
-                          ))}
-                        {/* TODO: fix this */}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {issues.filter((issue: any) => !issue.pull_request).length > 10 && (
-                          <Link
-                            href={`${repo?.html_url}/issues`}
-                            target="_blank"
-                            event="project_page_issues_link_clicked"
-                            eventObject={{ projectId: project.id }}
-                            className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
-                          >
-                            {/* TODO: fix this */}
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            View all {
-                              issues.filter((issue: any) => !issue.pull_request).length
-                            }{' '}
-                            issues on GitHub →
-                          </Link>
-                        )}
-                      </div>
+                            ))}
+                          {issuesCount > 10 && (
+                            <Link
+                              href={
+                                project?.gitHost === 'github'
+                                  ? `${repo?.html_url}/issues?q=is%3Aopen`
+                                  : `${repo?.web_url}/-/issues?state=opened`
+                              }
+                              target="_blank"
+                              event="project_page_issues_link_clicked"
+                              eventObject={{ projectId: project.id }}
+                              className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
+                            >
+                              View all {issuesCount} open issues on{' '}
+                              {project?.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-neutral-400">No open issues found</p>
+                      )
                     ) : (
-                      <p className="text-sm text-neutral-400">No issues found</p>
+                      <p className="text-sm text-neutral-400">Error loading issues</p>
                     )}
-
-                    {/* TODO: fix this */}
-                    {}
                   </TabsContent>
                   <TabsContent value="pull-requests">
-                    {otherQueries[2].isLoading ? (
+                    {otherQueries[1].isLoading ? (
                       <div className="flex w-full justify-center py-4">
                         <LoadingSpinner className="h-16 w-16" />
                       </div>
-                    ) : pullRequests && pullRequests.length > 0 ? (
-                      <div className="space-y-3">
-                        {/* TODO: fix this */}
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        {pullRequests.slice(0, 10).map((pr: any) => (
-                          <div
-                            key={pr.id}
-                            className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
-                          >
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  {pr.draft ? (
-                                    <div className="flex items-center gap-1 text-gray-400">
-                                      <GitPullRequest className="h-4 w-4" />
-                                      <span className="text-xs font-medium">Draft</span>
-                                    </div>
-                                  ) : pr.state === 'open' ? (
-                                    <div className="flex items-center gap-1 text-blue-400">
-                                      <GitPullRequest className="h-4 w-4" />
-                                      <span className="text-xs font-medium">Open</span>
-                                    </div>
-                                  ) : pr.merged_at ? (
-                                    <div className="flex items-center gap-1 text-purple-400">
-                                      <GitMerge className="h-4 w-4" />
-                                      <span className="text-xs font-medium">Merged</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1 text-red-400">
-                                      <XCircle className="h-4 w-4" />
-                                      <span className="text-xs font-medium">Closed</span>
-                                    </div>
-                                  )}
-                                  <span className="text-xs text-neutral-500">
-                                    #{pr.number || pr.iid}
-                                  </span>
-                                </div>
-                                <Link
-                                  href={pr.html_url || pr.web_url}
-                                  target="_blank"
-                                  event="project_page_pull_request_link_clicked"
-                                  eventObject={{ projectId: project.id }}
-                                  className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
-                                >
-                                  {pr.title}
-                                </Link>
-                                {pr.labels && pr.labels.length > 0 && (
-                                  <div className="mt-2 flex flex-wrap gap-1">
-                                    {/* TODO: fix this */}
-                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    {pr.labels.map((label: any) => (
-                                      <span
-                                        key={label.id || label}
-                                        className="rounded-full px-2 py-0.5 text-xs"
-                                        style={{
-                                          backgroundColor: `#${label.color}20`,
-                                          color: `#${label.color}`,
-                                          border: `1px solid #${label.color}40`,
-                                        }}
-                                      >
-                                        {label.name}
+                    ) : pullRequests ? (
+                      pullRequests.length === 0 ? (
+                        <p className="text-sm text-neutral-400">No pull requests found</p>
+                      ) : pullRequests.filter((pr) => pr && pr.state === 'open').length > 0 ? (
+                        <div className="space-y-3">
+                          {pullRequests
+                            .filter((pr) => pr && pr.state === 'open')
+                            .slice(0, 10)
+                            .map((pr) => (
+                              <div
+                                key={pr.id}
+                                className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      {pr.draft ? (
+                                        <div className="flex items-center gap-1 text-gray-400">
+                                          <GitPullRequest className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Draft</span>
+                                        </div>
+                                      ) : pr.state === 'open' ? (
+                                        <div className="flex items-center gap-1 text-blue-400">
+                                          <GitPullRequest className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Open</span>
+                                        </div>
+                                      ) : pr.merged_at ? (
+                                        <div className="flex items-center gap-1 text-purple-400">
+                                          <GitMerge className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Merged</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-1 text-red-400">
+                                          <XCircle className="h-4 w-4" />
+                                          <span className="text-xs font-medium">Closed</span>
+                                        </div>
+                                      )}
+                                      <span className="text-xs text-neutral-500">
+                                        #{pr.number || pr.iid}
                                       </span>
-                                    ))}
+                                    </div>
+                                    <Link
+                                      href={pr.html_url || pr.web_url || '#'}
+                                      target="_blank"
+                                      event="project_page_pull_request_link_clicked"
+                                      eventObject={{ projectId: project.id }}
+                                      className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
+                                    >
+                                      {pr.title}
+                                    </Link>
+                                    {pr.labels && pr.labels.length > 0 && (
+                                      <div className="mt-2 flex flex-wrap gap-1">
+                                        {pr.labels.map((label, idx) => {
+                                          if (typeof label === 'string') {
+                                            return (
+                                              <span
+                                                key={idx}
+                                                className="rounded-full bg-neutral-700 px-2 py-0.5 text-xs text-neutral-200"
+                                              >
+                                                {label}
+                                              </span>
+                                            );
+                                          }
+
+                                          return (
+                                            <span
+                                              key={label.id || idx}
+                                              className="rounded-full px-2 py-0.5 text-xs"
+                                              style={{
+                                                backgroundColor: `#${label.color}20`,
+                                                color: `#${label.color}`,
+                                                border: `1px solid #${label.color}40`,
+                                              }}
+                                            >
+                                              {label.name}
+                                            </span>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                    <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>{formatDate(new Date(pr.created_at))}</span>
+                                      </div>
+                                      <span>by {pr.user?.login || pr.author?.username}</span>
+                                      {pr.merged_at && (
+                                        <span className="text-purple-400">
+                                          merged {formatDate(new Date(pr.merged_at))}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                )}
-                                <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
-                                  <div className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    <span>{formatDate(new Date(pr.created_at))}</span>
-                                  </div>
-                                  <span>by {pr.user?.login || pr.author?.username}</span>
-                                  {pr.merged_at && (
-                                    <span className="text-purple-400">
-                                      merged {formatDate(new Date(pr.merged_at))}
-                                    </span>
-                                  )}
+                                  <Link
+                                    href={pr.html_url || pr.web_url || '#'}
+                                    event="project_page_pull_request_link_clicked"
+                                    eventObject={{ projectId: project.id }}
+                                    target="_blank"
+                                    className="text-neutral-400 transition-colors hover:text-white"
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Link>
                                 </div>
                               </div>
-                              <Link
-                                href={pr.html_url || pr.web_url}
-                                event="project_page_pull_request_link_clicked"
-                                eventObject={{ projectId: project.id }}
-                                target="_blank"
-                                className="text-neutral-400 transition-colors hover:text-white"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Link>
-                            </div>
-                          </div>
-                        ))}
-                        {pullRequests.length > 10 && (
-                          <Link
-                            href={`${repo?.html_url}/pulls?q=is%3Apr`}
-                            target="_blank"
-                            event="project_page_pull_requests_link_clicked"
-                            eventObject={{ projectId: project.id }}
-                            className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
-                          >
-                            View all {pullRequests.length} pull requests on GitHub →
-                          </Link>
-                        )}
-                      </div>
+                            ))}
+                          {pullRequestsCount > 10 && (
+                            <Link
+                              href={
+                                project?.gitHost === 'github'
+                                  ? `${repo?.html_url}/pulls?q=is%3Apr+is%3Aopen`
+                                  : `${repo?.web_url}/-/merge_requests?state=opened`
+                              }
+                              target="_blank"
+                              event="project_page_pull_requests_link_clicked"
+                              eventObject={{ projectId: project.id }}
+                              className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
+                            >
+                              View all {pullRequestsCount} open pull requests on{' '}
+                              {project?.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
+                            </Link>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-neutral-400">No open pull requests found</p>
+                      )
                     ) : (
-                      <p className="text-sm text-neutral-400">No pull requests</p>
+                      <p className="text-sm text-neutral-400">Error loading pull requests</p>
                     )}
                   </TabsContent>
                   <TabsContent value="contributing">
@@ -493,7 +668,11 @@ export default function ProjectPage({ id }: { id: string }) {
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
                         <MarkdownContent
                           content={contributing.content}
-                          encoding={contributing.encoding}
+                          encoding={
+                            contributing.encoding === 'base64' || contributing.encoding === 'utf8'
+                              ? contributing.encoding
+                              : 'base64'
+                          }
                         />
                       </div>
                     ) : (
@@ -521,7 +700,11 @@ export default function ProjectPage({ id }: { id: string }) {
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
                         <MarkdownContent
                           content={codeOfConduct.content}
-                          encoding={codeOfConduct.encoding}
+                          encoding={
+                            codeOfConduct.encoding === 'base64' || codeOfConduct.encoding === 'utf8'
+                              ? codeOfConduct.encoding
+                              : 'base64'
+                          }
                         />
                       </div>
                     ) : (
@@ -581,17 +764,16 @@ export default function ProjectPage({ id }: { id: string }) {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-neutral-400">
                       <AlertCircle className="h-4 w-4" />
-                      <span className="text-sm">Issues</span>
+                      <span className="text-sm">Open Issues</span>
                     </div>
-                    <span className="text-sm">
-                      {issues?.filter(
-                        // TODO: fix this
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (issue: any) =>
-                          !issue.pull_request &&
-                          (issue.state === 'open' || issue.state === 'opened'),
-                      ).length || 0}
-                    </span>
+                    <span className="text-sm">{issuesCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-neutral-400">
+                      <GitPullRequest className="h-4 w-4" />
+                      <span className="text-sm">Open PRs</span>
+                    </div>
+                    <span className="text-sm">{pullRequestsCount}</span>
                   </div>
                 </div>
               </div>
@@ -706,19 +888,14 @@ export default function ProjectPage({ id }: { id: string }) {
   );
 }
 
-function ClaimProjectSection({
-  isUnclaimed,
-  user,
-  project,
-  className,
-}: {
+interface ClaimProjectSectionProps {
   isUnclaimed: boolean;
   user?: { id: string } | null;
-  // TODO: fix this
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  project: any;
+  project: ProjectWithRelations;
   className: string;
-}) {
+}
+
+function ClaimProjectSection({ isUnclaimed, user, project, className }: ClaimProjectSectionProps) {
   if (!isUnclaimed || !user) return null;
 
   return (
