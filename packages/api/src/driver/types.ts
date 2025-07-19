@@ -184,6 +184,8 @@ export interface GitManager {
   getContributors(identifier: string): Promise<ContributorData[]>;
   getIssues(identifier: string): Promise<IssueData[]>;
   getPullRequests(identifier: string): Promise<PullRequestData[]>;
+  getIssuesCount(identifier: string): Promise<number>;
+  getPullRequestsCount(identifier: string): Promise<number>;
   getReadme(identifier: string): Promise<ReadmeData>;
   getContributing(identifier: string): Promise<ContributingData>;
   getCodeOfConduct(identifier: string): Promise<CodeOfConductData>;
@@ -197,8 +199,8 @@ export interface GitManager {
   getRepoData(identifier: string): Promise<{
     repo: RepoData;
     contributors: ContributorData[];
-    issues: IssueData[];
-    pullRequests: PullRequestData[];
+    issuesCount: number;
+    pullRequestsCount: number;
   }>;
   verifyOwnership(
     identifier: string,
