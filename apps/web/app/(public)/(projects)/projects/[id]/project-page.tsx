@@ -205,108 +205,234 @@ export default function ProjectPage({ id }: { id: string }) {
 
             <div className="">
               <Tabs defaultValue="readme" className="w-full">
-                <TabsList className="mb-2 bg-neutral-900/0 p-0">
-                  <TabsTrigger value="readme" className="rounded-none text-sm">
-                    <FileText className="h-4 w-4" />
-                    <span className="hidden sm:inline">README</span>
-                    <span className="sm:hidden">README</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="issues" className="rounded-none text-sm">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="hidden sm:inline">Issues</span>
-                    <span className="sm:hidden">Issues</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="pull-requests" className="rounded-none text-sm">
-                    <GitPullRequest className="h-4 w-4" />
-                    <span className="hidden sm:inline">Pull Requests</span>
-                    <span className="sm:hidden">PRs</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="contributing" className="rounded-none text-sm">
-                    <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Contributing</span>
-                    <span className="sm:hidden">Contributing</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="code-of-conduct" className="rounded-none text-sm">
-                    <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline">Code of Conduct</span>
-                    <span className="sm:hidden">CoC</span>
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="readme">
-                  {readme ? (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <MarkdownContent content={readme.content} encoding={readme.encoding} />
-                    </div>
-                  ) : (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="py-8 text-center">
-                        <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
-                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
-                          No README found
-                        </h3>
-                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
-                          A README file typically contains information about the project, how to
-                          install and use it, and other important details for users and
-                          contributors.
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Common filenames: README.md, README.rst, README.txt
-                        </p>
+                <div className="mb-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <TabsList className="min-w-max bg-neutral-900/0 p-0">
+                    <TabsTrigger value="readme" className="rounded-none text-sm whitespace-nowrap">
+                      <FileText className="h-4 w-4" />
+                      <span className="hidden sm:inline">README</span>
+                      <span className="sm:hidden">README</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="issues" className="rounded-none text-sm whitespace-nowrap">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="hidden sm:inline">Issues</span>
+                      <span className="sm:hidden">Issues</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="pull-requests"
+                      className="rounded-none text-sm whitespace-nowrap"
+                    >
+                      <GitPullRequest className="h-4 w-4" />
+                      <span className="hidden sm:inline">Pull Requests</span>
+                      <span className="sm:hidden">PRs</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="contributing"
+                      className="rounded-none text-sm whitespace-nowrap"
+                    >
+                      <Users className="h-4 w-4" />
+                      <span className="hidden sm:inline">Contributing</span>
+                      <span className="sm:hidden">Contributing</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="code-of-conduct"
+                      className="rounded-none text-sm whitespace-nowrap"
+                    >
+                      <Heart className="h-4 w-4" />
+                      <span className="hidden sm:inline">Code of Conduct</span>
+                      <span className="sm:hidden">Code of Conduct</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                <div className="max-h-[calc(100vh-400px)] overflow-x-hidden overflow-y-auto lg:max-h-none lg:overflow-x-visible lg:overflow-y-visible">
+                  <TabsContent value="readme">
+                    {readme ? (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <MarkdownContent content={readme.content} encoding={readme.encoding} />
                       </div>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="issues">
-                  {otherQueries[1].isLoading ? (
-                    <div className="flex w-full justify-center py-4">
-                      <LoadingSpinner />
-                    </div>
-                  ) : issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
-                    <div className="space-y-3">
-                      {issues
-                        // TODO: fix this
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .filter((issue: any) => !issue.pull_request)
-                        .slice(0, 10)
-                        // TODO: fix this
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        .map((issue: any) => (
+                    ) : (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <div className="py-8 text-center">
+                          <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                          <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                            No README found
+                          </h3>
+                          <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                            A README file typically contains information about the project, how to
+                            install and use it, and other important details for users and
+                            contributors.
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Common filenames: README.md, README.rst, README.txt
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="issues">
+                    {otherQueries[1].isLoading ? (
+                      <div className="flex w-full justify-center py-4">
+                        <LoadingSpinner />
+                      </div>
+                    ) : issues && issues.filter((issue: any) => !issue.pull_request).length > 0 ? (
+                      <div className="space-y-3">
+                        {issues
+                          // TODO: fix this
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          .filter((issue: any) => !issue.pull_request)
+                          .slice(0, 10)
+                          // TODO: fix this
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          .map((issue: any) => (
+                            <div
+                              key={issue.id}
+                              className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
+                            >
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    {issue.state === 'open' ? (
+                                      <div className="flex items-center gap-1 text-emerald-400">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span className="text-xs font-medium">Open</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-1 text-purple-400">
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span className="text-xs font-medium">Closed</span>
+                                      </div>
+                                    )}
+                                    <span className="text-xs text-neutral-500">
+                                      #{issue.number || issue.iid}
+                                    </span>
+                                  </div>
+                                  <Link
+                                    href={issue.html_url || issue.web_url}
+                                    event="project_page_issue_link_clicked"
+                                    eventObject={{ projectId: project.id }}
+                                    target="_blank"
+                                    className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
+                                  >
+                                    {issue.title}
+                                  </Link>
+                                  {issue.labels && issue.labels.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {/* TODO: fix this */}
+                                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                      {issue.labels.map((label: any) => (
+                                        <span
+                                          key={label.id || label}
+                                          className="rounded-full px-2 py-0.5 text-xs"
+                                          style={{
+                                            backgroundColor: `#${label.color}20`,
+                                            color: `#${label.color}`,
+                                            border: `1px solid #${label.color}40`,
+                                          }}
+                                        >
+                                          {label.name}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      <span>{formatDate(new Date(issue.created_at))}</span>
+                                    </div>
+                                    <span>by {issue.user?.login || issue.author?.username}</span>
+                                  </div>
+                                </div>
+                                <Link
+                                  href={issue.html_url || issue.web_url}
+                                  target="_blank"
+                                  className="text-neutral-400 transition-colors hover:text-white"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Link>
+                              </div>
+                            </div>
+                          ))}
+                        {/* TODO: fix this */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {issues.filter((issue: any) => !issue.pull_request).length > 10 && (
+                          <Link
+                            href={`${repo?.html_url}/issues`}
+                            target="_blank"
+                            event="project_page_issues_link_clicked"
+                            eventObject={{ projectId: project.id }}
+                            className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
+                          >
+                            {/* TODO: fix this */}
+                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                            View all {
+                              issues.filter((issue: any) => !issue.pull_request).length
+                            }{' '}
+                            issues on GitHub →
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-400">No issues found</p>
+                    )}
+
+                    {/* TODO: fix this */}
+                    {}
+                  </TabsContent>
+                  <TabsContent value="pull-requests">
+                    {otherQueries[2].isLoading ? (
+                      <div className="flex w-full justify-center py-4">
+                        <LoadingSpinner className="h-16 w-16" />
+                      </div>
+                    ) : pullRequests && pullRequests.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* TODO: fix this */}
+                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                        {pullRequests.slice(0, 10).map((pr: any) => (
                           <div
-                            key={issue.id}
+                            key={pr.id}
                             className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  {issue.state === 'open' ? (
-                                    <div className="flex items-center gap-1 text-emerald-400">
-                                      <AlertCircle className="h-4 w-4" />
+                                  {pr.draft ? (
+                                    <div className="flex items-center gap-1 text-gray-400">
+                                      <GitPullRequest className="h-4 w-4" />
+                                      <span className="text-xs font-medium">Draft</span>
+                                    </div>
+                                  ) : pr.state === 'open' ? (
+                                    <div className="flex items-center gap-1 text-blue-400">
+                                      <GitPullRequest className="h-4 w-4" />
                                       <span className="text-xs font-medium">Open</span>
                                     </div>
-                                  ) : (
+                                  ) : pr.merged_at ? (
                                     <div className="flex items-center gap-1 text-purple-400">
-                                      <CheckCircle className="h-4 w-4" />
+                                      <GitMerge className="h-4 w-4" />
+                                      <span className="text-xs font-medium">Merged</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1 text-red-400">
+                                      <XCircle className="h-4 w-4" />
                                       <span className="text-xs font-medium">Closed</span>
                                     </div>
                                   )}
                                   <span className="text-xs text-neutral-500">
-                                    #{issue.number || issue.iid}
+                                    #{pr.number || pr.iid}
                                   </span>
                                 </div>
                                 <Link
-                                  href={issue.html_url || issue.web_url}
-                                  event="project_page_issue_link_clicked"
-                                  eventObject={{ projectId: project.id }}
+                                  href={pr.html_url || pr.web_url}
                                   target="_blank"
+                                  event="project_page_pull_request_link_clicked"
+                                  eventObject={{ projectId: project.id }}
                                   className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                                 >
-                                  {issue.title}
+                                  {pr.title}
                                 </Link>
-                                {issue.labels && issue.labels.length > 0 && (
+                                {pr.labels && pr.labels.length > 0 && (
                                   <div className="mt-2 flex flex-wrap gap-1">
                                     {/* TODO: fix this */}
                                     {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                    {issue.labels.map((label: any) => (
+                                    {pr.labels.map((label: any) => (
                                       <span
                                         key={label.id || label}
                                         className="rounded-full px-2 py-0.5 text-xs"
@@ -324,13 +450,20 @@ export default function ProjectPage({ id }: { id: string }) {
                                 <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    <span>{formatDate(new Date(issue.created_at))}</span>
+                                    <span>{formatDate(new Date(pr.created_at))}</span>
                                   </div>
-                                  <span>by {issue.user?.login || issue.author?.username}</span>
+                                  <span>by {pr.user?.login || pr.author?.username}</span>
+                                  {pr.merged_at && (
+                                    <span className="text-purple-400">
+                                      merged {formatDate(new Date(pr.merged_at))}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <Link
-                                href={issue.html_url || issue.web_url}
+                                href={pr.html_url || pr.web_url}
+                                event="project_page_pull_request_link_clicked"
+                                eventObject={{ projectId: project.id }}
                                 target="_blank"
                                 className="text-neutral-400 transition-colors hover:text-white"
                               >
@@ -339,196 +472,78 @@ export default function ProjectPage({ id }: { id: string }) {
                             </div>
                           </div>
                         ))}
-                      {/* TODO: fix this */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {issues.filter((issue: any) => !issue.pull_request).length > 10 && (
-                        <Link
-                          href={`${repo?.html_url}/issues`}
-                          target="_blank"
-                          event="project_page_issues_link_clicked"
-                          eventObject={{ projectId: project.id }}
-                          className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
-                        >
-                          {/* TODO: fix this */}
-                          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                          View all {issues.filter((issue: any) => !issue.pull_request).length}{' '}
-                          issues on GitHub →
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-neutral-400">No issues found</p>
-                  )}
-
-                  {/* TODO: fix this */}
-                  {}
-                </TabsContent>
-                <TabsContent value="pull-requests">
-                  {otherQueries[2].isLoading ? (
-                    <div className="flex w-full justify-center py-4">
-                      <LoadingSpinner className="h-16 w-16" />
-                    </div>
-                  ) : pullRequests && pullRequests.length > 0 ? (
-                    <div className="space-y-3">
-                      {/* TODO: fix this */}
-                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      {pullRequests.slice(0, 10).map((pr: any) => (
-                        <div
-                          key={pr.id}
-                          className="rounded-none border border-neutral-800 p-4 transition-colors hover:border-neutral-700"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                {pr.draft ? (
-                                  <div className="flex items-center gap-1 text-gray-400">
-                                    <GitPullRequest className="h-4 w-4" />
-                                    <span className="text-xs font-medium">Draft</span>
-                                  </div>
-                                ) : pr.state === 'open' ? (
-                                  <div className="flex items-center gap-1 text-blue-400">
-                                    <GitPullRequest className="h-4 w-4" />
-                                    <span className="text-xs font-medium">Open</span>
-                                  </div>
-                                ) : pr.merged_at ? (
-                                  <div className="flex items-center gap-1 text-purple-400">
-                                    <GitMerge className="h-4 w-4" />
-                                    <span className="text-xs font-medium">Merged</span>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-1 text-red-400">
-                                    <XCircle className="h-4 w-4" />
-                                    <span className="text-xs font-medium">Closed</span>
-                                  </div>
-                                )}
-                                <span className="text-xs text-neutral-500">
-                                  #{pr.number || pr.iid}
-                                </span>
-                              </div>
-                              <Link
-                                href={pr.html_url || pr.web_url}
-                                target="_blank"
-                                event="project_page_pull_request_link_clicked"
-                                eventObject={{ projectId: project.id }}
-                                className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
-                              >
-                                {pr.title}
-                              </Link>
-                              {pr.labels && pr.labels.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {/* TODO: fix this */}
-                                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                  {pr.labels.map((label: any) => (
-                                    <span
-                                      key={label.id || label}
-                                      className="rounded-full px-2 py-0.5 text-xs"
-                                      style={{
-                                        backgroundColor: `#${label.color}20`,
-                                        color: `#${label.color}`,
-                                        border: `1px solid #${label.color}40`,
-                                      }}
-                                    >
-                                      {label.name}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  <span>{formatDate(new Date(pr.created_at))}</span>
-                                </div>
-                                <span>by {pr.user?.login || pr.author?.username}</span>
-                                {pr.merged_at && (
-                                  <span className="text-purple-400">
-                                    merged {formatDate(new Date(pr.merged_at))}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <Link
-                              href={pr.html_url || pr.web_url}
-                              event="project_page_pull_request_link_clicked"
-                              eventObject={{ projectId: project.id }}
-                              target="_blank"
-                              className="text-neutral-400 transition-colors hover:text-white"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                            </Link>
-                          </div>
+                        {pullRequests.length > 10 && (
+                          <Link
+                            href={`${repo?.html_url}/pulls?q=is%3Apr`}
+                            target="_blank"
+                            event="project_page_pull_requests_link_clicked"
+                            eventObject={{ projectId: project.id }}
+                            className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
+                          >
+                            View all {pullRequests.length} pull requests on GitHub →
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-400">No pull requests</p>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="contributing">
+                    {contributing ? (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <MarkdownContent
+                          content={contributing.content}
+                          encoding={contributing.encoding}
+                        />
+                      </div>
+                    ) : (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <div className="py-8 text-center">
+                          <Users className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                          <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                            No contributing guidelines found
+                          </h3>
+                          <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                            Contributing guidelines help new contributors understand how to
+                            participate in the project, including coding standards, pull request
+                            processes, and community expectations.
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md,
+                            docs/CONTRIBUTING.md
+                          </p>
                         </div>
-                      ))}
-                      {pullRequests.length > 10 && (
-                        <Link
-                          href={`${repo?.html_url}/pulls?q=is%3Apr`}
-                          target="_blank"
-                          event="project_page_pull_requests_link_clicked"
-                          eventObject={{ projectId: project.id }}
-                          className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
-                        >
-                          View all {pullRequests.length} pull requests on GitHub →
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-neutral-400">No pull requests</p>
-                  )}
-                </TabsContent>
-                <TabsContent value="contributing">
-                  {contributing ? (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <MarkdownContent
-                        content={contributing.content}
-                        encoding={contributing.encoding}
-                      />
-                    </div>
-                  ) : (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="py-8 text-center">
-                        <Users className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
-                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
-                          No contributing guidelines found
-                        </h3>
-                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
-                          Contributing guidelines help new contributors understand how to
-                          participate in the project, including coding standards, pull request
-                          processes, and community expectations.
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Common filenames: CONTRIBUTING.md, .github/CONTRIBUTING.md,
-                          docs/CONTRIBUTING.md
-                        </p>
                       </div>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="code-of-conduct">
-                  {codeOfConduct ? (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <MarkdownContent
-                        content={codeOfConduct.content}
-                        encoding={codeOfConduct.encoding}
-                      />
-                    </div>
-                  ) : (
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="py-8 text-center">
-                        <Heart className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
-                        <h3 className="mb-2 text-lg font-medium text-neutral-300">
-                          No code of conduct found
-                        </h3>
-                        <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
-                          A code of conduct establishes community standards, outlines expected
-                          behavior, and provides guidelines for creating a welcoming and inclusive
-                          environment for all contributors.
-                        </p>
-                        <p className="text-xs text-neutral-500">
-                          Common filenames: CODE_OF_CONDUCT.md, COC.md, .github/CODE_OF_CONDUCT.md
-                        </p>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="code-of-conduct">
+                    {codeOfConduct ? (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <MarkdownContent
+                          content={codeOfConduct.content}
+                          encoding={codeOfConduct.encoding}
+                        />
                       </div>
-                    </div>
-                  )}
-                </TabsContent>
+                    ) : (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <div className="py-8 text-center">
+                          <Heart className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                          <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                            No code of conduct found
+                          </h3>
+                          <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                            A code of conduct establishes community standards, outlines expected
+                            behavior, and provides guidelines for creating a welcoming and inclusive
+                            environment for all contributors.
+                          </p>
+                          <p className="text-xs text-neutral-500">
+                            Common filenames: CODE_OF_CONDUCT.md, COC.md, .github/CODE_OF_CONDUCT.md
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                </div>
               </Tabs>
             </div>
           </div>
@@ -710,7 +725,6 @@ function ClaimProjectSection({
     <div className={className}>
       <div className="flex w-full flex-row items-center justify-between gap-2">
         <div className="ml-2 flex flex-row items-center justify-start gap-2">
-          <p className="text-center text-xs font-medium text-neutral-200">Unclaimed</p>
           <p className="text-center text-xs text-neutral-400">
             This project hasn&apos;t been claimed yet
           </p>
