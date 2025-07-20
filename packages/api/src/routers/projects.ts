@@ -1084,4 +1084,14 @@ export const projectsRouter = createTRPCRouter({
         });
       }
     }),
+
+  getContributors: protectedProcedure
+    .input(z.object({ url: z.string(), provider: z.enum(['github', 'gitlab']) }))
+    .query(async ({ ctx, input }) => {
+      const driver = await getActiveDriver(input.provider, ctx as Context);
+
+      const contributors = await driver.getContributors(input.url);
+
+      return contributors;
+    }),
 });

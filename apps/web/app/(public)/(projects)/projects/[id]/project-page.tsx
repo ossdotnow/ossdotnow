@@ -20,12 +20,12 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
+import { ContributorData, ProjectWithRelations } from '@workspace/api';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import ProjectDescription from './project-description';
-import { ProjectWithRelations } from '@workspace/api';
 import ProjectErrorPage from '../project-error-page';
 import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
@@ -261,6 +261,16 @@ export default function ProjectPage({ id }: { id: string }) {
           retry: false,
         },
       ),
+      trpc.projects.getContributors.queryOptions(
+        {
+          url: project?.gitRepoUrl as string,
+          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        },
+        {
+          enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          retry: false,
+        },
+      ),
     ],
   });
 
@@ -302,7 +312,7 @@ export default function ProjectPage({ id }: { id: string }) {
     url: repoData.html_url || repoData.web_url || project.gitRepoUrl || '',
   };
   const repoStats = repoDataQuery.data as RepoData | undefined;
-  const contributors = repoStats?.contributors;
+  // const contributors = repoStats?.contributors;
   const issuesCount = repoStats?.issuesCount || 0;
   const pullRequestsCount = repoStats?.pullRequestsCount || 0;
   const issues = (otherQueries[0].data as Issue[] | undefined) || [];
@@ -310,6 +320,7 @@ export default function ProjectPage({ id }: { id: string }) {
   const readme = otherQueries[2].data as RepoContent | undefined;
   const contributing = otherQueries[3].data as RepoContent | undefined;
   const codeOfConduct = otherQueries[4].data as RepoContent | undefined;
+  const contributors = otherQueries[5].data as ContributorData[] | undefined;
 
   return (
     <div className="mt-4 px-6 md:mt-8">
@@ -336,13 +347,11 @@ export default function ProjectPage({ id }: { id: string }) {
                   <TabsList className="min-w-max bg-neutral-900/0 p-0">
                     <TabsTrigger value="readme" className="rounded-none text-sm whitespace-nowrap">
                       <FileText className="h-4 w-4" />
-                      <span className="hidden sm:inline">README</span>
-                      <span className="sm:hidden">README</span>
+                      <span>README</span>
                     </TabsTrigger>
                     <TabsTrigger value="issues" className="rounded-none text-sm whitespace-nowrap">
                       <AlertCircle className="h-4 w-4" />
-                      <span className="hidden sm:inline">Issues</span>
-                      <span className="sm:hidden">Issues</span>
+                      <span>Issues</span>
                     </TabsTrigger>
                     <TabsTrigger
                       value="pull-requests"
@@ -357,16 +366,21 @@ export default function ProjectPage({ id }: { id: string }) {
                       className="rounded-none text-sm whitespace-nowrap"
                     >
                       <Users className="h-4 w-4" />
-                      <span className="hidden sm:inline">Contributing</span>
-                      <span className="sm:hidden">Contributing</span>
+                      <span>Contributing</span>
                     </TabsTrigger>
                     <TabsTrigger
                       value="code-of-conduct"
                       className="rounded-none text-sm whitespace-nowrap"
                     >
                       <Heart className="h-4 w-4" />
-                      <span className="hidden sm:inline">Code of Conduct</span>
-                      <span className="sm:hidden">Code of Conduct</span>
+                      <span>Code of Conduct</span>
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="contributors"
+                      className="rounded-none text-sm whitespace-nowrap"
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Contributors</span>
                     </TabsTrigger>
                   </TabsList>
                 </div>
@@ -725,6 +739,32 @@ export default function ProjectPage({ id }: { id: string }) {
                         </div>
                       </div>
                     )}
+                  </TabsContent>
+                  <TabsContent value="contributors">
+                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                      <div className="grid grid-cols-3 gap-2 md:grid-cols-5 lg:grid-cols-6">
+                        {contributors?.map((contributor) => (
+                          <Link
+                            rel="noopener noreferrer"
+                            key={contributor.id}
+                            href={`https://${project?.gitHost === 'github' ? 'github.com' : 'gitlab.com'}/${contributor.username}`}
+                            target="_blank"
+                            event="project_page_contributor_link_clicked"
+                            eventObject={{ projectId: project.id, contributorId: contributor.id }}
+                            className="flex flex-col items-center gap-2 p-2 transition-all hover:outline hover:outline-neutral-700"
+                          >
+                            <img
+                              src={contributor.avatarUrl}
+                              alt={contributor.username}
+                              className="h-10 w-10 rounded-full"
+                            />
+                            <span className="line-clamp-1 truncate text-sm text-neutral-400">
+                              {contributor.username}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </TabsContent>
                 </div>
               </Tabs>
