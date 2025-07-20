@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
-import EditProjectDialog from '@/components/submissions/EditProjectDialog';
+import EditProjectDialog from '@/components/submissions/edit-project-dialog';
 import { ProjectData, ProjectWithRelations } from '@workspace/api';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
@@ -237,11 +237,6 @@ function ActionButtons({
   return (
     <div className={className}>
       {isOwner && (
-        <div className="absolute right-0 bottom-35">
-          <EditProjectDialog projectId={project.id} projectName={project.name} />
-        </div>
-      )}
-      {isOwner && (
         <LaunchProjectDialog
           projectId={project.id}
           projectName={project.name}
@@ -250,6 +245,7 @@ function ActionButtons({
           gitHost={project.gitHost || undefined}
         />
       )}
+
       {repoUrl && (
         <Link
           href={repoUrl}
@@ -263,19 +259,14 @@ function ActionButtons({
             className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600"
           >
             {project.gitHost === 'github' ? (
-              <>
-                <Icons.github className="h-4 w-4" />
-                View on GitHub
-              </>
+              <Icons.github className="h-4 w-4" />
             ) : (
-              <>
-                <Icons.gitlab className="h-4 w-4" />
-                View on GitLab
-              </>
+              <Icons.gitlab className="h-4 w-4" />
             )}
           </Button>
         </Link>
       )}
+      {isOwner && <EditProjectDialog projectId={project.id} projectName={project.name} />}
     </div>
   );
 }
