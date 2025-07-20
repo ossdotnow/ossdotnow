@@ -1,13 +1,7 @@
 'use client';
 
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@workspace/ui/components/select';
-import {
+  Award,
   Calendar,
   Clock,
   ExternalLink,
@@ -15,8 +9,16 @@ import {
   Globe,
   Heart,
   MapPin,
+  Share,
   TrendingUp,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
@@ -194,9 +196,9 @@ function ContributionGraph({
 
   if (isLoading) {
     return (
-      <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+      <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
         <CardContent className="p-4">
-          <div className="flex h-[180px] items-center justify-center">
+          <div className="flex items-center justify-center py-8">
             <div className="text-neutral-400">Loading contribution graph...</div>
           </div>
         </CardContent>
@@ -388,81 +390,109 @@ export default function ProfilePage({ id }: { id: string }) {
                 ) : (
                   <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
                     <CardContent className="px-6">
-                      <div className="text-center">
-                        <Avatar className="mx-auto mb-4 h-24 w-24">
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-16 w-16 flex-shrink-0 rounded-none">
                           <AvatarImage src={profile?.image} />
                           <AvatarFallback>
                             {profile?.name?.charAt(0).toUpperCase() ?? 'U'}
                           </AvatarFallback>
                         </Avatar>
-                        <h1 className="mb-2 text-2xl font-bold">{profile?.name}</h1>
-                        {/* <p className="mb-4 text-neutral-400">{profile?.bio}</p> */}
 
-                        {profile?.git?.location && (
-                          <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                            <MapPin className="h-4 w-4" />
-                            <span>{profile?.git?.location}</span>
-                          </div>
-                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h1 className="truncate text-lg font-bold">{profile?.name}</h1>
 
-                        <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            Joined{' '}
-                            {profile?.git?.createdAt &&
-                              new Date(profile.git.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="sm" asChild>
+                                <Link
+                                  href={`https://${profile?.git?.provider}.com/${profile?.git?.login}`}
+                                  target="_blank"
+                                >
+                                  {profile?.git?.provider === 'github' ? (
+                                    <Icons.github className="h-4 w-4" />
+                                  ) : (
+                                    <Icons.gitlab className="h-4 w-4" />
+                                  )}
+                                </Link>
+                              </Button>
 
-                        <div className="mb-6 flex justify-center space-x-3">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`https://${profile?.git?.provider}.com/${profile?.git?.login}`}
-                              target="_blank"
-                            >
-                              {profile?.git?.provider === 'github' ? (
-                                <Icons.github className="h-4 w-4" />
-                              ) : (
-                                <Icons.gitlab className="h-4 w-4" />
+                              {profile?.git?.blog && (
+                                <Button variant="ghost" size="sm" asChild>
+                                  <Link href={profile?.git?.blog} target="_blank">
+                                    <Globe className="h-4 w-4" />
+                                  </Link>
+                                </Button>
                               )}
-                            </Link>
-                          </Button>
-
-                          {profile?.git?.blog ? (
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={profile?.git?.blog ?? ''} target="_blank">
-                                <Globe className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                          ) : null}
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                          <div>
-                            <div className="text-2xl font-bold">
-                              {(projectsWithGithubData?.length || 0).toLocaleString()}
                             </div>
-                            <div className="text-xs text-neutral-400">Projects</div>
                           </div>
-                          <div>
-                            <ResponsiveNumber
-                              value={
-                                projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
-                              }
-                              className="text-2xl font-bold"
-                            />
-                            <div className="text-xs text-neutral-400">Total Stars</div>
-                          </div>
-                          <div>
-                            <ResponsiveNumber
-                              value={
-                                projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
-                              }
-                              className="text-2xl font-bold"
-                            />
-                            <div className="text-xs text-neutral-400">Total Forks</div>
+
+                          <div className="mt-1 flex items-center justify-between text-sm text-neutral-400">
+                            {profile?.git?.location && (
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                <span className="truncate">{profile?.git?.location}</span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>
+                                {profile?.git?.createdAt &&
+                                  new Date(profile.git.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
                         </div>
+                      </div>
+
+                      <div className="mt-6 grid grid-cols-3 gap-4 border-t border-neutral-800 pt-4">
+                        <div className="text-center">
+                          <div className="text-lg font-bold">
+                            {(projectsWithGithubData?.length || 0).toLocaleString()}
+                          </div>
+                          <div className="text-xs text-neutral-400">Projects</div>
+                        </div>
+                        <div className="text-center">
+                          <ResponsiveNumber
+                            value={
+                              projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
+                            }
+                            className="text-lg font-bold"
+                          />
+                          <div className="text-xs text-neutral-400">Stars</div>
+                        </div>
+                        <div className="text-center">
+                          <ResponsiveNumber
+                            value={
+                              projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
+                            }
+                            className="text-lg font-bold"
+                          />
+                          <div className="text-xs text-neutral-400">Forks</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 rounded-none border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-800 hover:text-neutral-200"
+                          // TODO: Implement share functionality
+                          // Add Web Share API with clipboard fallback
+                        >
+                          <Share className="mr-2 h-4 w-4" />
+                          Share
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 rounded-none border-neutral-800 bg-neutral-900/50 text-neutral-400 hover:border-neutral-700 hover:bg-neutral-800 hover:text-neutral-200"
+                          // TODO: Implement endorse functionality
+                          // Add endorse/profile recommendation feature
+                        >
+                          <Award className="mr-2 h-4 w-4" />
+                          Endorse
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -477,7 +507,16 @@ export default function ProfilePage({ id }: { id: string }) {
             </div>
 
             <div className="space-y-4 lg:col-span-8">
-              {profile?.git && (
+              {isProfileLoading && (
+                <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-neutral-400">Loading contribution graph...</div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {!isProfileLoading && profile?.git && (
                 <ContributionGraph username={profile.git.login} provider={profile.git.provider} />
               )}
               <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
@@ -493,7 +532,7 @@ export default function ProfilePage({ id }: { id: string }) {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="projects" className="mt-6">
+                <TabsContent value="projects" className="mt-2">
                   {featuredProjects.length > 0 ? (
                     <div className="mb-8">
                       <div className="mb-4 flex items-center justify-between">
@@ -560,11 +599,11 @@ export default function ProfilePage({ id }: { id: string }) {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="contributions" className="mt-6">
+                <TabsContent value="contributions" className="mt-2">
                   <UserPullRequests profile={profile as Profile} />
                 </TabsContent>
 
-                <TabsContent value="collections" className="mt-6">
+                <TabsContent value="collections" className="mt-2">
                   <div className="py-12 text-center">
                     <div className="mb-4 text-neutral-400">
                       <Heart className="mx-auto mb-4 h-12 w-12 opacity-50" />
@@ -898,43 +937,51 @@ function UserPullRequests({ profile }: { profile: Profile }) {
 
 function ProfileSidebarSkeleton() {
   return (
-    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0 backdrop-blur-sm">
-      <CardContent className="p-4">
-        <div className="text-center">
-          <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-none" />
-          <Skeleton className="mx-auto mb-2 h-7 w-40 rounded-none" />
-          <Skeleton className="mx-auto mb-4 h-5 w-60 rounded-none" />
+    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
+      <CardContent className="px-6">
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-16 w-16 flex-shrink-0 rounded-none" />
 
-          <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4 rounded-none" />
-            <Skeleton className="h-4 w-20 rounded-none" />
-          </div>
-
-          <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-            <Skeleton className="h-4 w-4 rounded-none" />
-            <Skeleton className="h-4 w-28 rounded-none" />
-          </div>
-
-          <div className="mb-6 flex justify-center space-x-3">
-            <Skeleton className="h-9 w-9 rounded-none" />
-            <Skeleton className="h-9 w-9 rounded-none" />
-            <Skeleton className="h-9 w-9 rounded-none" />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <Skeleton className="h-7 w-12 rounded-none" />
-              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-6 w-32 rounded-none" />
+              <div className="flex items-center gap-1">
+                <Skeleton className="h-8 w-8 rounded-none" />
+                <Skeleton className="h-8 w-8 rounded-none" />
+              </div>
             </div>
-            <div>
-              <Skeleton className="h-7 w-12 rounded-none" />
-              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
-            </div>
-            <div>
-              <Skeleton className="h-7 w-12 rounded-none" />
-              <Skeleton className="mt-1 h-3 w-12 rounded-none" />
+
+            <div className="mt-1 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Skeleton className="h-3 w-3 rounded-none" />
+                <Skeleton className="h-4 w-20 rounded-none" />
+              </div>
+              <div className="flex items-center gap-1">
+                <Skeleton className="h-3 w-3 rounded-none" />
+                <Skeleton className="h-4 w-16 rounded-none" />
+              </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-3 gap-4 border-t border-neutral-800 pt-4">
+          <div className="text-center">
+            <Skeleton className="mx-auto h-7 w-12 rounded-none" />
+            <Skeleton className="mx-auto mt-1 h-3 w-12 rounded-none" />
+          </div>
+          <div className="text-center">
+            <Skeleton className="mx-auto h-7 w-12 rounded-none" />
+            <Skeleton className="mx-auto mt-1 h-3 w-12 rounded-none" />
+          </div>
+          <div className="text-center">
+            <Skeleton className="mx-auto h-7 w-12 rounded-none" />
+            <Skeleton className="mx-auto mt-1 h-3 w-12 rounded-none" />
+          </div>
+        </div>
+
+        <div className="mt-5 flex gap-2">
+          <Skeleton className="h-9 flex-1 rounded-none" />
+          <Skeleton className="h-9 flex-1 rounded-none" />
         </div>
       </CardContent>
     </Card>
