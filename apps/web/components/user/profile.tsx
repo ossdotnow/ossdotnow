@@ -47,6 +47,248 @@ interface PullRequestData {
   createdAt: string;
 }
 
+interface ContributionDay {
+  date: Date;
+  count: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+function ContributionGraph({
+  username,
+  provider,
+}: {
+  username: string;
+  provider: 'github' | 'gitlab';
+}) {
+  const trpc = useTRPC();
+  const { data, isLoading } = useQuery(
+    trpc.profile.getUserContributions.queryOptions({
+      username,
+      provider,
+    }),
+  );
+
+  const contributions: ContributionDay[] =
+    data?.days.map((day) => ({
+      date: new Date(day.date),
+      count: day.contributionCount,
+      level: (() => {
+        switch (day.contributionLevel) {
+          case 'NONE':
+            return 0;
+          case 'FIRST_QUARTILE':
+            return 1;
+          case 'SECOND_QUARTILE':
+            return 2;
+          case 'THIRD_QUARTILE':
+            return 3;
+          case 'FOURTH_QUARTILE':
+            return 4;
+          default:
+            return 0;
+        }
+      })(),
+    })) || [];
+
+  const getContributionGrid = () => {
+    const grid: (ContributionDay | null)[][] = [];
+    if (contributions.length === 0) return grid;
+
+    const firstDay = contributions[0];
+    if (!firstDay) return grid;
+
+    const firstDayOfWeek = firstDay.date.getDay();
+
+    for (let i = 0; i < 7; i++) {
+      grid.push([]);
+    }
+
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      if (grid[i]) {
+        grid[i]?.push(null);
+      }
+    }
+
+    contributions.forEach((day) => {
+      const dayOfWeek = day.date.getDay();
+      if (grid[dayOfWeek]) {
+        grid[dayOfWeek].push(day);
+      }
+    });
+
+    const maxWeeks = Math.max(...grid.map((row) => row.length));
+    grid.forEach((row) => {
+      while (row.length < maxWeeks) {
+        row.push(null);
+      }
+    });
+
+    return grid;
+  };
+
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  const grid = getContributionGrid();
+  const weeks = grid.length > 0 && grid[0] ? grid[0].length : 0;
+
+  const getMonthColumns = () => {
+    const monthCols: { month: string; colspan: number; index: number }[] = [];
+    let currentMonth = -1;
+    let startWeek = 0;
+
+    for (let week = 0; week < weeks; week++) {
+      let monthForWeek = -1;
+      for (let day = 0; day < 7; day++) {
+        const contribution = grid[day]?.[week];
+        if (contribution) {
+          monthForWeek = contribution.date.getMonth();
+          break;
+        }
+      }
+
+      if (monthForWeek !== -1 && monthForWeek !== currentMonth) {
+        if (currentMonth !== -1) {
+          monthCols.push({
+            month: months[currentMonth] || '',
+            colspan: week - startWeek,
+            index: monthCols.length,
+          });
+        }
+        currentMonth = monthForWeek;
+        startWeek = week;
+      }
+    }
+
+    if (currentMonth !== -1) {
+      monthCols.push({
+        month: months[currentMonth] || '',
+        colspan: weeks - startWeek,
+        index: monthCols.length,
+      });
+    }
+
+    return monthCols;
+  };
+
+  const levelColors = [
+    'bg-neutral-800',
+    'bg-blue-900/50',
+    'bg-blue-800/70',
+    'bg-blue-700',
+    'bg-blue-600',
+  ];
+
+  if (isLoading) {
+    return (
+      <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
+        <CardContent className="p-4">
+          <div className="flex h-[180px] items-center justify-center">
+            <div className="text-neutral-400">Loading contribution graph...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+      <CardContent className="p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-sm font-medium text-neutral-300">Contribution Activity</div>
+          {data && (
+            <div className="text-xs text-neutral-400">
+              {data.totalContributions.toLocaleString()} contributions in the last year
+            </div>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table
+            className="border-separate"
+            style={{ borderSpacing: '3px' }}
+            role="grid"
+            aria-readonly="true"
+          >
+            <caption className="sr-only">Contribution Graph</caption>
+            <thead>
+              <tr style={{ height: '13px' }}>
+                <td style={{ width: '28px' }}>
+                  <span className="sr-only">Day of Week</span>
+                </td>
+                {getMonthColumns().map((col) => (
+                  <td
+                    key={col.index}
+                    className="relative text-xs text-neutral-400"
+                    colSpan={col.colspan}
+                  >
+                    <span className="sr-only">{col.month}</span>
+                    <span aria-hidden="true" className="absolute top-0 left-0">
+                      {col.month}
+                    </span>
+                  </td>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {weekDays.map((dayName, dayIndex) => (
+                <tr key={dayIndex} style={{ height: '10px' }}>
+                  <td
+                    className="relative pr-1 text-right text-xs text-neutral-400"
+                    style={{ width: '28px' }}
+                  >
+                    <span className="sr-only">{dayName}</span>
+                    <span
+                      aria-hidden="true"
+                      className={cn('absolute right-1', dayIndex % 2 === 0 && 'opacity-0')}
+                    >
+                      {dayName.slice(0, 3)}
+                    </span>
+                  </td>
+                  {Array.from({ length: weeks }).map((_, weekIndex) => {
+                    const day = grid[dayIndex]?.[weekIndex];
+                    return (
+                      <td
+                        key={weekIndex}
+                        className={cn('h-[10px] w-[10px]', day ? levelColors[day.level] : '')}
+                        style={{ width: '10px' }}
+                        title={
+                          day ? `${day.count} contributions on ${day.date.toDateString()}` : ''
+                        }
+                        role="gridcell"
+                        aria-selected="false"
+                      />
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="mt-2 flex items-center justify-end gap-1 text-xs text-neutral-400">
+            <span>Less</span>
+            {levelColors.map((color, i) => (
+              <div key={i} className={cn('h-[10px] w-[10px]', color)} />
+            ))}
+            <span>More</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
   const [tab, setTab] = useQueryState('tab', {
@@ -129,7 +371,7 @@ export default function ProfilePage({ id }: { id: string }) {
   const featuredProjects = [] as any[];
 
   return (
-    <div className="relative px-6 pt-10">
+    <div className="relative px-6 pt-8">
       <div
         className={`pointer-events-none fixed top-[calc(32px+65px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
           showShadow ? 'opacity-100' : 'opacity-0'
@@ -140,99 +382,104 @@ export default function ProfilePage({ id }: { id: string }) {
         <div className="py-4">
           <div className="grid gap-4 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              {isProfileLoading ? (
-                <ProfileSidebarSkeleton />
-              ) : (
-                <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
-                  <CardContent className="px-6">
-                    <div className="text-center">
-                      <Avatar className="mx-auto mb-4 h-24 w-24">
-                        <AvatarImage src={profile?.image} />
-                        <AvatarFallback>
-                          {profile?.name?.charAt(0).toUpperCase() ?? 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <h1 className="mb-2 text-2xl font-bold">{profile?.name}</h1>
-                      {/* <p className="mb-4 text-neutral-400">{profile?.bio}</p> */}
+              <div className="sticky top-[calc(32px+66px+16px)]">
+                {isProfileLoading ? (
+                  <ProfileSidebarSkeleton />
+                ) : (
+                  <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
+                    <CardContent className="px-6">
+                      <div className="text-center">
+                        <Avatar className="mx-auto mb-4 h-24 w-24">
+                          <AvatarImage src={profile?.image} />
+                          <AvatarFallback>
+                            {profile?.name?.charAt(0).toUpperCase() ?? 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <h1 className="mb-2 text-2xl font-bold">{profile?.name}</h1>
+                        {/* <p className="mb-4 text-neutral-400">{profile?.bio}</p> */}
 
-                      {profile?.git?.location && (
-                        <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                          <MapPin className="h-4 w-4" />
-                          <span>{profile?.git?.location}</span>
+                        {profile?.git?.location && (
+                          <div className="mb-4 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+                            <MapPin className="h-4 w-4" />
+                            <span>{profile?.git?.location}</span>
+                          </div>
+                        )}
+
+                        <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
+                          <Calendar className="h-4 w-4" />
+                          <span>
+                            Joined{' '}
+                            {profile?.git?.createdAt &&
+                              new Date(profile.git.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
-                      )}
 
-                      <div className="mb-6 flex items-center justify-center space-x-2 text-sm text-neutral-400">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          Joined{' '}
-                          {profile?.git?.createdAt &&
-                            new Date(profile.git.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      <div className="mb-6 flex justify-center space-x-3">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`https://${profile?.git?.provider}.com/${profile?.git?.login}`}
-                            target="_blank"
-                          >
-                            {profile?.git?.provider === 'github' ? (
-                              <Icons.github className="h-4 w-4" />
-                            ) : (
-                              <Icons.gitlab className="h-4 w-4" />
-                            )}
-                          </Link>
-                        </Button>
-
-                        {profile?.git?.blog ? (
+                        <div className="mb-6 flex justify-center space-x-3">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={profile?.git?.blog ?? ''} target="_blank">
-                              <Globe className="h-4 w-4" />
+                            <Link
+                              href={`https://${profile?.git?.provider}.com/${profile?.git?.login}`}
+                              target="_blank"
+                            >
+                              {profile?.git?.provider === 'github' ? (
+                                <Icons.github className="h-4 w-4" />
+                              ) : (
+                                <Icons.gitlab className="h-4 w-4" />
+                              )}
                             </Link>
                           </Button>
-                        ) : null}
-                      </div>
 
-                      <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                          <div className="text-2xl font-bold">
-                            {(projectsWithGithubData?.length || 0).toLocaleString()}
+                          {profile?.git?.blog ? (
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={profile?.git?.blog ?? ''} target="_blank">
+                                <Globe className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          ) : null}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 text-center">
+                          <div>
+                            <div className="text-2xl font-bold">
+                              {(projectsWithGithubData?.length || 0).toLocaleString()}
+                            </div>
+                            <div className="text-xs text-neutral-400">Projects</div>
                           </div>
-                          <div className="text-xs text-neutral-400">Projects</div>
-                        </div>
-                        <div>
-                          <ResponsiveNumber
-                            value={
-                              projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
-                            }
-                            className="text-2xl font-bold"
-                          />
-                          <div className="text-xs text-neutral-400">Total Stars</div>
-                        </div>
-                        <div>
-                          <ResponsiveNumber
-                            value={
-                              projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
-                            }
-                            className="text-2xl font-bold"
-                          />
-                          <div className="text-xs text-neutral-400">Total Forks</div>
+                          <div>
+                            <ResponsiveNumber
+                              value={
+                                projectsWithGithubData?.reduce((sum, p) => sum + p.stars, 0) || 0
+                              }
+                              className="text-2xl font-bold"
+                            />
+                            <div className="text-xs text-neutral-400">Total Stars</div>
+                          </div>
+                          <div>
+                            <ResponsiveNumber
+                              value={
+                                projectsWithGithubData?.reduce((sum, p) => sum + p.forks, 0) || 0
+                              }
+                              className="text-2xl font-bold"
+                            />
+                            <div className="text-xs text-neutral-400">Total Forks</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
 
-              {profile?.id && (
-                <div className="hidden lg:block">
-                  <RecentActivity userId={profile.id} />
-                </div>
-              )}
+                {profile?.id && (
+                  <div className="hidden lg:block">
+                    <RecentActivity userId={profile.id} />
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="lg:col-span-8">
+            <div className="space-y-4 lg:col-span-8">
+              {profile?.git && (
+                <ContributionGraph username={profile.git.login} provider={profile.git.provider} />
+              )}
               <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3 rounded-none border-neutral-800 bg-neutral-900/50">
                   <TabsTrigger value="projects" className="rounded-none">
@@ -377,8 +624,8 @@ function UserPullRequests({ profile }: { profile: Profile }) {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <Card key={i} className="rounded-none border-neutral-800 bg-neutral-900/50">
-            <CardContent className="p-4 py-0">
+          <Card key={i} className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+            <CardContent className="p-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <Skeleton className="mb-2 h-5 w-3/4 rounded-none" />
@@ -470,26 +717,26 @@ function UserPullRequests({ profile }: { profile: Profile }) {
   return (
     <div>
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
-          <CardContent className="p-4 py-0">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+          <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.merged}</div>
             <div className="text-xs text-neutral-400">Merged PRs</div>
           </CardContent>
         </Card>
-        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
-          <CardContent className="p-4 py-0">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+          <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.open}</div>
             <div className="text-xs text-neutral-400">Open PRs</div>
           </CardContent>
         </Card>
-        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
-          <CardContent className="p-4 py-0">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+          <CardContent className="p-4">
             <div className="text-2xl font-bold">{stats.avgMergeTime}d</div>
             <div className="text-xs text-neutral-400">Avg Merge Time</div>
           </CardContent>
         </Card>
-        <Card className="rounded-none border-neutral-800 bg-neutral-900/50">
-          <CardContent className="p-4 py-0">
+        <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+          <CardContent className="p-4">
             <div className="text-2xl font-bold">{pullRequests.length}</div>
             <div className="text-xs text-neutral-400">Total PRs</div>
           </CardContent>
@@ -544,11 +791,11 @@ function UserPullRequests({ profile }: { profile: Profile }) {
               <Card
                 key={pr.id}
                 className={cn(
-                  'rounded-none border-neutral-800 bg-neutral-900/50 transition-colors hover:bg-neutral-900/70',
+                  'rounded-none border-neutral-800 bg-neutral-900/50 p-0 transition-colors hover:bg-neutral-900/70',
                   isMergedQuickly && 'border-green-900/50',
                 )}
               >
-                <CardContent className="px-4 py-0">
+                <CardContent className="p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
                       <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -651,8 +898,8 @@ function UserPullRequests({ profile }: { profile: Profile }) {
 
 function ProfileSidebarSkeleton() {
   return (
-    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 backdrop-blur-sm">
-      <CardContent className="px-6">
+    <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0 backdrop-blur-sm">
+      <CardContent className="p-4">
         <div className="text-center">
           <Skeleton className="mx-auto mb-4 h-24 w-24 rounded-none" />
           <Skeleton className="mx-auto mb-2 h-7 w-40 rounded-none" />

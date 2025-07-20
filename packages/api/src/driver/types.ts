@@ -175,9 +175,22 @@ export type GitManagerConfig = {
   token: string;
 };
 
-export type ContributionData = {
-  count: number;
-};
+export interface ContributionDay {
+  date: string;
+  contributionCount: number;
+  contributionLevel:
+    | 'NONE'
+    | 'FIRST_QUARTILE'
+    | 'SECOND_QUARTILE'
+    | 'THIRD_QUARTILE'
+    | 'FOURTH_QUARTILE';
+  color: string;
+}
+
+export interface ContributionData {
+  totalContributions: number;
+  days: ContributionDay[];
+}
 
 export interface GitManager {
   getRepo(identifier: string): Promise<RepoData>;
@@ -225,6 +238,6 @@ export interface GitManager {
     org: string,
     username: string,
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
-  getContributions(username: string): Promise<ContributionData[]>;
+  getContributions(username: string): Promise<ContributionData>;
   getUserDetails(username: string): Promise<UserData>;
 }

@@ -60,7 +60,8 @@ export class GitlabManager implements GitManager {
         try {
           const projectData = await this.gitlab.Projects.show(identifier);
 
-          const isPrivate = projectData.visibility === 'private' || projectData.visibility === 'internal';
+          const isPrivate =
+            projectData.visibility === 'private' || projectData.visibility === 'internal';
 
           return {
             ...projectData,
@@ -226,7 +227,6 @@ export class GitlabManager implements GitManager {
             state: 'closed',
             perPage: 100,
           });
-
 
           const mergedMRs = await this.gitlab.MergeRequests.all({
             projectId: identifier,
@@ -684,8 +684,29 @@ export class GitlabManager implements GitManager {
     );
   }
 
-  getContributions(username: string): Promise<ContributionData[]> {
-    throw new Error('Method not implemented.');
+  async getContributions(username: string): Promise<ContributionData> {
+    return getCached(
+      createCacheKey('gitlab', 'contributions', username),
+      async () => {
+        try {
+          // GitLab doesn't provide a direct contributions API like GitHub
+          // We could potentially fetch user's recent events or activity, but that's limited
+          // For now, return empty contribution data
+          console.warn(`GitLab contributions API not available for user: ${username}`);
+
+          return {
+            totalContributions: 0,
+            days: [],
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch GitLab contributions: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
   }
 
   async getUserPullRequests(

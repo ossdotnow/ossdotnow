@@ -370,7 +370,7 @@ export default function ProjectPage({ id }: { id: string }) {
                     </TabsTrigger>
                   </TabsList>
                 </div>
-                <div className="max-h-[calc(100vh-400px)] overflow-x-hidden overflow-y-auto lg:max-h-none lg:overflow-x-visible lg:overflow-y-visible">
+                <div className="overflow-x-hidden overflow-y-auto lg:overflow-x-visible lg:overflow-y-visible">
                   <TabsContent value="readme">
                     {readme ? (
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">

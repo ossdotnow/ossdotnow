@@ -233,6 +233,30 @@ export const profileRouter = createTRPCRouter({
 
       return activities.slice(0, 50);
     }),
+  getUserContributions: publicProcedure
+    .input(
+      z.object({
+        username: z.string(),
+        provider: z.enum(['github', 'gitlab']),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const { username, provider } = input;
+
+      try {
+        const driver = await getActiveDriver(provider, ctx);
+        const contributions = await driver.getContributions(username);
+        return contributions;
+      } catch (error) {
+        if (error instanceof TRPCError) {
+          throw error;
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to fetch user contributions',
+        });
+      }
+    }),
   getUserPullRequests: publicProcedure
     .input(
       z.object({
