@@ -1,4 +1,4 @@
-import { categoryProjectStatuses, categoryProjectTypes, categoryTags } from '@workspace/db/schema';
+import { categoryProjectStatuses, categoryProjectTypes, categoryTags, projectApprovalStatusEnum } from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
 import { and, asc, count, desc, eq, or, ilike, inArray } from 'drizzle-orm';
@@ -22,6 +22,7 @@ const createProjectInput = createInsertSchema(project)
     status: z.string().min(1, 'Project status is required'),
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
+    approvalStatus: z.enum(projectApprovalStatusEnum.enumValues),
   });
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
@@ -544,11 +545,8 @@ export const projectsRouter = createTRPCRouter({
       return newProject;
     });
   }),
-  updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    if (!input.id) throw new Error('Project ID is required for update');
-    if (!ctx.session.userId) throw new Error('User not authenticated');
+  updateProject: adminProcedure.input(createProjectInput.extend({ id: z.string() })).mutation(async ({ ctx, input }) => {
     const projectId = input.id;
-    const userId = ctx.session.userId;
 
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
@@ -564,13 +562,13 @@ export const projectsRouter = createTRPCRouter({
           statusId,
           typeId,
         })
-        .where(and(eq(project.id, projectId), eq(project.ownerId, userId)))
+        .where(eq(project.id, projectId))
         .returning();
 
       if (!updatedProject) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'Project not found or not owned by you',
+          message: 'Project not found',
         });
       }
       await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
