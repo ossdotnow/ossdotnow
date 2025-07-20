@@ -10,67 +10,37 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { projectApprovalStatusEnum, projectProviderEnum } from '@workspace/db/schema';
 import { useCallback, useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string | null;
-  gitRepoUrl: string;
-  gitHost: string;
-  logoUrl: string | null;
-  approvalStatus: string;
-  status: { name: string } | null;
-  type: { name: string } | null;
-  tagRelations: Array<{ tag: { name: string } | null }>;
-  socialLinks: {
-    twitter: string | null;
-    discord: string | null;
-    linkedin: string | null;
-    website: string | null;
-  } | null;
-  isLookingForContributors: boolean;
-  isLookingForInvestors: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  hasBeenAcquired: boolean;
-  isPinned: boolean;
-  isRepoPrivate: boolean;
-};
+import { Project } from '@/types/project';
 
 const editProjectSchema = z.object({
   name: z.string().min(1, 'Project name is required'),
-  description: z.string().default(''),
+  description: z.string(),
   gitRepoUrl: z.string().min(1, 'Repository URL is required'),
   gitHost: z.enum(projectProviderEnum.enumValues),
-  logoUrl: z.string().default(''),
+  logoUrl: z.string(),
   approvalStatus: z.enum(projectApprovalStatusEnum.enumValues),
   status: z.string().min(1, 'Project status is required'),
   type: z.string().min(1, 'Project type is required'),
   tags: z.array(z.string()),
   socialLinks: z.object({
-    twitter: z.string().default(''),
-    discord: z.string().default(''),
-    linkedin: z.string().default(''),
-    website: z.string().default(''),
-  }).default({
-    twitter: '',
-    discord: '',
-    linkedin: '',
-    website: '',
+    twitter: z.string(),
+    discord: z.string(),
+    linkedin: z.string(),
+    website: z.string(),
   }),
-  isLookingForContributors: z.boolean().default(false),
-  isLookingForInvestors: z.boolean().default(false),
-  isHiring: z.boolean().default(false),
-  isPublic: z.boolean().default(false),
-  hasBeenAcquired: z.boolean().default(false),
-  isPinned: z.boolean().default(false),
-  isRepoPrivate: z.boolean().default(false),
+  isLookingForContributors: z.boolean(),
+  isLookingForInvestors: z.boolean(),
+  isHiring: z.boolean(),
+  isPublic: z.boolean(),
+  hasBeenAcquired: z.boolean(),
+  isPinned: z.boolean(),
+  isRepoPrivate: z.boolean(),
 });
 
-type EditProjectFormData = z.infer<typeof editProjectSchema>;
+export type EditProjectFormData = z.infer<typeof editProjectSchema>;
 
 interface ProjectEditFormProps {
-  projectData: Project;
+  projectData: Project | null;
   projectId: string;
 }
 
@@ -161,7 +131,7 @@ export function ProjectEditForm({ projectData, projectId }: ProjectEditFormProps
 
     for (const pattern of githubPatterns) {
       const match = trimmedInput.match(pattern);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match?.[2]) {
         return {
           repo: `${match[1]}/${match[2]}`,
           host: 'github',
@@ -171,7 +141,7 @@ export function ProjectEditForm({ projectData, projectId }: ProjectEditFormProps
 
     for (const pattern of gitlabPatterns) {
       const match = trimmedInput.match(pattern);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match?.[2]) {
         return {
           repo: `${match[1]}/${match[2]}`,
           host: 'gitlab',

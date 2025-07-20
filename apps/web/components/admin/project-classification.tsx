@@ -6,15 +6,15 @@ import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { Badge } from '@workspace/ui/components/badge';
 import { projectApprovalStatusEnum } from '@workspace/db/schema';
 import { UseFormReturn } from 'react-hook-form';
+import { EditProjectFormData } from './project-edit-form';
 
 interface ProjectClassificationProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EditProjectFormData>;
   projectStatuses: Array<{ id: string; name: string; displayName: string }> | undefined;
   projectTypes: Array<{ id: string; name: string; displayName: string }> | undefined;
   tags: Array<{ name: string; displayName: string }> | undefined;
   projectStatusesLoading: boolean;
   projectTypesLoading: boolean;
-  tagsLoading: boolean;
 }
 
 export function ProjectClassification({
@@ -24,7 +24,6 @@ export function ProjectClassification({
   tags,
   projectStatusesLoading,
   projectTypesLoading,
-  tagsLoading,
 }: ProjectClassificationProps) {
   return (
     <div>

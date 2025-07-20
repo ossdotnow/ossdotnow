@@ -15,32 +15,7 @@ import { ProjectClassification } from '@/components/admin/project-classification
 import { ProjectSocialLinks } from '@/components/admin/project-social-links';
 import { ProjectSettings } from '@/components/admin/project-settings';
 import { RepositoryChangeDialog } from '@/components/admin/repository-change-dialog';
-
-type Project = {
-  id: string;
-  name: string;
-  description: string | null;
-  gitRepoUrl: string;
-  gitHost: string;
-  logoUrl: string | null;
-  approvalStatus: string;
-  status: { name: string } | null;
-  type: { name: string } | null;
-  tagRelations: Array<{ tag: { name: string } | null }>;
-  socialLinks: {
-    twitter: string | null;
-    discord: string | null;
-    linkedin: string | null;
-    website: string | null;
-  } | null;
-  isLookingForContributors: boolean;
-  isLookingForInvestors: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  hasBeenAcquired: boolean;
-  isPinned: boolean;
-  isRepoPrivate: boolean;
-};
+import { isProject } from '@/types/project';
 
 export default function AdminProjectEditPage() {
   const params = useParams();
@@ -75,11 +50,14 @@ export default function AdminProjectEditPage() {
     confirmRepoChange,
     cancelRepoChange,
     onSubmit,
-  } = ProjectEditForm({ projectData: projectData as Project, projectId });
+  } = ProjectEditForm({
+    projectData: isProject(projectData) ? projectData : null,
+    projectId
+  });
 
   // Set form values when project data loads
   React.useEffect(() => {
-    if (projectData && !projectStatusesLoading && !projectTypesLoading && !tagsLoading) {
+    if (projectData && isProject(projectData) && !projectStatusesLoading && !projectTypesLoading && !tagsLoading) {
       const currentTags = projectData.tagRelations?.map(relation => relation.tag?.name).filter(Boolean) ?? [];
 
       const formData = {
@@ -107,7 +85,6 @@ export default function AdminProjectEditPage() {
         isRepoPrivate: projectData.isRepoPrivate,
       };
 
-      console.log('Setting form data:', formData);
       form.reset(formData);
     }
   }, [projectData, projectStatusesLoading, projectTypesLoading, tagsLoading, form]);
@@ -120,12 +97,12 @@ export default function AdminProjectEditPage() {
     );
   }
 
-  if (!projectData) {
+  if (!projectData || !isProject(projectData)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <h2 className="text-xl font-semibold">Project not found</h2>
-          <p className="text-muted-foreground">The project you're looking for doesn't exist.</p>
+          <p className="text-muted-foreground">The project you&apos;re looking for doesn&apos;t exist.</p>
           <Button asChild className="mt-4">
             <Link href="/admin/projects">Back to Projects</Link>
           </Button>
@@ -180,7 +157,6 @@ export default function AdminProjectEditPage() {
                       tags={tags}
                       projectStatusesLoading={projectStatusesLoading}
                       projectTypesLoading={projectTypesLoading}
-                      tagsLoading={tagsLoading}
                     />
 
                     <Separator className="bg-neutral-700" />

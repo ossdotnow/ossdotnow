@@ -3,9 +3,10 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@workspace/ui/components/form';
 import { Input } from '@workspace/ui/components/input';
 import { UseFormReturn } from 'react-hook-form';
+import { EditProjectFormData } from './project-edit-form';
 
 interface ProjectSocialLinksProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EditProjectFormData>;
 }
 
 export function ProjectSocialLinks({ form }: ProjectSocialLinksProps) {

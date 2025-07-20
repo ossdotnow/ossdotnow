@@ -3,9 +3,10 @@
 import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '@workspace/ui/components/form';
 import { Switch } from '@workspace/ui/components/switch';
 import { UseFormReturn } from 'react-hook-form';
+import { EditProjectFormData } from './project-edit-form';
 
 interface ProjectSettingsProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EditProjectFormData>;
 }
 
 export function ProjectSettings({ form }: ProjectSettingsProps) {

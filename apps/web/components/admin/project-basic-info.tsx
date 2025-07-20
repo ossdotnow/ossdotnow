@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { UseFormReturn } from 'react-hook-form';
+import { EditProjectFormData } from './project-edit-form';
 
 interface ProjectBasicInfoProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<EditProjectFormData>;
   repoValidation: {
     isValidating: boolean;
     isValid: boolean | null;
@@ -29,6 +30,16 @@ export function ProjectBasicInfo({
   parseRepositoryUrl,
   handleRepoChange,
 }: ProjectBasicInfoProps) {
+  // Helper function to handle repository URL parsing and changes
+  const handleRepositoryInput = (inputValue: string) => {
+    const parsed = parseRepositoryUrl(inputValue);
+    if (parsed) {
+      handleRepoChange(parsed.repo, parsed.host as 'github' | 'gitlab');
+    } else {
+      const gitHost = form.getValues('gitHost') || 'github';
+      handleRepoChange(inputValue, gitHost as 'github' | 'gitlab');
+    }
+  };
   return (
     <div>
       <h3 className="mb-4 text-md font-medium text-white">Basic Information</h3>
@@ -80,14 +91,7 @@ export function ProjectBasicInfo({
                     value={field.value ?? ''}
                     onChange={(e) => {
                       const inputValue = e.target.value;
-                      const parsed = parseRepositoryUrl(inputValue);
-
-                      if (parsed) {
-                        handleRepoChange(parsed.repo, parsed.host as 'github' | 'gitlab');
-                      } else {
-                        const gitHost = form.getValues('gitHost') || 'github';
-                        handleRepoChange(inputValue, gitHost as 'github' | 'gitlab');
-                      }
+                      handleRepositoryInput(inputValue);
                     }}
                     onPaste={async (e) => {
                       let pastedText = '';
@@ -104,25 +108,13 @@ export function ProjectBasicInfo({
                         console.error('error', error);
                         setTimeout(() => {
                           const inputValue = (e.target as HTMLInputElement).value;
-                          const parsed = parseRepositoryUrl(inputValue);
-                          if (parsed) {
-                            handleRepoChange(parsed.repo, parsed.host as 'github' | 'gitlab');
-                          } else {
-                            const gitHost = form.getValues('gitHost') || 'github';
-                            handleRepoChange(inputValue, gitHost as 'github' | 'gitlab');
-                          }
+                          handleRepositoryInput(inputValue);
                         }, 0);
                         return;
                       }
 
                       if (pastedText) {
-                        const parsed = parseRepositoryUrl(pastedText);
-                        if (parsed) {
-                          handleRepoChange(parsed.repo, parsed.host as 'github' | 'gitlab');
-                        } else {
-                          const gitHost = form.getValues('gitHost') || 'github';
-                          handleRepoChange(pastedText, gitHost as 'github' | 'gitlab');
-                        }
+                        handleRepositoryInput(pastedText);
                       }
                     }}
                   />
