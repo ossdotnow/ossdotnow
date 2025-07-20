@@ -43,8 +43,12 @@ export const userRouter = createTRPCRouter({
       const gitHubContributions = await gitHubDriver.getContributions(input.username);
       const gitLabContributions = await gitLabDriver.getContributions(input.username);
 
-      const contributions = [...gitHubContributions, ...gitLabContributions];
+      const mergedContributions = {
+        totalContributions:
+          gitHubContributions.totalContributions + gitLabContributions.totalContributions,
+        days: [...gitHubContributions.days, ...gitLabContributions.days],
+      };
 
-      return contributions;
+      return mergedContributions;
     }),
 });
