@@ -16,7 +16,9 @@ import SubmissionForm from './submission-form';
 import { Edit, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
+import { submisionForm } from '@/forms';
 import { toast } from 'sonner';
+import { z } from 'zod/v4';
 
 interface EditProjectDialogProps {
   projectId: string;
@@ -26,27 +28,7 @@ interface EditProjectDialogProps {
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
-export type FormData = {
-  name: string;
-  description: string;
-  logoUrl: string;
-  gitRepoUrl: string;
-  gitHost: 'github' | 'gitlab';
-  status: string;
-  type: string;
-  socialLinks: {
-    twitter: string;
-    discord: string;
-    linkedin: string;
-    website: string;
-  };
-  tags: string[];
-  isLookingForContributors: boolean;
-  isLookingForInvestors: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  hasBeenAcquired: boolean;
-};
+type FormData = z.infer<typeof submisionForm>;
 
 export default function EditProjectDialog({
   projectId,
@@ -56,21 +38,19 @@ export default function EditProjectDialog({
   size = 'sm',
 }: EditProjectDialogProps) {
   const [open, setOpen] = useState(false);
-
   const [initialData, setInitialData] = useState<FormData | null>(null);
   const trpc = useTRPC();
 
-  // Fetch project data when dialog opens
   const {
     data: projectData,
     isLoading,
     error,
+    refetch,
   } = useQuery(trpc.projects.getById.queryOptions({ id: projectId }, { enabled: open }));
 
   useEffect(() => {
     if (projectData && open) {
-      // Transform the project data to match the form structure
-      const formData = {
+      const formData: FormData = {
         name: projectData.name || '',
         description: projectData.description || '',
         logoUrl: projectData.logoUrl || '',
@@ -88,10 +68,9 @@ export default function EditProjectDialog({
         isLookingForContributors: projectData.isLookingForContributors || false,
         isLookingForInvestors: projectData.isLookingForInvestors || false,
         isHiring: projectData.isHiring || false,
-        isPublic: projectData.isPublic !== false, // Default to true
+        isPublic: projectData.isPublic !== false,
         hasBeenAcquired: projectData.hasBeenAcquired || false,
       };
-
       setInitialData(formData);
     }
   }, [projectData, open]);
@@ -99,14 +78,12 @@ export default function EditProjectDialog({
   const handleSuccess = () => {
     toast.success('Project updated successfully!');
     setOpen(false);
-    // Reset initial data so it fetches fresh data next time
     setInitialData(null);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     if (!newOpen) {
-      // Reset initial data when closing
       setInitialData(null);
     }
   };
@@ -143,8 +120,11 @@ export default function EditProjectDialog({
             <span className="ml-2">Loading project data...</span>
           </div>
         ) : error ? (
-          <div className="flex items-center justify-center py-8 text-red-500">
-            <p>Error loading project data. Please try again.</p>
+          <div className="flex flex-col items-center justify-center py-8 text-red-500">
+            <p>Failed to load project. Please try again.</p>
+            <Button variant="secondary" onClick={() => refetch()} className="mt-4">
+              Retry
+            </Button>
           </div>
         ) : initialData ? (
           <SubmissionForm

@@ -30,9 +30,26 @@ export default function ProjectCard({ project }: { project: Project }) {
 
   return (
     <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
-      {/* Edit button fixed top-right */}
-      <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
-        <EditProjectDialog projectId={project.id} projectName={project.name} />
+      {/* Edit button and badges positioned in top right */}
+      <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-2">
+        <div onClick={(e) => e.stopPropagation()} role="button" aria-label={`Edit ${project.name}`}>
+          <EditProjectDialog projectId={project.id} projectName={project.name} />
+        </div>
+
+        {(project.isLookingForContributors || project.hasBeenAcquired) && (
+          <div className="flex flex-col items-end gap-1">
+            {project.isLookingForContributors && (
+              <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492]">
+                Open to contributors
+              </span>
+            )}
+            {project.hasBeenAcquired && (
+              <span className="rounded-none bg-yellow-500/10 px-1.5 py-0.5 text-xs font-medium text-yellow-400">
+                Acquired
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <Link
@@ -42,9 +59,7 @@ export default function ProjectCard({ project }: { project: Project }) {
         className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4"
       >
         <span className="sr-only">View {project.name}</span>
-
-        <div className="mb-3 flex items-start gap-3">
-          {/* Avatar */}
+        <div className="mb-3 flex items-center gap-3">
           {repo?.owner?.avatar_url || repo?.namespace?.avatar_url ? (
             <Image
               src={repo.owner?.avatar_url || `https://gitlab.com${repo.namespace?.avatar_url}`}
@@ -58,37 +73,18 @@ export default function ProjectCard({ project }: { project: Project }) {
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
           )}
 
-          {/* Info section */}
-          <div className="min-w-0 flex-1">
-            {/* Title + badges in same column */}
-            <h3 className="mb-1 truncate text-sm font-semibold text-white md:text-base">
-              {project.name}
-            </h3>
-
-            {/* Badges */}
-            {(project.isLookingForContributors || project.hasBeenAcquired) && (
-              <div className="mb-1 flex flex-wrap gap-1 md:gap-1.5">
-                {project.isLookingForContributors && (
-                  <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492] md:px-2">
-                    Open to contributors
-                  </span>
-                )}
-                {project.hasBeenAcquired && (
-                  <span className="rounded-none bg-yellow-500/10 px-1.5 py-0.5 text-xs font-medium text-yellow-400 md:px-2">
-                    Acquired
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Description */}
+          <div className="min-w-0 flex-1 pr-16">
+            <div className="mb-1">
+              <h3 className="truncate text-sm font-semibold text-white md:text-base">
+                {project.name}
+              </h3>
+            </div>
             <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
               {project.description}
             </p>
           </div>
         </div>
 
-        {/* Footer stats */}
         <div className="flex items-center gap-3 p-2 pb-1 text-xs md:gap-4 md:text-sm">
           <div className="flex items-center gap-1">
             <Icons.star className="h-3 w-3 text-yellow-600 md:h-3.5 md:w-3.5" />

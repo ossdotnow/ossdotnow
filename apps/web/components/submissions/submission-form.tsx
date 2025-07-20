@@ -195,20 +195,16 @@ export default function SubmissionForm({
     isValid: null,
     message: null,
   });
+  const updateSubmissionHook = useUpdateSubmission(onSuccess);
+  const earlySubmissionHook = useEarlySubmission(onSuccess);
+  const submissionHook = useSubmission(onSuccess);
+
   const { mutate, success, error, isLoading, clearError } = isEditing
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      (() => {
-        const updateHook = useUpdateSubmission(onSuccess);
-        return {
-          ...updateHook,
-          success: false, // Updates don't show success screen
-        };
-      })()
+    ? { ...updateSubmissionHook, success: false }
     : earlySubmission
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useEarlySubmission(onSuccess)
-      : // eslint-disable-next-line react-hooks/rules-of-hooks
-        useSubmission(onSuccess);
+      ? earlySubmissionHook
+      : submissionHook;
+
   const trpc = useTRPC();
   const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 

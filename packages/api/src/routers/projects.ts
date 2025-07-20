@@ -400,24 +400,32 @@ export const projectsRouter = createTRPCRouter({
         },
       };
     }),
-  getById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+
+  getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const userId = ctx.session.userId;
+
+    if (!userId) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'User not authenticated',
+      });
+    }
+
     const projectData = await ctx.db.query.project.findFirst({
-      where: eq(project.id, input.id),
+      where: and(eq(project.id, input.id), eq(project.ownerId, userId)),
       with: {
         status: true,
         type: true,
         tagRelations: {
-          with: {
-            tag: true,
-          },
+          with: { tag: true },
         },
       },
     });
 
     if (!projectData) {
       throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Project not found',
+        code: 'FORBIDDEN',
+        message: 'Not authorized to access this project',
       });
     }
 
@@ -453,10 +461,8 @@ export const projectsRouter = createTRPCRouter({
       const { page, pageSize, userId } = input;
       const offset = (page - 1) * pageSize;
 
-      // Build where conditions
       const conditions = [eq(project.ownerId, userId)];
 
-      // If viewing another user's projects, hide private repositories
       if (!ctx.session?.userId || ctx.session.userId !== userId) {
         conditions.push(eq(project.isRepoPrivate, false));
       }
@@ -503,6 +509,7 @@ export const projectsRouter = createTRPCRouter({
         },
       };
     }),
+
   getProject: publicProcedure.input(z.object({ id: z.string() })).query(({ ctx, input }) => {
     return ctx.db.query.project.findFirst({
       where: eq(project.id, input.id),
