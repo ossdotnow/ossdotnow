@@ -140,30 +140,48 @@ function ContributionGraph({
     'Nov',
     'Dec',
   ];
-  const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const grid = getContributionGrid();
   const weeks = grid.length > 0 && grid[0] ? grid[0].length : 0;
 
-  const getMonthLabels = () => {
-    const labels: { month: string; week: number }[] = [];
+  const getMonthColumns = () => {
+    const monthCols: { month: string; colspan: number; index: number }[] = [];
     let currentMonth = -1;
+    let startWeek = 0;
 
     for (let week = 0; week < weeks; week++) {
+      let monthForWeek = -1;
       for (let day = 0; day < 7; day++) {
         const contribution = grid[day]?.[week];
         if (contribution) {
-          const month = contribution.date.getMonth();
-          if (month !== currentMonth) {
-            currentMonth = month;
-            labels.push({ month: months[month] || '', week });
-            break;
-          }
+          monthForWeek = contribution.date.getMonth();
+          break;
         }
+      }
+
+      if (monthForWeek !== -1 && monthForWeek !== currentMonth) {
+        if (currentMonth !== -1) {
+          monthCols.push({
+            month: months[currentMonth] || '',
+            colspan: week - startWeek,
+            index: monthCols.length,
+          });
+        }
+        currentMonth = monthForWeek;
+        startWeek = week;
       }
     }
 
-    return labels;
+    if (currentMonth !== -1) {
+      monthCols.push({
+        month: months[currentMonth] || '',
+        colspan: weeks - startWeek,
+        index: monthCols.length,
+      });
+    }
+
+    return monthCols;
   };
 
   const levelColors = [
@@ -198,58 +216,72 @@ function ContributionGraph({
           )}
         </div>
         <div className="overflow-x-auto">
-          <div className="inline-block">
-            <div className="mb-1 flex">
-              <div className="w-5"></div>
-              {getMonthLabels().map((label, i) => (
-                <div
-                  key={i}
-                  className="text-xs text-neutral-400"
-                  style={{
-                    marginLeft: `${(label.week - (getMonthLabels()[i - 1]?.week || 0)) * 11 - 11}px`,
-                  }}
-                >
-                  {label.month}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex">
-              <div className="mr-1 flex flex-col">
-                {weekDays.map((day, i) => (
-                  <div key={i} className="flex h-[11px] items-center text-xs text-neutral-400">
-                    {i % 2 === 1 ? day : ''}
-                  </div>
+          <table
+            className="border-separate"
+            style={{ borderSpacing: '3px' }}
+            role="grid"
+            aria-readonly="true"
+          >
+            <caption className="sr-only">Contribution Graph</caption>
+            <thead>
+              <tr style={{ height: '13px' }}>
+                <td style={{ width: '28px' }}>
+                  <span className="sr-only">Day of Week</span>
+                </td>
+                {getMonthColumns().map((col) => (
+                  <td
+                    key={col.index}
+                    className="relative text-xs text-neutral-400"
+                    colSpan={col.colspan}
+                  >
+                    <span className="sr-only">{col.month}</span>
+                    <span aria-hidden="true" className="absolute top-0 left-0">
+                      {col.month}
+                    </span>
+                  </td>
                 ))}
-              </div>
-
-              <div className="flex flex-col gap-0.5">
-                {grid.map((week, weekIndex) => (
-                  <div key={weekIndex} className="flex">
-                    {week.map((day, dayIndex) => (
-                      <div
-                        key={dayIndex}
-                        className={cn(
-                          'mr-[2px] h-[9px] w-[9px]',
-                          day ? levelColors[day.level] : '',
-                        )}
+              </tr>
+            </thead>
+            <tbody>
+              {weekDays.map((dayName, dayIndex) => (
+                <tr key={dayIndex} style={{ height: '10px' }}>
+                  <td
+                    className="relative pr-1 text-right text-xs text-neutral-400"
+                    style={{ width: '28px' }}
+                  >
+                    <span className="sr-only">{dayName}</span>
+                    <span
+                      aria-hidden="true"
+                      className={cn('absolute right-1', dayIndex % 2 === 0 && 'opacity-0')}
+                    >
+                      {dayName.slice(0, 3)}
+                    </span>
+                  </td>
+                  {Array.from({ length: weeks }).map((_, weekIndex) => {
+                    const day = grid[dayIndex]?.[weekIndex];
+                    return (
+                      <td
+                        key={weekIndex}
+                        className={cn('h-[10px] w-[10px]', day ? levelColors[day.level] : '')}
+                        style={{ width: '10px' }}
                         title={
                           day ? `${day.count} contributions on ${day.date.toDateString()}` : ''
                         }
+                        role="gridcell"
+                        aria-selected="false"
                       />
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-2 flex items-center justify-end gap-1 text-xs text-neutral-400">
-              <span>Less</span>
-              {levelColors.map((color, i) => (
-                <div key={i} className={cn('h-[9px] w-[9px]', color)} />
+                    );
+                  })}
+                </tr>
               ))}
-              <span>More</span>
-            </div>
+            </tbody>
+          </table>
+          <div className="mt-2 flex items-center justify-end gap-1 text-xs text-neutral-400">
+            <span>Less</span>
+            {levelColors.map((color, i) => (
+              <div key={i} className={cn('h-[10px] w-[10px]', color)} />
+            ))}
+            <span>More</span>
           </div>
         </div>
       </CardContent>
