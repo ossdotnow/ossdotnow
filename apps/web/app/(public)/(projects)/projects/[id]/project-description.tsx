@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
+import EditProjectDialog from '@/components/submissions/EditProjectDialog';
 import { ProjectData, ProjectWithRelations } from '@workspace/api';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
@@ -31,7 +32,12 @@ export default function ProjectDescription({
   const avatarImage = getAvatarImage();
 
   return (
-    <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+    <div className="relative border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+      {isOwner && (
+        <div className="absolute top-4 right-4">
+          <EditProjectDialog projectId={project.id} projectName={project.name}></EditProjectDialog>
+        </div>
+      )}
       <div className="flex flex-col gap-4">
         {/* Top row: Avatar + Title + Tags */}
         <div className="flex items-start gap-3">

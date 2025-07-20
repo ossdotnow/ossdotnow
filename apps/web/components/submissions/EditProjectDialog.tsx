@@ -101,8 +101,7 @@ export default function EditProjectDialog({
             size={size}
             className="cursor-pointer rounded-none"
           >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Project
+            <Edit className="h-4 w-4" />
           </Button>
         )}
       </DialogTrigger>
