@@ -400,6 +400,47 @@ export const projectsRouter = createTRPCRouter({
         },
       };
     }),
+  getById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const projectData = await ctx.db.query.project.findFirst({
+      where: eq(project.id, input.id),
+      with: {
+        status: true,
+        type: true,
+        tagRelations: {
+          with: {
+            tag: true,
+          },
+        },
+      },
+    });
+
+    if (!projectData) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Project not found',
+      });
+    }
+
+    return {
+      id: projectData.id,
+      name: projectData.name,
+      description: projectData.description,
+      logoUrl: projectData.logoUrl,
+      gitRepoUrl: projectData.gitRepoUrl,
+      gitHost: projectData.gitHost,
+      isPublic: projectData.isPublic,
+      isRepoPrivate: projectData.isRepoPrivate,
+      isHiring: projectData.isHiring,
+      isLookingForContributors: projectData.isLookingForContributors,
+      isLookingForInvestors: projectData.isLookingForInvestors,
+      hasBeenAcquired: projectData.hasBeenAcquired,
+      status: projectData.status?.name ?? '',
+      type: projectData.type?.name ?? '',
+      socialLinks: projectData.socialLinks ?? {},
+      tags: projectData.tagRelations.map((rel) => rel.tag.name),
+    };
+  }),
+
   getProjectsByUserId: publicProcedure
     .input(
       z.object({

@@ -321,6 +321,7 @@ export default function ProfilePage({ id }: { id: string }) {
       },
     ),
   );
+  console.log('projects', projects?.data);
 
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
 

@@ -38,7 +38,6 @@ import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
-
 function useEarlySubmission(onSuccess?: () => void) {
   const trpc = useTRPC();
   const [isMounted, setIsMounted] = useState(false);
@@ -133,12 +132,56 @@ function useSubmission(onSuccess?: () => void) {
   };
 }
 
+//update the project
+function useUpdateSubmission(onSuccess?: () => void) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+
+  const { mutate, isPending } = useMutation(
+    trpc.projects.updateProject.mutationOptions({
+      onSuccess: () => {
+        setError(null);
+        queryClient.invalidateQueries();
+
+        vercelTrack('project_update_success');
+        databuddyTrack('project_update_success');
+        onSuccess?.();
+      },
+      onError: (err) => {
+        const errorMessage = err.message || 'Something went wrong. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage);
+        vercelTrack('project_update_error', { error: errorMessage });
+        databuddyTrack('project_update_error', { error: errorMessage });
+      },
+    }),
+  );
+
+  const clearError = () => setError(null);
+
+  return {
+    mutate,
+    error,
+    isLoading: isPending,
+    clearError,
+  };
+}
+
+type FormData = z.infer<typeof submisionForm>;
+
 export default function SubmissionForm({
   earlySubmission = false,
   onSuccess,
+  isEditing = false,
+  projectId,
+  initialData,
 }: {
   earlySubmission?: boolean;
   onSuccess?: () => void;
+  isEditing?: boolean;
+  projectId?: string;
+  initialData?: FormData;
 } = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -152,11 +195,20 @@ export default function SubmissionForm({
     isValid: null,
     message: null,
   });
-  const { mutate, success, error, isLoading, clearError } = earlySubmission
+  const { mutate, success, error, isLoading, clearError } = isEditing
     ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useEarlySubmission(onSuccess)
-    : // eslint-disable-next-line react-hooks/rules-of-hooks
-      useSubmission(onSuccess);
+      (() => {
+        const updateHook = useUpdateSubmission(onSuccess);
+        return {
+          ...updateHook,
+          success: false, // Updates don't show success screen
+        };
+      })()
+    : earlySubmission
+      ? // eslint-disable-next-line react-hooks/rules-of-hooks
+        useEarlySubmission(onSuccess)
+      : // eslint-disable-next-line react-hooks/rules-of-hooks
+        useSubmission(onSuccess);
   const trpc = useTRPC();
   const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
 
@@ -169,38 +221,55 @@ export default function SubmissionForm({
   );
   const { data: tags } = useQuery(trpc.categories.getTags.queryOptions({ activeOnly: true }));
 
-  type FormData = z.infer<typeof formSchema>;
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     mode: 'onBlur',
     reValidateMode: 'onChange',
-    defaultValues: {
-      name: '',
-      description: '',
-      logoUrl: '',
-      gitRepoUrl: '',
-      gitHost: 'github',
-      status: '',
-      type: '',
-      socialLinks: {
-        twitter: '',
-        discord: '',
-        linkedin: '',
-        website: '',
-      },
-      tags: [],
-      isLookingForContributors: false,
-      isLookingForInvestors: false,
-      isHiring: false,
-      isPublic: true,
-      hasBeenAcquired: false,
-    },
+    defaultValues:
+      isEditing && initialData
+        ? initialData
+        : {
+            name: '',
+            description: '',
+            logoUrl: '',
+            gitRepoUrl: '',
+            gitHost: 'github',
+            status: '',
+            type: '',
+            socialLinks: {
+              twitter: '',
+              discord: '',
+              linkedin: '',
+              website: '',
+            },
+            tags: [],
+            isLookingForContributors: false,
+            isLookingForInvestors: false,
+            isHiring: false,
+            isPublic: true,
+            hasBeenAcquired: false,
+          },
   });
 
   const { trigger } = form;
 
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (isEditing && initialData) {
+      // Reset form with initial data
+      form.reset(initialData);
+
+      // Set selected platforms based on initial data
+      const platforms = new Set<string>();
+      Object.entries(initialData.socialLinks || {}).forEach(([key, value]) => {
+        if (typeof value === 'string' && value.trim() !== '') {
+          platforms.add(key);
+        }
+      });
+      setSelectedPlatforms(platforms);
+    }
+  }, [isEditing, initialData, form]);
 
   const parseRepositoryUrl = (
     input: string,
@@ -286,6 +355,7 @@ export default function SubmissionForm({
                   })
                 : trpc.submission.checkDuplicateRepo.queryOptions({
                     gitRepoUrl: repoUrl,
+                    ...(isEditing && projectId ? { projectId } : {}),
                   }),
             );
 
@@ -303,7 +373,8 @@ export default function SubmissionForm({
               setRepoValidation({
                 isValidating: false,
                 isValid: true,
-                message: 'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
+                message:
+                  'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
               });
             } else {
               setRepoValidation({
@@ -347,7 +418,7 @@ export default function SubmissionForm({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [queryClient, trpc, form],
+    [queryClient, trpc, form, earlySubmission, isEditing, projectId],
   );
 
   const debouncedValidateRepo = useDebouncedCallback((repoUrl: string, gitHost: string) => {
@@ -404,13 +475,23 @@ export default function SubmissionForm({
       placeholder: 'https://discord.gg/username',
     },
   ];
-
   function handleProjectSubmission(formData: FormData) {
-    mutate({
-      ...formData,
-      status: formData.status || '',
-      type: formData.type || '',
-    });
+    if (isEditing && projectId) {
+      // Update existing project
+      mutate({
+        id: projectId,
+        ...formData,
+        status: formData.status || '',
+        type: formData.type || '',
+      });
+    } else {
+      // Create new project
+      mutate({
+        ...formData,
+        status: formData.status || '',
+        type: formData.type || '',
+      });
+    }
   }
 
   const nextStep = async () => {
@@ -471,7 +552,7 @@ export default function SubmissionForm({
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-    const progress = ((currentStep + 1) / steps.length) * 100;
+  const progress = ((currentStep + 1) / steps.length) * 100;
   return success && env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
     // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
@@ -696,20 +777,20 @@ export default function SubmissionForm({
               />
 
               {/* <div className="flex flex-col gap-2">
-                      <FormLabel>Logo</FormLabel>
-                      <UploadDropzone
-                        endpoint="project-logos"
-                        onClientUploadComplete={(res) => {
-                          const [file] = res ?? [];
-                          if (file?.url) {
-                            form.setValue('logoUrl', file.url, { shouldValidate: true });
-                          }
-                        }}
-                        onUploadError={(error: Error) => {
-                          console.error(`ERROR! ${error.message}`);
-                        }}
-                      />
-                    </div> */}
+                        <FormLabel>Logo</FormLabel>
+                        <UploadDropzone
+                          endpoint="project-logos"
+                          onClientUploadComplete={(res) => {
+                            const [file] = res ?? [];
+                            if (file?.url) {
+                              form.setValue('logoUrl', file.url, { shouldValidate: true });
+                            }
+                          }}
+                          onUploadError={(error: Error) => {
+                            console.error(`ERROR! ${error.message}`);
+                          }}
+                        />
+                      </div> */}
             </div>
           )}
 
@@ -921,7 +1002,7 @@ export default function SubmissionForm({
               <Button
                 type="button"
                 variant="outline"
-                className="rounded-none"
+                className="cursor-pointer rounded-none"
                 onClick={prevStep}
                 disabled={currentStep === 0}
               >
@@ -931,7 +1012,7 @@ export default function SubmissionForm({
 
               {currentStep === steps.length - 1 ? (
                 // add || success to disabled
-                <Button type="submit" className="rounded-none" disabled={isLoading}>
+                <Button type="submit" className="cursor-pointer rounded-none" disabled={isLoading}>
                   {isLoading ? 'Submitting...' : 'Submit Project'}
                 </Button>
               ) : (
@@ -942,7 +1023,7 @@ export default function SubmissionForm({
                     e.stopPropagation();
                     nextStep();
                   }}
-                  className="rounded-none"
+                  className="cursor-pointer rounded-none"
                 >
                   Next
                   <ChevronRight className="ml-2 h-4 w-4" />

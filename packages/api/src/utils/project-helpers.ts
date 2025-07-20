@@ -57,7 +57,7 @@ export async function resolveTagIds(db: DB, tagNames: string[]) {
 
   return tags.map((tag) => tag.id);
 }
-export async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
+export async function checkProjectDuplicate(db: DB, gitRepoUrl: string, projectId?: string) {
   const existingProject = await db.query.project.findFirst({
     where: eq(project.gitRepoUrl, gitRepoUrl),
     columns: {
@@ -68,6 +68,11 @@ export async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
   });
 
   if (!existingProject) {
+    return { exists: false };
+  }
+
+  // If editing and the found project is the same as the one being edited, skip duplicate
+  if (projectId && existingProject.id === projectId) {
     return { exists: false };
   }
 

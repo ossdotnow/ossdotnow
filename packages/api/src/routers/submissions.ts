@@ -57,9 +57,9 @@ async function checkUserOwnsProject(ctx: Context, gitRepoUrl: string) {
 
 export const submissionRouter = createTRPCRouter({
   checkDuplicateRepo: publicProcedure
-    .input(z.object({ gitRepoUrl: z.string() }))
+    .input(z.object({ gitRepoUrl: z.string(), projectId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      return await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
+      return await checkProjectDuplicate(ctx.db, input.gitRepoUrl, input.projectId);
     }),
   checkUserOwnsProject: publicProcedure
     .input(z.object({ gitRepoUrl: z.string() }))

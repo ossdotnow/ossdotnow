@@ -714,6 +714,7 @@ export const projectsData = {
       },
       //gitlab
       {
+        
         ownerId: null,
         logoUrl: null,
         gitRepoUrl: 'inkscape/inkscape',
