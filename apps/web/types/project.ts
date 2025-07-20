@@ -41,7 +41,22 @@ export function isProject(data: unknown): data is Project {
     (project.status === null || (typeof project.status === 'object' && project.status !== null && typeof (project.status as Record<string, unknown>).name === 'string')) &&
     (project.type === null || (typeof project.type === 'object' && project.type !== null && typeof (project.type as Record<string, unknown>).name === 'string')) &&
     Array.isArray(project.tagRelations) &&
-    (project.socialLinks === null || (typeof project.socialLinks === 'object' && project.socialLinks !== null)) &&
+    project.tagRelations.every(relation =>
+      relation &&
+      typeof relation === 'object' &&
+      (relation.tag === null ||
+        (typeof relation.tag === 'object' &&
+         relation.tag !== null &&
+         typeof relation.tag.name === 'string'))
+    ) &&
+    (project.socialLinks === null || (
+      typeof project.socialLinks === 'object' &&
+      project.socialLinks !== null &&
+      ['twitter', 'discord', 'linkedin', 'website'].every(key =>
+        project.socialLinks![key as keyof typeof project.socialLinks] === null ||
+        typeof project.socialLinks![key as keyof typeof project.socialLinks] === 'string'
+      )
+    )) &&
     typeof project.isLookingForContributors === 'boolean' &&
     typeof project.isLookingForInvestors === 'boolean' &&
     typeof project.isHiring === 'boolean' &&
