@@ -322,6 +322,8 @@ export default function ProjectPage({ id }: { id: string }) {
   const codeOfConduct = otherQueries[4].data as RepoContent | undefined;
   const contributors = otherQueries[5].data as ContributorData[] | undefined;
 
+  console.log(contributors);
+
   return (
     <div className="mt-4 px-6 md:mt-8">
       <div

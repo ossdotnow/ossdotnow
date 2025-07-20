@@ -793,6 +793,7 @@ export class GithubManager implements GitManager {
                 id: c.id!,
                 username: c.login!,
                 avatarUrl: c.avatar_url,
+                contributions: c.contributions,
               })),
             );
             page++;
