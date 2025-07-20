@@ -33,11 +33,6 @@ export default function ProjectDescription({
 
   return (
     <div className="relative border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
-      {isOwner && (
-        <div className="absolute top-4 right-4">
-          <EditProjectDialog projectId={project.id} projectName={project.name}></EditProjectDialog>
-        </div>
-      )}
       <div className="flex flex-col gap-4">
         {/* Top row: Avatar + Title + Tags */}
         <div className="flex items-start gap-3">
@@ -62,7 +57,7 @@ export default function ProjectDescription({
         </div>
       </div>
       {/* Action buttons (full width) */}
-      <div className="flex w-full justify-end">
+      <div className="relative flex w-full justify-end">
         <ActionButtons
           isOwner={isOwner}
           project={project}
@@ -218,7 +213,6 @@ function ProjectDescriptionText({ project }: { project: ProjectWithRelations }) 
     </div>
   );
 }
-
 function ActionButtons({
   isOwner,
   project,
@@ -242,6 +236,11 @@ function ActionButtons({
 
   return (
     <div className={className}>
+      {isOwner && (
+        <div className="absolute right-0 bottom-35">
+          <EditProjectDialog projectId={project.id} projectName={project.name} />
+        </div>
+      )}
       {isOwner && (
         <LaunchProjectDialog
           projectId={project.id}
