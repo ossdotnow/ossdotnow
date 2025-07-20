@@ -3,11 +3,13 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Button } from '@workspace/ui/components/button';
 import { Flag, Share2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDistanceToNow } from 'date-fns';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { toast } from 'sonner';
+import { authClient } from '@workspace/auth/client';
+import type { Launch, Project } from '../types';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -16,12 +18,13 @@ const isValidProvider = (
 };
 
 interface LaunchHeaderProps {
-  launch: any;
-  project: any;
+  launch: Launch;
+  project: Project;
   projectId: string;
 }
 
 export default function LaunchHeader({ launch, project, projectId }: LaunchHeaderProps) {
+  const { data: session } = authClient.useSession();
   const trpc = useTRPC();
 
   // Fetch repository data
@@ -36,6 +39,17 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
         retry: false,
       },
     ),
+  );
+
+  const reportMutation = useMutation(
+    trpc.launches.reportProject.mutationOptions({
+      onSuccess: () => {
+        toast.success('Project reported successfully!');
+      },
+      onError: () => {
+        toast.error('Failed to report project. Please try again.');
+      },
+    }),
   );
 
   const handleShare = async () => {
@@ -58,7 +72,11 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
   };
 
   const handleReport = async () => {
-    toast.error('Please login to report');
+    if (!session?.user) {
+      toast.error('Please login to report');
+      return;
+    }
+    reportMutation.mutate({ projectId });
   };
 
   return (
@@ -89,7 +107,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
               <Avatar className="h-6 w-6">
-                <AvatarImage src={launch.owner?.image} />
+                <AvatarImage src={launch.owner?.image || ''} />
                 <AvatarFallback>{launch.owner?.name?.[0]}</AvatarFallback>
               </Avatar>
               <span className="text-sm text-neutral-400">
@@ -110,7 +128,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
                 variant="outline"
                 onClick={handleReport}
                 className="gap-2 rounded-none"
-                disabled={false}
+                disabled={reportMutation.isPending}
               >
                 <Flag className="h-4 w-4" />
               </Button>

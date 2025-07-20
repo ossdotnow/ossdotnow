@@ -10,6 +10,7 @@ import { projectProviderEnum } from '@workspace/db/schema';
 import Link from '@workspace/ui/components/link';
 import { toast } from 'sonner';
 import { authClient } from '@workspace/auth/client';
+import type { Launch, Project } from '../types';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -18,15 +19,18 @@ const isValidProvider = (
 };
 
 interface LaunchSidebarProps {
-  launch: any;
-  project: any;
+  launch: Launch;
+  project: Project;
   projectId: string;
-  comments: any[];
 }
 
-export default function LaunchSidebar({ launch, project, projectId, comments }: LaunchSidebarProps) {
+export default function LaunchSidebar({ launch, project, projectId }: LaunchSidebarProps) {
   const { data: session } = authClient.useSession();
   const trpc = useTRPC();
+
+  // Validate gitRepoUrl and gitHost before using them in queries
+  const isValidRepoUrl = Boolean(project?.gitRepoUrl && project.gitRepoUrl.trim() !== '');
+  const isValidGitHost = isValidProvider(project?.gitHost);
 
   // Fetch repository data
   const repoQuery = useQuery(
@@ -36,7 +40,7 @@ export default function LaunchSidebar({ launch, project, projectId, comments }: 
         provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
       },
       {
-        enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        enabled: isValidRepoUrl && isValidGitHost,
         retry: false,
       },
     ),
@@ -49,7 +53,7 @@ export default function LaunchSidebar({ launch, project, projectId, comments }: 
         provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
       },
       {
-        enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        enabled: !!repoQuery.data && isValidRepoUrl && isValidGitHost,
         retry: false,
       },
     ),

@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { z } from 'zod/v4';
 import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
+import type { Comment } from '../types';
 
 const commentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment is too long'),
@@ -22,17 +23,15 @@ const commentSchema = z.object({
 type CommentFormData = z.infer<typeof commentSchema>;
 
 interface LaunchCommentsProps {
-  launch: any;
   projectId: string;
-  comments: any[];
+  comments: Comment[];
   commentsLoading: boolean;
 }
 
-export default function LaunchComments({ launch, projectId, comments, commentsLoading }: LaunchCommentsProps) {
+export default function LaunchComments({ projectId, comments, commentsLoading }: LaunchCommentsProps) {
   const { data: session } = authClient.useSession();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-
   const form = useForm<CommentFormData>({
     resolver: zodResolver(commentSchema),
     defaultValues: {
@@ -70,7 +69,7 @@ export default function LaunchComments({ launch, projectId, comments, commentsLo
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault();
-      form.handleSubmit(onSubmit)();
+      void form.handleSubmit(onSubmit)();
     }
   };
 
@@ -98,12 +97,10 @@ export default function LaunchComments({ launch, projectId, comments, commentsLo
             <span className="ml-2 text-neutral-400">Loading comments...</span>
           </div>
         ) : comments && comments.length > 0 ? (
-          // TODO: fix this
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          comments.map((comment: any) => (
+          comments.map((comment: Comment) => (
             <div key={comment.id} className="flex gap-4 rounded-none border border-neutral-800 bg-neutral-800/30 p-4">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={comment.user.image} />
+                <AvatarImage src={comment.user.image || ''} />
                 <AvatarFallback>{comment.user.name?.[0] || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex-1">
