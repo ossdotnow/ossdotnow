@@ -267,7 +267,7 @@ export default function ProjectPage({ id }: { id: string }) {
           provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
           retry: false,
         },
       ),
