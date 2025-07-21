@@ -1,7 +1,7 @@
 'use client';
 
-import { Award, Calendar, Globe, MapPin, Share } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
+import { Award, Calendar, Globe, MapPin, Share } from 'lucide-react';
 import ResponsiveNumber from '@/components/user/responsive-numbers';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';

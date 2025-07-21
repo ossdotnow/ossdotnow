@@ -1,16 +1,16 @@
 import {
-  GitManager,
-  RepoData,
+  CodeOfConductData,
+  ContributingData,
+  ContributionData,
+  ContributionDay,
   ContributorData,
+  FileData,
+  GitManager,
+  GitManagerConfig,
   IssueData,
   PullRequestData,
   ReadmeData,
-  ContributingData,
-  CodeOfConductData,
-  FileData,
-  GitManagerConfig,
-  ContributionData,
-  ContributionDay,
+  RepoData,
   UserData,
   UserPullRequestData,
 } from './types';
@@ -19,8 +19,8 @@ import {
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
 import { project, projectClaim } from '@workspace/db/schema';
-import { getCached, createCacheKey } from '../utils/cache';
-import { eq, and, isNull } from 'drizzle-orm';
+import { createCacheKey, getCached } from '../utils/cache';
+import { and, eq, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
 import { type Context } from './utils';
@@ -86,43 +86,6 @@ export class GithubManager implements GitManager {
       username: currentUser.username,
     });
     return data;
-  }
-
-  async getContributors(identifier: string): Promise<ContributorData[]> {
-    const { owner, repo } = this.parseRepoIdentifier(identifier);
-
-    return getCached(
-      createCacheKey('github', 'contributors', identifier),
-      async () => {
-        const allContributors: any[] = [];
-        let page = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-          const { data } = await this.octokit.rest.repos.listContributors({
-            owner,
-            repo,
-            per_page: 100,
-            page,
-          });
-
-          allContributors.push(...data);
-
-          hasMore = data.length === 100;
-          page++;
-
-          if (page > 50) break;
-        }
-
-        return allContributors.map((c) => ({
-          ...c,
-          id: c.id!,
-          username: c.login!,
-          avatarUrl: c.avatar_url,
-        }));
-      },
-      { ttl: 60 * 60 },
-    );
   }
 
   async getIssues(identifier: string): Promise<IssueData[]> {
@@ -653,147 +616,202 @@ export class GithubManager implements GitManager {
     const limit = options?.limit || 100;
     const stateFilter = options?.state || 'all';
 
-    // Start with a simpler query and add fields progressively
-    const query = `
-      query GetUserPullRequests($username: String!, $first: Int!, $after: String) {
-        user(login: $username) {
-          pullRequests(first: $first, after: $after, orderBy: {field: CREATED_AT, direction: DESC}) {
-            totalCount
-            pageInfo {
-              hasNextPage
-              endCursor
-            }
-            nodes {
-              id
-              number
-              title
-              state
-              isDraft
-              createdAt
-              updatedAt
-              closedAt
-              mergedAt
+    return getCached(
+      createCacheKey('github', 'user_pull_requests', username),
+      async () => {
+        // Start with a simpler query and add fields progressively
+        const query = `
+    query GetUserPullRequests($username: String!, $first: Int!, $after: String) {
+      user(login: $username) {
+        pullRequests(first: $first, after: $after, orderBy: {field: CREATED_AT, direction: DESC}) {
+          totalCount
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+          nodes {
+            id
+            number
+            title
+            state
+            isDraft
+            createdAt
+            updatedAt
+            closedAt
+            mergedAt
+            url
+            headRefName
+            baseRefName
+            repository {
+              nameWithOwner
               url
-              headRefName
-              baseRefName
-              repository {
-                nameWithOwner
-                url
-                isPrivate
-                owner {
-                  login
-                }
+              isPrivate
+              owner {
+                login
               }
             }
           }
         }
       }
-    `;
+    }
+  `;
 
-    const allPRs: UserPullRequestData[] = [];
-    let hasNextPage = true;
-    let cursor: string | null = null;
+        const allPRs: UserPullRequestData[] = [];
+        let hasNextPage = true;
+        let cursor: string | null = null;
 
-    try {
-      while (hasNextPage && allPRs.length < limit) {
-        const response: any = await this.octokit.graphql<{
-          user: {
-            pullRequests: {
-              totalCount: number;
-              pageInfo: {
-                hasNextPage: boolean;
-                endCursor: string | null;
-              };
-              nodes: Array<{
-                id: string;
-                number: number;
-                title: string;
-                state: 'OPEN' | 'CLOSED' | 'MERGED';
-                isDraft: boolean;
-                createdAt: string;
-                updatedAt: string;
-                closedAt: string | null;
-                mergedAt: string | null;
-                url: string;
-                headRefName: string;
-                baseRefName: string;
-                repository: {
-                  nameWithOwner: string;
-                  url: string;
-                  isPrivate: boolean;
-                  owner: {
-                    login: string;
+        try {
+          while (hasNextPage && allPRs.length < limit) {
+            const response: any = await this.octokit.graphql<{
+              user: {
+                pullRequests: {
+                  totalCount: number;
+                  pageInfo: {
+                    hasNextPage: boolean;
+                    endCursor: string | null;
                   };
+                  nodes: Array<{
+                    id: string;
+                    number: number;
+                    title: string;
+                    state: 'OPEN' | 'CLOSED' | 'MERGED';
+                    isDraft: boolean;
+                    createdAt: string;
+                    updatedAt: string;
+                    closedAt: string | null;
+                    mergedAt: string | null;
+                    url: string;
+                    headRefName: string;
+                    baseRefName: string;
+                    repository: {
+                      nameWithOwner: string;
+                      url: string;
+                      isPrivate: boolean;
+                      owner: {
+                        login: string;
+                      };
+                    };
+                  }>;
                 };
-              }>;
-            };
-          };
-        }>(query, {
-          username,
-          first: Math.min(100, limit - allPRs.length),
-          after: cursor,
-        });
+              };
+            }>(query, {
+              username,
+              first: Math.min(100, limit - allPRs.length),
+              after: cursor,
+            });
 
-        if (!response.user) {
+            if (!response.user) {
+              throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: `GitHub user '${username}' not found`,
+              });
+            }
+
+            const prs = response.user.pullRequests.nodes;
+
+            const formattedPRs: UserPullRequestData[] = prs.map((pr: any) => ({
+              id: pr.id,
+              number: pr.number,
+              title: pr.title,
+              state: pr.state.toLowerCase(),
+              url: pr.url,
+              createdAt: pr.createdAt,
+              updatedAt: pr.updatedAt,
+              closedAt: pr.closedAt || undefined,
+              mergedAt: pr.mergedAt || undefined,
+              isDraft: pr.isDraft,
+              headRefName: pr.headRefName,
+              baseRefName: pr.baseRefName,
+              repository: {
+                nameWithOwner: pr.repository.nameWithOwner,
+                url: pr.repository.url,
+                isPrivate: pr.repository.isPrivate,
+                owner: {
+                  login: pr.repository.owner.login,
+                },
+              },
+            }));
+
+            const filteredPRs = formattedPRs.filter((pr) => {
+              if (stateFilter === 'all') return true;
+              if (stateFilter === 'open') return pr.state === 'open';
+              if (stateFilter === 'closed') return pr.state === 'closed' && !pr.mergedAt;
+              if (stateFilter === 'merged') return !!pr.mergedAt;
+              return true;
+            });
+
+            allPRs.push(...filteredPRs);
+
+            hasNextPage = response.user.pullRequests.pageInfo.hasNextPage;
+            cursor = response.user.pullRequests.pageInfo.endCursor;
+
+            if (!hasNextPage || allPRs.length >= limit) {
+              break;
+            }
+          }
+
+          return allPRs.slice(0, limit);
+        } catch (error) {
+          console.error('Error fetching GitHub PRs:', error);
+          if (error instanceof TRPCError) {
+            throw error;
+          }
           throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: `GitHub user '${username}' not found`,
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch pull requests: ${error instanceof Error ? error.message : String(error)}`,
           });
         }
+      },
+      { ttl: 5 * 60 },
+    );
+  }
 
-        const prs = response.user.pullRequests.nodes;
+  async getContributors(identifier: string): Promise<ContributorData[]> {
+    const { owner, repo } = this.parseRepoIdentifier(identifier);
 
-        const formattedPRs: UserPullRequestData[] = prs.map((pr: any) => ({
-          id: pr.id,
-          number: pr.number,
-          title: pr.title,
-          state: pr.state.toLowerCase(),
-          url: pr.url,
-          createdAt: pr.createdAt,
-          updatedAt: pr.updatedAt,
-          closedAt: pr.closedAt || undefined,
-          mergedAt: pr.mergedAt || undefined,
-          isDraft: pr.isDraft,
-          headRefName: pr.headRefName,
-          baseRefName: pr.baseRefName,
-          repository: {
-            nameWithOwner: pr.repository.nameWithOwner,
-            url: pr.repository.url,
-            isPrivate: pr.repository.isPrivate,
-            owner: {
-              login: pr.repository.owner.login,
-            },
-          },
-        }));
+    return getCached(
+      createCacheKey('github', 'contributors', identifier),
+      async () => {
+        try {
+          const contributors: ContributorData[] = [];
+          let page = 1;
+          let hasMore = true;
+          const MAX_PAGES = 50;
 
-        const filteredPRs = formattedPRs.filter((pr) => {
-          if (stateFilter === 'all') return true;
-          if (stateFilter === 'open') return pr.state === 'open';
-          if (stateFilter === 'closed') return pr.state === 'closed' && !pr.mergedAt;
-          if (stateFilter === 'merged') return pr.state === 'merged' || !!pr.mergedAt;
-          return true;
-        });
+          while (hasMore && page <= MAX_PAGES) {
+            const { data } = await this.octokit.rest.repos.listContributors({
+              owner,
+              repo,
+              per_page: 100,
+              page,
+            });
 
-        allPRs.push(...filteredPRs);
+            if (data.length === 0) {
+              hasMore = false;
+            } else {
+              contributors.push(
+                ...data.map((c) => ({
+                  ...c,
+                  id: c.id!,
+                  username: c.login!,
+                  avatarUrl: c.avatar_url,
+                  contributions: c.contributions,
+                })),
+              );
+              page++;
+            }
+          }
 
-        hasNextPage = response.user.pullRequests.pageInfo.hasNextPage;
-        cursor = response.user.pullRequests.pageInfo.endCursor;
-
-        if (!hasNextPage || allPRs.length >= limit) {
-          break;
+          return contributors;
+        } catch (error) {
+          console.error('Error fetching GitHub contributors:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve contributors for this GitHub repository',
+          });
         }
-      }
-
-      return allPRs.slice(0, limit);
-    } catch (error) {
-      console.error('Error fetching GitHub PRs:', error);
-      if (error instanceof TRPCError) {
-        throw error;
-      }
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch pull requests: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
+      },
+      { ttl: 60 * 60 },
+    );
   }
 }

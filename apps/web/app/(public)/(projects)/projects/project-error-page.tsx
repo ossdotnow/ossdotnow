@@ -86,18 +86,18 @@ export default function ProjectErrorPage({ type, onTryAgain }: ProjectErrorPageP
             unavailable. Please try again later.
           </p>
           <div className="flex flex-col justify-center gap-2 px-4 sm:flex-row sm:gap-3 sm:px-0">
-            <button
-              onClick={onTryAgain}
-              className="inline-flex items-center justify-center gap-2 bg-white px-3 py-2 text-xs font-medium text-black transition-colors hover:bg-neutral-200 sm:px-4 sm:py-2.5 sm:text-sm"
-            >
-              Try Again
-            </button>
             <Link
               href="/projects"
               className="inline-flex items-center justify-center gap-2 border border-neutral-700 bg-transparent px-3 py-2 text-xs font-medium text-white transition-colors hover:border-neutral-600 hover:bg-neutral-800 sm:px-4 sm:py-2.5 sm:text-sm"
             >
               ← Back to Projects
             </Link>
+            <button
+              onClick={onTryAgain}
+              className="inline-flex items-center justify-center gap-2 bg-white px-3 py-2 text-xs font-medium text-black transition-colors hover:bg-neutral-200 sm:px-4 sm:py-2.5 sm:text-sm"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>

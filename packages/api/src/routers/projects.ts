@@ -1,4 +1,9 @@
-import { categoryProjectStatuses, categoryProjectTypes, categoryTags, projectApprovalStatusEnum } from '@workspace/db/schema';
+import {
+  categoryProjectStatuses,
+  categoryProjectTypes,
+  categoryTags,
+  projectApprovalStatusEnum,
+} from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
 import { and, asc, count, desc, eq, or, ilike, inArray } from 'drizzle-orm';
@@ -506,45 +511,47 @@ export const projectsRouter = createTRPCRouter({
       return newProject;
     });
   }),
-  updateProject: adminProcedure.input(createProjectInput.extend({ id: z.string() })).mutation(async ({ ctx, input }) => {
-    const projectId = input.id;
+  updateProject: adminProcedure
+    .input(createProjectInput.extend({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = input.id;
 
-    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
-      status: input.status,
-      type: input.type,
-      tags: input.tags,
-    });
+      const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+        status: input.status,
+        type: input.type,
+        tags: input.tags,
+      });
 
-    return await ctx.db.transaction(async (tx) => {
-      const [updatedProject] = await tx
-        .update(project)
-        .set({
-          ...input,
-          statusId,
-          typeId,
-        })
-        .where(eq(project.id, projectId))
-        .returning();
+      return await ctx.db.transaction(async (tx) => {
+        const [updatedProject] = await tx
+          .update(project)
+          .set({
+            ...input,
+            statusId,
+            typeId,
+          })
+          .where(eq(project.id, projectId))
+          .returning();
 
-      if (!updatedProject) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Project not found',
-        });
-      }
-      await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
+        if (!updatedProject) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          });
+        }
+        await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
 
-      if (tagIds.length > 0) {
-        const tagRelations = tagIds.map((tagId: string) => ({
-          projectId: projectId,
-          tagId: tagId as string,
-        }));
-        await tx.insert(projectTagRelations).values(tagRelations);
-      }
+        if (tagIds.length > 0) {
+          const tagRelations = tagIds.map((tagId: string) => ({
+            projectId: projectId,
+            tagId: tagId as string,
+          }));
+          await tx.insert(projectTagRelations).values(tagRelations);
+        }
 
-      return updatedProject;
-    });
-  }),
+        return updatedProject;
+      });
+    }),
   acceptProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -1083,5 +1090,15 @@ export const projectsRouter = createTRPCRouter({
           message: 'An unexpected error occurred while refreshing repository status',
         });
       }
+    }),
+
+  getContributors: publicProcedure
+    .input(z.object({ url: z.string(), provider: z.enum(['github', 'gitlab']) }))
+    .query(async ({ ctx, input }) => {
+      const driver = await getActiveDriver(input.provider, ctx as Context);
+
+      const contributors = await driver.getContributors(input.url);
+
+      return contributors;
     }),
 });

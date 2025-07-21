@@ -160,6 +160,7 @@ export class GitlabManager implements GitManager {
           id: m.id,
           username: m.username,
           avatarUrl: m.avatar_url,
+          contributions: m.contributions,
         }));
       },
       { ttl: 60 * 60 },
