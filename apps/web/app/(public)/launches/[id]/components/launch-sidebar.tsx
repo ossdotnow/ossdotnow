@@ -1,16 +1,23 @@
 'use client';
 
-import { Button } from '@workspace/ui/components/button';
+import {
+  AlertCircle,
+  ArrowUp,
+  ExternalLink,
+  GitFork,
+  GitPullRequest,
+  Star,
+  Users,
+} from 'lucide-react';
 import { Separator } from '@workspace/ui/components/separator';
-import { ArrowUp, ExternalLink, Star, GitFork, Users, AlertCircle, GitPullRequest } from 'lucide-react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useTRPC } from '@/hooks/use-trpc';
-import { formatDistanceToNow } from 'date-fns';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
-import Link from '@workspace/ui/components/link';
-import { toast } from 'sonner';
+import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
-import type { Launch, Project } from '../types';
+import Link from '@workspace/ui/components/link';
+import { formatDistanceToNow } from 'date-fns';
+import { useTRPC } from '@/hooks/use-trpc';
+import { toast } from 'sonner';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -19,8 +26,10 @@ const isValidProvider = (
 };
 
 interface LaunchSidebarProps {
-  launch: Launch;
-  project: Project;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  launch: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  project: any;
   projectId: string;
 }
 

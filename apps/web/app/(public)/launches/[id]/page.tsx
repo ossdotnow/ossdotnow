@@ -1,20 +1,16 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authClient } from '@workspace/auth/client';
+import LaunchComments from './components/launch-comments';
+import LaunchSidebar from './components/launch-sidebar';
+import LaunchHeader from './components/launch-header';
+import { useQuery } from '@tanstack/react-query';
 import { use, useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
-import { toast } from 'sonner';
-import LaunchHeader from './components/launch-header';
-import LaunchSidebar from './components/launch-sidebar';
-import LaunchComments from './components/launch-comments';
 
 export default function LaunchDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const projectId = resolvedParams.id;
-  const { data: session } = authClient.useSession();
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -26,41 +22,15 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Fetch launch details
   const { data: launch, isLoading: launchLoading } = useQuery(
     trpc.launches.getLaunchByProjectId.queryOptions({ projectId }),
   );
 
-  // Fetch project details
   const { data: project } = useQuery(trpc.projects.getProject.queryOptions({ id: projectId }));
 
-  // Fetch comments
   const { data: comments, isLoading: commentsLoading } = useQuery(
     trpc.launches.getComments.queryOptions({ projectId }),
   );
-
-  // Vote mutation
-  const voteMutation = useMutation({
-    ...trpc.launches.voteProject.mutationOptions(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
-      });
-    },
-    onError: () => {
-      toast.error('Failed to vote. Please try again.');
-    },
-  });
-
-  const reportMutation = useMutation({
-    ...trpc.launches.reportProject.mutationOptions(),
-    onSuccess: () => {
-      toast.success('Project reported successfully.');
-    },
-    onError: () => {
-      toast.error('Failed to report project. Please try again.');
-    },
-  });
 
   if (launchLoading || !launch) {
     return (
@@ -90,13 +60,14 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
             {(launch.detailedDescription || launch.description) && (
               <div className="border border-neutral-800 bg-neutral-900/50 p-6">
                 <h2 className="mb-4 text-lg font-semibold text-white">About</h2>
-                <p className="text-neutral-400">{launch.detailedDescription || launch.description}</p>
+                <p className="text-neutral-400">
+                  {launch.detailedDescription || launch.description}
+                </p>
               </div>
             )}
 
             {/* Comments Section */}
             <LaunchComments
-              launch={launch}
               projectId={projectId}
               comments={comments || []}
               commentsLoading={commentsLoading}
@@ -104,12 +75,7 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
           </div>
 
           {/* Sidebar */}
-          <LaunchSidebar
-            launch={launch}
-            project={project}
-            projectId={projectId}
-            comments={comments || []}
-          />
+          <LaunchSidebar launch={launch} project={project} projectId={projectId} />
         </div>
       </div>
     </div>

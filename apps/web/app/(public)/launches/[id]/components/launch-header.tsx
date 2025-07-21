@@ -1,15 +1,14 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
-import { Button } from '@workspace/ui/components/button';
-import { Flag, Share2 } from 'lucide-react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useTRPC } from '@/hooks/use-trpc';
-import { formatDistanceToNow } from 'date-fns';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
-import { toast } from 'sonner';
+import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
-import type { Launch, Project } from '../types';
+import { formatDistanceToNow } from 'date-fns';
+import { Flag, Share2 } from 'lucide-react';
+import { useTRPC } from '@/hooks/use-trpc';
+import { toast } from 'sonner';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -18,8 +17,10 @@ const isValidProvider = (
 };
 
 interface LaunchHeaderProps {
-  launch: Launch;
-  project: Project;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  launch: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  project: any;
   projectId: string;
 }
 
@@ -83,12 +84,15 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
     <div className="border border-neutral-800 bg-neutral-900/50 p-6">
       <div className="flex flex-row gap-4 sm:gap-6">
         {/* Column 1: Repo Logo */}
-        <div className="flex-shrink-0 self-stretch order-2 sm:order-1 sm:self-stretch">
-          <div className="h-20 mx-auto max-w-32 sm:h-full">
+        <div className="order-2 flex-shrink-0 self-stretch sm:order-1 sm:self-stretch">
+          <div className="mx-auto h-20 max-w-32 sm:h-full">
             {(repoQuery.data && repoQuery.data?.owner && repoQuery.data?.owner?.avatar_url) ||
             (repoQuery.data?.namespace && repoQuery.data?.namespace?.avatar_url) ? (
               <img
-                src={repoQuery.data?.owner?.avatar_url || `https://gitlab.com${repoQuery.data?.namespace?.avatar_url}`}
+                src={
+                  repoQuery.data?.owner?.avatar_url ||
+                  `https://gitlab.com${repoQuery.data?.namespace?.avatar_url}`
+                }
                 alt={`${launch.name} logo`}
                 className="h-full w-full rounded-none object-cover"
                 loading="lazy"
@@ -100,9 +104,9 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
         </div>
 
         {/* Column 2: Repo Name, Description, User Info */}
-        <div className="flex-1 min-w-0 order-1 sm:order-2">
+        <div className="order-1 min-w-0 flex-1 sm:order-2">
           <h1 className="mb-2 text-3xl font-bold">{launch.name}</h1>
-          <p className="text-lg text-neutral-400 mb-2">{launch.tagline}</p>
+          <p className="mb-2 text-lg text-neutral-400">{launch.tagline}</p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2">
@@ -112,9 +116,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
               </Avatar>
               <span className="text-sm text-neutral-400">
                 {launch.owner?.name || 'Unknown'} launched{' '}
-                {launch.launchDate
-                  ? formatDistanceToNow(new Date(launch.launchDate))
-                  : 'recently'}{' '}
+                {launch.launchDate ? formatDistanceToNow(new Date(launch.launchDate)) : 'recently'}{' '}
                 ago
               </span>
             </div>
