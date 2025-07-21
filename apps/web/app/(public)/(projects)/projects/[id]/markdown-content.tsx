@@ -55,7 +55,21 @@ const markdownComponents: Components = {
   h2: ({ children }) => <h2 className="mt-6 mb-3 text-xl font-semibold text-white">{children}</h2>,
   h3: ({ children }) => <h3 className="mt-5 mb-2 text-lg font-medium text-white">{children}</h3>,
   h4: ({ children }) => <h4 className="mt-4 mb-2 text-base font-medium text-white">{children}</h4>,
-  p: ({ children }) => <p className="mb-4 inline leading-relaxed text-neutral-300">{children}</p>,
+  p: ({ children }) => {
+    const containsOnlyImages =
+      Array.isArray(children) &&
+      children.every((child) => typeof child === 'object' && child?.type === 'img');
+
+    if (containsOnlyImages) {
+      return (
+        <p className="mb-4 flex flex-wrap justify-center gap-2 leading-relaxed text-neutral-300">
+          {children}
+        </p>
+      );
+    }
+
+    return <p className="mb-4 leading-relaxed text-neutral-300">{children}</p>;
+  },
   ul: ({ children }) => {
     return (
       <ul className="mb-4 ml-5 list-outside list-disc space-y-1 text-neutral-300">{children}</ul>
@@ -79,14 +93,15 @@ const markdownComponents: Components = {
       {children}
     </Link>
   ),
-  img: ({ src, alt }) => (
+  img: ({ src, alt, ...props }) => (
     <img
       src={src}
       alt={alt || ''}
-      className="my-3 h-auto max-w-full rounded-lg border border-neutral-800"
+      {...props}
+      className="my-3 inline-block h-auto max-w-full border-neutral-800"
     />
   ),
-  pre: ({ children, node }) => {
+  pre: ({ children }) => {
     const extractTextFromChildren = (children: any): string => {
       if (!children) return '';
       if (typeof children === 'string') return children;
@@ -116,7 +131,7 @@ const markdownComponents: Components = {
   code: ({ children, className }) => {
     const isInline = !className;
     return isInline ? (
-      <code className="rounded bg-neutral-800 px-1.5 py-0.5 font-mono text-sm text-neutral-200">
+      <code className="rounded bg-neutral-800 px-1.5 py-0.5 text-sm text-neutral-200">
         {children}
       </code>
     ) : (
