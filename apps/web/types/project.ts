@@ -173,7 +173,34 @@ export function isDatabaseProject(data: unknown): data is DatabaseProject {
     typeof project.isPinned === 'boolean' &&
     typeof project.isRepoPrivate === 'boolean' &&
     project.createdAt instanceof Date &&
-    project.updatedAt instanceof Date
+    project.updatedAt instanceof Date &&
+    (project.status === null ||
+      project.status === undefined ||
+      (typeof project.status === 'object' &&
+        project.status !== null &&
+        typeof (project.status as Record<string, unknown>).id === 'string' &&
+        typeof (project.status as Record<string, unknown>).name === 'string')) &&
+    (project.type === null ||
+      project.type === undefined ||
+      (typeof project.type === 'object' &&
+        project.type !== null &&
+        typeof (project.type as Record<string, unknown>).id === 'string' &&
+        typeof (project.type as Record<string, unknown>).name === 'string')) &&
+    (project.tagRelations === undefined ||
+      (Array.isArray(project.tagRelations) &&
+        project.tagRelations.every(
+          (rel) =>
+            rel &&
+            typeof rel === 'object' &&
+            (rel.tag === null ||
+              rel.tag === undefined ||
+              (typeof rel.tag === 'object' &&
+                rel.tag !== null &&
+                typeof (rel.tag as Record<string, unknown>).id === 'string' &&
+                typeof (rel.tag as Record<string, unknown>).name === 'string')),
+        ))) &&
+    (project.socialLinks === null ||
+      (typeof project.socialLinks === 'object' && project.socialLinks !== null))
   );
 }
 
