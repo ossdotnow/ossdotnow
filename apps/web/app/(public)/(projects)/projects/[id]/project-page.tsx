@@ -312,7 +312,6 @@ export default function ProjectPage({ id }: { id: string }) {
     url: repoData.html_url || repoData.web_url || project.gitRepoUrl || '',
   };
   const repoStats = repoDataQuery.data as RepoData | undefined;
-  // const contributors = repoStats?.contributors;
   const issuesCount = repoStats?.issuesCount || 0;
   const pullRequestsCount = repoStats?.pullRequestsCount || 0;
   const issues = (otherQueries[0].data as Issue[] | undefined) || [];
@@ -321,8 +320,6 @@ export default function ProjectPage({ id }: { id: string }) {
   const contributing = otherQueries[3].data as RepoContent | undefined;
   const codeOfConduct = otherQueries[4].data as RepoContent | undefined;
   const contributors = otherQueries[5].data as ContributorData[] | undefined;
-
-  console.log(contributors);
 
   return (
     <div className="mt-4 px-6 md:mt-8">
@@ -743,30 +740,48 @@ export default function ProjectPage({ id }: { id: string }) {
                     )}
                   </TabsContent>
                   <TabsContent value="contributors">
-                    <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                      <div className="grid grid-cols-3 gap-2 md:grid-cols-5 lg:grid-cols-6">
-                        {contributors?.map((contributor) => (
-                          <Link
-                            rel="noopener noreferrer"
-                            key={contributor.id}
-                            href={`https://${project?.gitHost === 'github' ? 'github.com' : 'gitlab.com'}/${contributor.username}`}
-                            target="_blank"
-                            event="project_page_contributor_link_clicked"
-                            eventObject={{ projectId: project.id, contributorId: contributor.id }}
-                            className="flex flex-col items-center gap-2 p-2 transition-all hover:outline hover:outline-neutral-700"
-                          >
-                            <img
-                              src={contributor.avatarUrl}
-                              alt={contributor.username}
-                              className="h-10 w-10 rounded-full"
-                            />
-                            <span className="line-clamp-1 truncate text-sm text-neutral-400">
-                              {contributor.username}
-                            </span>
-                          </Link>
-                        ))}
+                    {otherQueries[5].isLoading ? (
+                      <div className="flex w-full justify-center py-4">
+                        <LoadingSpinner />
                       </div>
-                    </div>
+                    ) : contributors && contributors.length > 0 ? (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <div className="grid grid-cols-3 gap-2 md:grid-cols-5 lg:grid-cols-6">
+                          {contributors?.map((contributor) => (
+                            <Link
+                              rel="noopener noreferrer"
+                              key={contributor.id}
+                              href={`https://${project?.gitHost === 'github' ? 'github.com' : 'gitlab.com'}/${contributor.username}`}
+                              target="_blank"
+                              event="project_page_contributor_link_clicked"
+                              eventObject={{ projectId: project.id, contributorId: contributor.id }}
+                              className="flex flex-col items-center gap-2 p-2 transition-all hover:outline hover:outline-neutral-700"
+                            >
+                              <img
+                                src={contributor.avatarUrl}
+                                alt={contributor.username}
+                                className="h-10 w-10 rounded-full"
+                              />
+                              <span className="line-clamp-1 truncate text-sm text-neutral-400">
+                                {contributor.username}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+                        <div className="py-8 text-center">
+                          <Users className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                          <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                            No contributors found
+                          </h3>
+                          <p className="mx-auto max-w-md text-sm text-neutral-400">
+                            Contributors data is not available for this repository.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </TabsContent>
                 </div>
               </Tabs>

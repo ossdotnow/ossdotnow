@@ -240,5 +240,4 @@ export interface GitManager {
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
   getContributions(username: string): Promise<ContributionData>;
   getUserDetails(username: string): Promise<UserData>;
-  getContributors(identifier: string): Promise<ContributorData[]>;
 }

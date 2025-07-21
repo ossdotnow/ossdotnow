@@ -736,7 +736,7 @@ export class GithubManager implements GitManager {
               if (stateFilter === 'all') return true;
               if (stateFilter === 'open') return pr.state === 'open';
               if (stateFilter === 'closed') return pr.state === 'closed' && !pr.mergedAt;
-              if (stateFilter === 'merged') return pr.state === 'merged' || !!pr.mergedAt;
+              if (stateFilter === 'merged') return !!pr.mergedAt;
               return true;
             });
 
@@ -772,37 +772,46 @@ export class GithubManager implements GitManager {
     return getCached(
       createCacheKey('github', 'contributors', identifier),
       async () => {
-        const contributors: ContributorData[] = [];
-        let page = 1;
-        let hasMore = true;
+        try {
+          const contributors: ContributorData[] = [];
+          let page = 1;
+          let hasMore = true;
+          const MAX_PAGES = 50;
 
-        while (hasMore) {
-          const { data } = await this.octokit.rest.repos.listContributors({
-            owner,
-            repo,
-            per_page: 999,
-            page,
-          });
+          while (hasMore && page <= MAX_PAGES) {
+            const { data } = await this.octokit.rest.repos.listContributors({
+              owner,
+              repo,
+              per_page: 100,
+              page,
+            });
 
-          if (data.length === 0) {
-            hasMore = false;
-          } else {
-            contributors.push(
-              ...data.map((c) => ({
-                ...c,
-                id: c.id!,
-                username: c.login!,
-                avatarUrl: c.avatar_url,
-                contributions: c.contributions,
-              })),
-            );
-            page++;
+            if (data.length === 0) {
+              hasMore = false;
+            } else {
+              contributors.push(
+                ...data.map((c) => ({
+                  ...c,
+                  id: c.id!,
+                  username: c.login!,
+                  avatarUrl: c.avatar_url,
+                  contributions: c.contributions,
+                })),
+              );
+              page++;
+            }
           }
-        }
 
-        return contributors;
+          return contributors;
+        } catch (error) {
+          console.error('Error fetching GitHub contributors:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve contributors for this GitHub repository',
+          });
+        }
       },
-      { ttl: 5 * 60 },
+      { ttl: 60 * 60 },
     );
   }
 }
