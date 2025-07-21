@@ -12,6 +12,7 @@ import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
 import { Button } from '@workspace/ui/components/button';
 import { ContributionGraph } from './contribution-graph';
+import { ProjectWithGithubData } from '@/types/project';
 import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
@@ -36,7 +37,7 @@ interface PullRequestData {
   isDraft?: boolean;
   createdAt: string;
   updatedAt?: string;
-  state: 'open' | 'closed' | 'merged';
+  state: string;
   url: string;
   title: string;
   repository: {
@@ -45,7 +46,7 @@ interface PullRequestData {
   };
   headRefName?: string;
   baseRefName?: string;
-  id: string;
+  id: string | number;
 }
 
 interface ProfileTabsProps {
@@ -53,8 +54,8 @@ interface ProfileTabsProps {
   isProfileLoading: boolean;
   tab: string;
   setTab: (value: string) => void;
-  featuredProjects: any[];
-  projectsWithGithubData: any[];
+  featuredProjects: ProjectWithGithubData[];
+  projectsWithGithubData: ProjectWithGithubData[];
 }
 
 export function ProfileTabs({
@@ -159,7 +160,7 @@ export function ProfileTabs({
         </TabsContent>
 
         <TabsContent value="contributions" className="mt-2">
-          <UserPullRequests profile={profile as Profile} />
+          {profile && <UserPullRequests profile={profile} />}
         </TabsContent>
 
         <TabsContent value="collections" className="mt-2">
@@ -269,7 +270,7 @@ function UserPullRequests({ profile }: { profile: Profile }) {
   const sortedPullRequests = [...pullRequests].sort((a, b) => {
     switch (sortBy) {
       case 'impact':
-        return calculatePRScore(b as PullRequestData) - calculatePRScore(a as PullRequestData);
+        return calculatePRScore(b) - calculatePRScore(a);
       case 'discussion':
         return (
           new Date(b.updatedAt || b.createdAt).getTime() -
