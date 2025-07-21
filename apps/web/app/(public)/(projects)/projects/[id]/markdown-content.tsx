@@ -1,4 +1,5 @@
 import ReactMarkdown, { Components } from 'react-markdown';
+import React from 'react';
 import Link from '@workspace/ui/components/link';
 import rehypeSanitize from 'rehype-sanitize';
 import { Check, Copy } from 'lucide-react';
@@ -56,9 +57,9 @@ const markdownComponents: Components = {
   h3: ({ children }) => <h3 className="mt-5 mb-2 text-lg font-medium text-white">{children}</h3>,
   h4: ({ children }) => <h4 className="mt-4 mb-2 text-base font-medium text-white">{children}</h4>,
   p: ({ children }) => {
-    const containsOnlyImages =
-      Array.isArray(children) &&
-      children.every((child) => typeof child === 'object' && child?.type === 'img');
+    const containsOnlyImages = React.Children.toArray(children).every(
+      (child) => React.isValidElement(child) && child.type === 'img',
+    );
 
     if (containsOnlyImages) {
       return (
