@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@workspace/ui/components/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Heart, TrendingUp, GitFork, Clock, ExternalLink } from 'lucide-react';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
@@ -12,6 +18,7 @@ import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
+import React, { useRef } from 'react';
 import { useQueryState } from 'nuqs';
 
 interface Profile {
@@ -58,6 +65,7 @@ export function ProfileTabs({
   featuredProjects,
   projectsWithGithubData,
 }: ProfileTabsProps) {
+  const featuredCarouselRef = useRef<HTMLDivElement>(null);
   return (
     <>
       {isProfileLoading && (
@@ -98,9 +106,8 @@ export function ProfileTabs({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const container = document.getElementById('featured-carousel');
-                      if (container) {
-                        container.scrollBy({ left: -300, behavior: 'smooth' });
+                      if (featuredCarouselRef.current) {
+                        featuredCarouselRef.current.scrollBy({ left: -300, behavior: 'smooth' });
                       }
                     }}
                     className="h-8 w-8 p-0"
@@ -111,9 +118,8 @@ export function ProfileTabs({
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const container = document.getElementById('featured-carousel');
-                      if (container) {
-                        container.scrollBy({ left: 300, behavior: 'smooth' });
+                      if (featuredCarouselRef.current) {
+                        featuredCarouselRef.current.scrollBy({ left: 300, behavior: 'smooth' });
                       }
                     }}
                     className="h-8 w-8 p-0"
@@ -123,7 +129,7 @@ export function ProfileTabs({
                 </div>
               </div>
               <div
-                id="featured-carousel"
+                ref={featuredCarouselRef}
                 className="flex space-x-4 overflow-x-auto pb-4"
                 style={{
                   scrollbarWidth: 'none',
