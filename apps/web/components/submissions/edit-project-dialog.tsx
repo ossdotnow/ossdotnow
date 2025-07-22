@@ -147,7 +147,7 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
 
     for (const pattern of githubPatterns) {
       const match = trimmedInput.match(pattern);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match?.[2]) {
         return {
           repo: `${match[1]}/${match[2]}`,
           host: 'github',
@@ -157,7 +157,7 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
 
     for (const pattern of gitlabPatterns) {
       const match = trimmedInput.match(pattern);
-      if (match && match[1] && match[2]) {
+      if (match?.[1] && match?.[2]) {
         return {
           repo: `${match[1]}/${match[2]}`,
           host: 'gitlab',
@@ -223,7 +223,7 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
   };
 
   return (
-    <div className="w-full p-4">
+    <div className="mx-auto w-full p-4">
       {error && (
         <div className="bg-destructive/10 text-destructive flex items-center gap-2 rounded-md p-3">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
