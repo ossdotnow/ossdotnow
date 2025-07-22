@@ -16,7 +16,7 @@ const createProjectInput = createInsertSchema(project).omit({
 
 export const earlySubmissionRouter = createTRPCRouter({
   addProject: publicProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    const limiter = getRateLimiter('early-access-waitlist');
+    const limiter = getRateLimiter('early-submissions');
     if (limiter) {
       const ip = getIp(ctx.headers);
       const safeIp = ip || `anonymous-${Date.now()}-${Math.random().toString(36).substring(7)}`;
