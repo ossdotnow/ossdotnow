@@ -773,35 +773,54 @@ export class GithubManager implements GitManager {
       createCacheKey('github', 'contributors', identifier),
       async () => {
         try {
-          const contributors: ContributorData[] = [];
+          const allPullRequests: Array<{
+            id: number;
+            user: { id: number; login: string; avatar_url: string } | null;
+            merged_at: string | null;
+          }> = [];
           let page = 1;
           let hasMore = true;
-          const MAX_PAGES = 50;
 
-          while (hasMore && page <= MAX_PAGES) {
-            const { data } = await this.octokit.rest.repos.listContributors({
+          while (hasMore) {
+            const { data: closedPRs } = await this.octokit.rest.pulls.list({
               owner,
               repo,
+              state: 'closed',
               per_page: 100,
-              page,
+              page: page,
             });
 
-            if (data.length === 0) {
+            if (closedPRs.length === 0) {
               hasMore = false;
             } else {
-              contributors.push(
-                ...data.map((c) => ({
-                  ...c,
-                  id: c.id!,
-                  username: c.login!,
-                  avatarUrl: c.avatar_url,
-                  contributions: c.contributions,
-                })),
-              );
+              const mergedPRs = closedPRs.filter((pr) => pr.merged_at !== null);
+              allPullRequests.push(...mergedPRs);
               page++;
             }
           }
+          const contributorMap = new Map<string, ContributorData>();
 
+          allPullRequests.forEach((pr) => {
+            if (pr.user?.login && pr.merged_at) {
+              const username = pr.user.login;
+              if (contributorMap.has(username)) {
+                const contributor = contributorMap.get(username)!;
+                contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
+              } else {
+                contributorMap.set(username, {
+                  id: pr.user.id,
+                  username: username,
+                  avatarUrl: pr.user.avatar_url,
+                  pullRequestsCount: 1,
+                });
+              }
+            }
+          });
+
+          const contributors = Array.from(contributorMap.values());
+          contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
+
+          console.log(`Found ${contributors.length} unique contributors`);
           return contributors;
         } catch (error) {
           console.error('Error fetching GitHub contributors:', error);

@@ -84,7 +84,7 @@ export interface ContributorData {
   id: string | number;
   username: string;
   avatarUrl?: string;
-  [key: string]: any;
+  pullRequestsCount?: number;
 }
 
 export interface IssueData {
