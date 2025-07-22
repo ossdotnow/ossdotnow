@@ -28,6 +28,8 @@ export function LoginForm({
   // });
 
   const signInWithProvider = async (providerId: ProviderId) => {
+    console.log('[LoginForm] Sign in with:', providerId);
+    console.log('[LoginForm] Redirect URL:', redirectUrl);
     if (env.NEXT_PUBLIC_VERCEL_ENV === 'production') {
       toast.error('This feature is not available in production');
       return;
