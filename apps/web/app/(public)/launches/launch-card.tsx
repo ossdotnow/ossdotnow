@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null,
@@ -31,6 +32,9 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+
+  const router = useRouter();
+  const currentPath = usePathname();
 
   const [localHasVoted, setLocalHasVoted] = useState(project.hasVoted);
   const [localVoteCount, setLocalVoteCount] = useState(project.voteCount);
@@ -69,6 +73,8 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
 
   const handleVote = async (projectId: string) => {
     if (!session?.user) {
+      
+      await router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }

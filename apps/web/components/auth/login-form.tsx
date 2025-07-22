@@ -9,6 +9,7 @@ import { cn } from '@workspace/ui/lib/utils';
 import { ProviderId } from '@/lib/constants';
 import { env } from '@workspace/env/client';
 import { toast } from 'sonner';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function LoginForm({
   className,
@@ -26,6 +27,8 @@ export function LoginForm({
   //     password: '',
   //   },
   // });
+  const searchParams = useSearchParams();
+  redirectUrl = searchParams.get('redirect') || '/';
 
   const signInWithProvider = async (providerId: ProviderId) => {
     if (env.NEXT_PUBLIC_VERCEL_ENV === 'production') {

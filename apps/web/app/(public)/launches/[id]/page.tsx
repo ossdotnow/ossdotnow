@@ -17,6 +17,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
+import { useRouter, usePathname } from 'next/navigation';
 
 const commentSchema = z.object({
   content: z.string().min(1, 'Comment cannot be empty').max(1000, 'Comment is too long'),
@@ -31,6 +32,9 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [showShadow, setShowShadow] = useState(false);
+
+  const router = useRouter();
+  const currentPath = usePathname();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,6 +106,7 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
 
   const handleVote = async () => {
     if (!session?.user) {
+      await router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }
