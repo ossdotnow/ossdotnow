@@ -15,7 +15,8 @@
         "GITHUB_CLIENT_SECRET",
         "UPLOADTHING_TOKEN",
         "GITHUB_TOKEN",
-        "NEXT_PUBLIC_VERCEL_URL"
+        "NEXT_PUBLIC_VERCEL_URL",
+        "UNKEY_ROOT_KEY"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
@@ -36,7 +37,8 @@
         "GITHUB_CLIENT_ID",
         "GITHUB_CLIENT_SECRET",
         "UPLOADTHING_TOKEN",
-        "GITHUB_TOKEN"
+        "GITHUB_TOKEN",
+        "UNKEY_ROOT_KEY"
       ],
       "persistent": true
     },
