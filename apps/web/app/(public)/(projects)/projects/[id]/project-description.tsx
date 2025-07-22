@@ -1,12 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { LaunchProjectDialog } from '@/components/project/launch-project-dialog';
-import EditProjectDialog from '@/components/submissions/edit-project-dialog';
 import { ProjectData, ProjectWithRelations } from '@workspace/api';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
+import { Edit, Globe, Linkedin } from 'lucide-react';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import { Globe, Linkedin } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -266,7 +265,15 @@ function ActionButtons({
           </Button>
         </Link>
       )}
-      {isOwner && <EditProjectDialog projectId={project.id} projectName={project.name} />}
+      <Link href={`/projects/editproject/${project.id}`}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full rounded-none border-neutral-700 bg-neutral-800 hover:border-neutral-600"
+        >
+          {isOwner && <Edit className="h-4 w-4" />}
+        </Button>
+      </Link> 
     </div>
   );
 }
