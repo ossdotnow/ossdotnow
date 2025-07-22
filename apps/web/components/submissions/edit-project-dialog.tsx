@@ -1,11 +1,12 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import React, { useCallback, useEffect, useState } from 'react';
 import { track as vercelTrack } from '@vercel/analytics/react';
 import { track as databuddyTrack } from '@databuddy/sdk';
 import { zodResolver } from '@hookform/resolvers/zod';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -36,9 +37,9 @@ import { Input } from '@workspace/ui/components/input';
 
 import { projectProviderEnum } from '@workspace/db/schema';
 import { useTRPC } from '@/hooks/use-trpc';
-import { submisionForm } from '@/forms';
+import { submissionForm } from '@/forms';
 
-type FormData = z.infer<typeof submisionForm>;
+type FormData = z.infer<typeof submissionForm>;
 
 interface EditProjectFormProps {
   projectId: string;
@@ -49,6 +50,7 @@ interface EditProjectFormProps {
 export function useUpdateProject(onSuccess?: () => void) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+
   const [error, setError] = useState<string | null>(null);
 
   const { mutate, isPending } = useMutation(
@@ -83,6 +85,7 @@ export function useUpdateProject(onSuccess?: () => void) {
 }
 
 export function EditProjectForm({ projectId, initialData, onSuccess }: EditProjectFormProps) {
+  const router = useRouter();
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [repoValidation, setRepoValidation] = useState<{
     isValidating: boolean;
@@ -107,7 +110,7 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
   const { data: tags } = useQuery(trpc.categories.getTags.queryOptions({ activeOnly: true }));
 
   const form = useForm<FormData>({
-    resolver: zodResolver(submisionForm),
+    resolver: zodResolver(submissionForm),
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: initialData,
@@ -286,7 +289,6 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
                               form.setValue('gitHost', parsed.host);
                             } else {
                               field.onChange(inputValue);
-                              const gitHost = form.getValues('gitHost') || 'github';
                             }
                           }}
                         />
@@ -568,9 +570,19 @@ export function EditProjectForm({ projectId, initialData, onSuccess }: EditProje
           </div>
 
           <div className="flex justify-end space-x-4 pt-6">
-            <Button type="button" variant="outline" onClick={() => window.history.back()}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (projectId) {
+                  router.push(`/submissions/${projectId}`);
+                } else {
+                  router.push('/submissions');
+                }
+              }}
+            >
               Cancel
             </Button>
+
             <Button type="submit" disabled={isLoading}>
               {isLoading ? 'Updating...' : 'Update Project'}
             </Button>

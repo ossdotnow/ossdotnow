@@ -21,11 +21,11 @@ import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { DialogFooter } from '@workspace/ui/components/dialog';
 import { track as vercelTrack } from '@vercel/analytics/react';
+// import { UploadDropzone } from '@/lib/uploadthing';
+import { earlySubmissionForm, submissionForm } from '@/forms';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
-// import { UploadDropzone } from '@/lib/uploadthing';
-import { earlySubmissionForm, submisionForm } from '@/forms';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { track as databuddyTrack } from '@databuddy/sdk';
@@ -158,7 +158,7 @@ export default function SubmissionForm({
     : // eslint-disable-next-line react-hooks/rules-of-hooks
       useSubmission(onSuccess);
   const trpc = useTRPC();
-  const formSchema = earlySubmission ? earlySubmissionForm : submisionForm;
+  const formSchema = earlySubmission ? earlySubmissionForm : submissionForm;
 
   // Fetch categories from database
   const { data: projectTypes, isLoading: projectTypesLoading } = useQuery(

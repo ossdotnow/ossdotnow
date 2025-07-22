@@ -43,7 +43,7 @@ export const earlySubmissionForm = createInsertSchema(project)
     tags: z.array(z.string()).default([]).optional(),
   });
 
-export const submisionForm = createInsertSchema(project)
+export const submissionForm = createInsertSchema(project)
   .omit({
     id: true,
     ownerId: true,
