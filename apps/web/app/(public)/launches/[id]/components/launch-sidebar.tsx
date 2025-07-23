@@ -10,7 +10,7 @@ import {
   Users,
 } from 'lucide-react';
 import { Separator } from '@workspace/ui/components/separator';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
@@ -37,6 +37,7 @@ interface LaunchSidebarProps {
 export default function LaunchSidebar({ launch, project, projectId }: LaunchSidebarProps) {
   const { data: session } = authClient.useSession();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const router = useRouter();
   const currentPath = usePathname();
@@ -76,6 +77,10 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
     ...trpc.launches.voteProject.mutationOptions(),
     onSuccess: () => {
       toast.success('Vote recorded!');
+      // Refetch launch data to update vote count
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
+      });
     },
     onError: () => {
       toast.error('Failed to vote. Please try again.');

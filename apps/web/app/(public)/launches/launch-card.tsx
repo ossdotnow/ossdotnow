@@ -48,11 +48,16 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   const voteMutation = useMutation({
     ...trpc.launches.voteProject.mutationOptions(),
     onSuccess: () => {
+      toast.success('Vote recorded!');
+      // Refetch all launch lists so UI updates instantly
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
       });
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
       });
     },
     onError: () => {
