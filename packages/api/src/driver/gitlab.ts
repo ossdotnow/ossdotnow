@@ -151,55 +151,81 @@ export class GitlabManager implements GitManager {
       createCacheKey('gitlab', 'contributors', identifier),
       async () => {
         try {
-          const mergedMRs = await this.gitlab.MergeRequests.all({
-            projectId: identifier,
-            state: 'merged',
-            perPage: 100,
-            maxPages: 50,
-          });
-
-          const allMRs = mergedMRs;
           const contributorMap = new Map<string, ContributorData>();
+          let page = 1;
+          const maxPages = 30;
+          let processedMRs = 0;
+          const maxMRsToProcess = 3000;
 
-          allMRs.forEach((mr: any) => {
-            if (mr && mr.author && mr.author.username) {
-              const username = mr.author.username;
-              const authorId = mr.author.id;
-              const avatarUrl = mr.author.avatar_url;
+          while (page <= maxPages && processedMRs < maxMRsToProcess) {
+            try {
 
-              if (contributorMap.has(username)) {
-                const contributor = contributorMap.get(username)!;
-                contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
-              } else {
-                contributorMap.set(username, {
-                  id: authorId || username,
-                  username: username,
-                  avatarUrl: avatarUrl || '',
-                  pullRequestsCount: 1,
-                });
+              const mergedMRs = await this.gitlab.MergeRequests.all({
+                projectId: identifier,
+                state: 'merged',
+                perPage: 100,
+                page: page,
+                orderBy: 'updated_at',
+                sort: 'desc',
+              });
+
+              if (!mergedMRs || mergedMRs.length === 0) {
+                break;
               }
+
+              processedMRs += mergedMRs.length;
+
+              mergedMRs.forEach((mr: any) => {
+                if (mr && mr.author && mr.author.username) {
+                  const username = mr.author.username;
+                  const authorId = mr.author.id;
+                  const avatarUrl = mr.author.avatar_url;
+
+                  if (contributorMap.has(username)) {
+                    const contributor = contributorMap.get(username)!;
+                    contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
+                  } else {
+                    contributorMap.set(username, {
+                      id: authorId || username,
+                      username: username,
+                      avatarUrl: avatarUrl || '',
+                      pullRequestsCount: 1,
+                    });
+                  }
+                }
+              });
+
+              page++;
+
+              if (contributorMap.size >= 1000) {
+                break;
+              }
+            } catch (pageError) {
+              break;
             }
-          });
+          }
 
           const contributors = Array.from(contributorMap.values());
           contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
 
-          return contributors;
+          const limitedContributors = contributors.slice(0, 500);
+          return limitedContributors;
         } catch (error) {
           console.error('Error fetching GitLab contributors via MRs:', error);
           try {
             const members = await this.gitlab.ProjectMembers.all(identifier, {
               perPage: 100,
-              maxPages: 10,
+              maxPages: 5,
             });
 
-            const fallbackContributors = members.map((member: any) => ({
-              id: member.id,
-              username: member.username,
-              avatarUrl: member.avatar_url,
-              pullRequestsCount: 0,
-            }));
-
+            const fallbackContributors = members
+              .map((member: any) => ({
+                id: member.id,
+                username: member.username,
+                avatarUrl: member.avatar_url,
+                pullRequestsCount: 0,
+              }))
+              .slice(0, 500);
             return fallbackContributors;
           } catch (fallbackError) {
             console.error('Fallback also failed:', fallbackError);
@@ -210,7 +236,7 @@ export class GitlabManager implements GitManager {
           }
         }
       },
-      { ttl: 60 * 60 },
+      { ttl: 4 * 60 * 60 },
     );
   }
 
@@ -263,37 +289,69 @@ export class GitlabManager implements GitManager {
       createCacheKey('gitlab', 'pulls', identifier),
       async () => {
         try {
-          // GitLab API doesn't support 'all' as a state
-          const openMRs = await this.gitlab.MergeRequests.all({
-            projectId: identifier,
-            state: 'opened',
-            perPage: 100,
-          });
+          const fetchMRsWithState = async (
+            state: 'opened' | 'closed' | 'merged',
+          ): Promise<any[]> => {
+            const allMRs: any[] = [];
+            let page = 1;
+            const maxPages = 5;
+            let hasMore = true;
 
-          const closedMRs = await this.gitlab.MergeRequests.all({
-            projectId: identifier,
-            state: 'closed',
-            perPage: 100,
-          });
+            while (hasMore && page <= maxPages) {
+              try {
+                const mrs = await this.gitlab.MergeRequests.all({
+                  projectId: identifier,
+                  state: state,
+                  perPage: 100,
+                  page: page,
+                  orderBy: 'updated_at',
+                  sort: 'desc',
+                });
 
-          const mergedMRs = await this.gitlab.MergeRequests.all({
-            projectId: identifier,
-            state: 'merged',
-            perPage: 100,
-          });
+                if (!mrs || mrs.length === 0) {
+                  hasMore = false;
+                  break;
+                }
+
+                allMRs.push(...mrs);
+                if (mrs.length < 100) {
+                  hasMore = false;
+                }
+
+                page++;
+              } catch (pageError) {
+                hasMore = false;
+                break;
+              }
+            }
+
+            return allMRs;
+          };
+          const [openMRs, closedMRs, mergedMRs] = await Promise.all([
+            fetchMRsWithState('opened'),
+            fetchMRsWithState('closed'),
+            fetchMRsWithState('merged'),
+          ]);
 
           const mergeRequests = [...openMRs, ...closedMRs, ...mergedMRs];
+
           return mergeRequests.map((mr: any) => ({
             id: mr.id,
             title: mr.title,
-            state: mr.state === 'opened' ? 'open' : mr.state, // same
+            state: mr.state === 'opened' ? 'open' : mr.state, // Map GitLab 'opened' to 'open' to match GitHub format
             url: mr.web_url,
-            merged_at: mr.merged_at || null, // same
-            number: mr.iid, // same
+            merged_at: mr.merged_at || null,
+            number: mr.iid, // GitLab uses iid for user-facing MR numbers
+            created_at: mr.created_at,
+            updated_at: mr.updated_at,
             user: {
               login: mr.author?.username,
             },
-            draft: mr.work_in_progress || false, // same
+            author: {
+              username: mr.author?.username,
+            },
+            draft: mr.work_in_progress || mr.draft || false, // Handle both work_in_progress and draft fields
+            labels: mr.labels || [],
             ...mr,
           }));
         } catch (error) {
@@ -339,14 +397,39 @@ export class GitlabManager implements GitManager {
       createCacheKey('gitlab', 'open_pull_requests_count', identifier),
       async () => {
         try {
-          const mergeRequests = await this.gitlab.MergeRequests.all({
-            projectId: identifier,
-            state: 'opened',
-            perPage: 100,
-            maxPages: 10,
-          });
+          let totalCount = 0;
+          let page = 1;
+          const maxPages = 10;
+          let hasMore = true;
 
-          return mergeRequests.length;
+          while (hasMore && page <= maxPages) {
+            try {
+              const mergeRequests = await this.gitlab.MergeRequests.all({
+                projectId: identifier,
+                state: 'opened',
+                perPage: 100,
+                page: page,
+              });
+
+              if (!mergeRequests || mergeRequests.length === 0) {
+                hasMore = false;
+                break;
+              }
+
+              totalCount += mergeRequests.length;
+              if (mergeRequests.length < 100) {
+                hasMore = false;
+              }
+
+              page++;
+            } catch (pageError) {
+              console.error(`Error fetching page ${page} of open MRs count:`, pageError);
+              hasMore = false;
+              break;
+            }
+          }
+
+          return totalCount;
         } catch (error) {
           console.error('Error fetching GitLab pull requests count:', error);
           throw new TRPCError({
@@ -486,8 +569,9 @@ export class GitlabManager implements GitManager {
   }
 
   async getRepoData(identifier: string) {
-    const [repo, contributors, issuesCount, pullRequestsCount] = await Promise.all([
-      this.getRepo(identifier),
+    const repo = await this.getRepo(identifier);
+
+    const [contributors, issuesCount, pullRequestsCount] = await Promise.all([
       this.getContributors(identifier),
       this.getIssuesCount(identifier),
       this.getPullRequestsCount(identifier),
