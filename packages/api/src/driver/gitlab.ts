@@ -150,18 +150,65 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'contributors', identifier),
       async () => {
-        const members = await this.gitlab.ProjectMembers.all(identifier, {
-          perPage: 100,
-          maxPages: 50,
-        });
+        try {
+          const mergedMRs = await this.gitlab.MergeRequests.all({
+            projectId: identifier,
+            state: 'merged',
+            perPage: 100,
+            maxPages: 50,
+          });
 
-        return members.map((m: any) => ({
-          ...m,
-          id: m.id,
-          username: m.username,
-          avatarUrl: m.avatar_url,
-          contributions: m.contributions,
-        }));
+          const allMRs = mergedMRs;
+          const contributorMap = new Map<string, ContributorData>();
+
+          allMRs.forEach((mr: any) => {
+            if (mr && mr.author && mr.author.username) {
+              const username = mr.author.username;
+              const authorId = mr.author.id;
+              const avatarUrl = mr.author.avatar_url;
+
+              if (contributorMap.has(username)) {
+                const contributor = contributorMap.get(username)!;
+                contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
+              } else {
+                contributorMap.set(username, {
+                  id: authorId || username,
+                  username: username,
+                  avatarUrl: avatarUrl || '',
+                  pullRequestsCount: 1,
+                });
+              }
+            }
+          });
+
+          const contributors = Array.from(contributorMap.values());
+          contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
+
+          return contributors;
+        } catch (error) {
+          console.error('Error fetching GitLab contributors via MRs:', error);
+          try {
+            const members = await this.gitlab.ProjectMembers.all(identifier, {
+              perPage: 100,
+              maxPages: 10,
+            });
+
+            const fallbackContributors = members.map((member: any) => ({
+              id: member.id,
+              username: member.username,
+              avatarUrl: member.avatar_url,
+              pullRequestsCount: 0,
+            }));
+
+            return fallbackContributors;
+          } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve contributors for this GitLab repository',
+            });
+          }
+        }
       },
       { ttl: 60 * 60 },
     );
@@ -265,18 +312,14 @@ export class GitlabManager implements GitManager {
       createCacheKey('gitlab', 'open_issues_count', identifier),
       async () => {
         try {
-          // Getting only open issues count
           const issues = await this.gitlab.Issues.all({
             projectId: identifier,
             state: 'opened',
-            perPage: 1,
+            perPage: 100,
+            maxPages: 10,
           });
 
-          // GitLab API doesn't provide pagination info directly on the array
-          // We need to check if the response has pagination metadata
-          // @ts-ignore - The GitLab API types don't include the pagination property
-          const paginationInfo = issues.pagination || (issues as any)._paginationInfo;
-          return paginationInfo?.total || issues.length || 0;
+          return issues.length;
         } catch (error) {
           console.error('Error fetching GitLab issues count:', error);
           throw new TRPCError({
@@ -299,14 +342,11 @@ export class GitlabManager implements GitManager {
           const mergeRequests = await this.gitlab.MergeRequests.all({
             projectId: identifier,
             state: 'opened',
-            perPage: 1,
+            perPage: 100,
+            maxPages: 10,
           });
 
-          // GitLab API doesn't provide pagination info directly on the array
-          // We need to check if the response has pagination metadata
-          // @ts-ignore - The GitLab API types don't include the pagination property
-          const paginationInfo = mergeRequests.pagination || (mergeRequests as any)._paginationInfo;
-          return paginationInfo?.total || mergeRequests.length || 0;
+          return mergeRequests.length;
         } catch (error) {
           console.error('Error fetching GitLab pull requests count:', error);
           throw new TRPCError({
@@ -315,7 +355,7 @@ export class GitlabManager implements GitManager {
           });
         }
       },
-      { ttl: 10 * 60 }, // Cache for 10 minutes as per requirements
+      { ttl: 10 * 60 },
     );
   }
 

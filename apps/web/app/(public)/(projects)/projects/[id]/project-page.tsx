@@ -29,8 +29,8 @@ import ProjectDescription from './project-description';
 import ProjectErrorPage from '../project-error-page';
 import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
+import { useEffect, useState, useRef } from 'react';
 import Link from '@workspace/ui/components/link';
-import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 
@@ -171,6 +171,8 @@ export default function ProjectPage({ id }: { id: string }) {
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const [showShadow, setShowShadow] = useState(false);
+  const [activeTab, setActiveTab] = useState('readme');
+  const tabsListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -180,6 +182,30 @@ export default function ProjectPage({ id }: { id: string }) {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Scroll active tab into view on smaller screens
+  useEffect(() => {
+    if (tabsListRef.current) {
+      const activeTabElement = tabsListRef.current.querySelector(
+        `[data-state="active"]`,
+      ) as HTMLElement;
+      if (activeTabElement) {
+        const container = tabsListRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const tabRect = activeTabElement.getBoundingClientRect();
+        if (tabRect.left < containerRect.left || tabRect.right > containerRect.right) {
+          const scrollLeft =
+            activeTabElement.offsetLeft -
+            container.clientWidth / 2 +
+            activeTabElement.clientWidth / 2;
+          container.scrollTo({
+            left: scrollLeft,
+            behavior: 'smooth',
+          });
+        }
+      }
+    }
+  }, [activeTab]);
 
   const trpc = useTRPC();
 
@@ -341,8 +367,11 @@ export default function ProjectPage({ id }: { id: string }) {
             <ProjectDescription isOwner={isOwner} project={project} repo={repo} />
 
             <div className="">
-              <Tabs defaultValue="readme" className="w-full">
-                <div className="mb-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              <Tabs defaultValue="readme" className="w-full" onValueChange={setActiveTab}>
+                <div
+                  ref={tabsListRef}
+                  className="mb-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                >
                   <TabsList className="min-w-max bg-neutral-900/0 p-0">
                     <TabsTrigger value="readme" className="rounded-none text-sm whitespace-nowrap">
                       <FileText className="h-4 w-4" />
@@ -746,7 +775,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       </div>
                     ) : contributors && contributors.length > 0 ? (
                       <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
-                        <div className="grid grid-cols-3 gap-2 md:grid-cols-5 lg:grid-cols-6">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                           {contributors?.map((contributor) => (
                             <Link
                               rel="noopener noreferrer"
@@ -755,16 +784,49 @@ export default function ProjectPage({ id }: { id: string }) {
                               target="_blank"
                               event="project_page_contributor_link_clicked"
                               eventObject={{ projectId: project.id, contributorId: contributor.id }}
-                              className="flex flex-col items-center gap-2 p-2 transition-all hover:outline hover:outline-neutral-700"
+                              className={`flex items-center gap-3 rounded-none border p-3 transition-all hover:bg-neutral-800/50 ${
+                                contributor.pullRequestsCount !== undefined &&
+                                contributor.pullRequestsCount >= 500
+                                  ? 'border-yellow-600/40 hover:border-yellow-500/60'
+                                  : contributor.pullRequestsCount !== undefined &&
+                                      contributor.pullRequestsCount >= 250
+                                    ? 'border-gray-400/35 hover:border-gray-300/55'
+                                    : contributor.pullRequestsCount !== undefined &&
+                                        contributor.pullRequestsCount >= 100
+                                      ? 'border-amber-700/35 hover:border-amber-600/55'
+                                      : contributor.pullRequestsCount !== undefined &&
+                                          contributor.pullRequestsCount >= 50
+                                        ? 'border-neutral-700/50 hover:border-neutral-600/70'
+                                        : 'border-neutral-800 hover:border-neutral-700'
+                              }`}
                             >
                               <img
                                 src={contributor.avatarUrl}
                                 alt={contributor.username}
                                 className="h-10 w-10 rounded-full"
                               />
-                              <span className="line-clamp-1 truncate text-sm text-neutral-400">
-                                {contributor.username}
-                              </span>
+                              <div className="min-w-0 flex-1">
+                                <div className="truncate text-sm font-medium text-neutral-300">
+                                  {contributor.username}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                                  {contributor.pullRequestsCount !== undefined && (
+                                    <span className="flex items-center gap-1 text-neutral-400">
+                                      <GitPullRequest className="h-3 w-3 text-purple-400" />
+                                      <span className="text-xs">
+                                        {contributor.pullRequestsCount >= 500
+                                          ? '500+'
+                                          : contributor.pullRequestsCount >= 250
+                                            ? '250+'
+                                            : contributor.pullRequestsCount >= 100
+                                              ? '100+'
+                                              : contributor.pullRequestsCount}{' '}
+                                        PRs
+                                      </span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </Link>
                           ))}
                         </div>
