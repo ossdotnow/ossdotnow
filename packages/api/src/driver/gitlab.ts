@@ -144,8 +144,9 @@ export class GitlabManager implements GitManager {
     }
   }
 
-  async getContributors(identifier: string): Promise<ContributorData[]> {
+  async getContributors(identifier: string, limit?: number): Promise<ContributorData[]> {
     this.parseRepoIdentifier(identifier);
+    const contributorLimit = limit && limit > 0 ? limit : 100;
 
     return getCached(
       createCacheKey('gitlab', 'contributors', identifier),
@@ -190,7 +191,7 @@ export class GitlabManager implements GitManager {
                 }
               });
 
-              if (contributorMap.size >= 100 || mergedMRs.length < perPage) {
+              if (contributorMap.size >= contributorLimit || mergedMRs.length < perPage) {
                 break;
               }
             } catch (pageError) {
@@ -200,7 +201,7 @@ export class GitlabManager implements GitManager {
           const contributors = Array.from(contributorMap.values());
           contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
 
-          return contributors.slice(0, 100);
+          return contributors.slice(0, contributorLimit);
         } catch (error) {
           console.error('Error fetching GitLab contributors via MRs:', error);
           try {
@@ -216,7 +217,7 @@ export class GitlabManager implements GitManager {
                 avatarUrl: member.avatar_url,
                 pullRequestsCount: 0,
               }))
-              .slice(0, 100);
+              .slice(0, contributorLimit);
             return fallbackContributors;
           } catch (fallbackError) {
             console.error('Fallback also failed:', fallbackError);
