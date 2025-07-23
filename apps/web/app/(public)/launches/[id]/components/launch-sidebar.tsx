@@ -18,6 +18,7 @@ import Link from '@workspace/ui/components/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
+import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -36,6 +37,9 @@ interface LaunchSidebarProps {
 export default function LaunchSidebar({ launch, project, projectId }: LaunchSidebarProps) {
   const { data: session } = authClient.useSession();
   const trpc = useTRPC();
+
+  const router = useRouter();
+  const currentPath = usePathname();
 
   // Validate gitRepoUrl and gitHost before using them in queries
   const isValidRepoUrl = Boolean(project?.gitRepoUrl && project.gitRepoUrl.trim() !== '');
@@ -80,6 +84,7 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
 
   const handleVote = async () => {
     if (!session?.user) {
+      await router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }

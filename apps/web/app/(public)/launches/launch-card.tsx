@@ -9,6 +9,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null,
@@ -39,6 +40,9 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
     staleTime: 1000 * 60 * 60 * 24,
   });
 
+  const router = useRouter();
+  const currentPath = usePathname();
+
   const rankBadge = getRankBadge(index ?? 0);
 
   const voteMutation = useMutation({
@@ -58,6 +62,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
 
   const handleVote = async (projectId: string) => {
     if (!session?.user) {
+      await router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }
