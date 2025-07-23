@@ -152,31 +152,26 @@ export class GitlabManager implements GitManager {
       async () => {
         try {
           const contributorMap = new Map<string, ContributorData>();
-          let page = 1;
-          const maxPages = 30;
-          let processedMRs = 0;
-          const maxMRsToProcess = 3000;
 
-          while (page <= maxPages && processedMRs < maxMRsToProcess) {
+          const maxPages = 5;
+          const perPage = 100;
+
+          for (let page = 1; page <= maxPages; page++) {
             try {
-
               const mergedMRs = await this.gitlab.MergeRequests.all({
                 projectId: identifier,
                 state: 'merged',
-                perPage: 100,
+                perPage: perPage,
                 page: page,
                 orderBy: 'updated_at',
                 sort: 'desc',
               });
-
               if (!mergedMRs || mergedMRs.length === 0) {
                 break;
               }
 
-              processedMRs += mergedMRs.length;
-
               mergedMRs.forEach((mr: any) => {
-                if (mr && mr.author && mr.author.username) {
+                if (mr?.author?.username) {
                   const username = mr.author.username;
                   const authorId = mr.author.id;
                   const avatarUrl = mr.author.avatar_url;
@@ -195,27 +190,23 @@ export class GitlabManager implements GitManager {
                 }
               });
 
-              page++;
-
-              if (contributorMap.size >= 1000) {
+              if (contributorMap.size >= 100 || mergedMRs.length < perPage) {
                 break;
               }
             } catch (pageError) {
               break;
             }
           }
-
           const contributors = Array.from(contributorMap.values());
           contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
 
-          const limitedContributors = contributors.slice(0, 500);
-          return limitedContributors;
+          return contributors.slice(0, 100);
         } catch (error) {
           console.error('Error fetching GitLab contributors via MRs:', error);
           try {
             const members = await this.gitlab.ProjectMembers.all(identifier, {
               perPage: 100,
-              maxPages: 5,
+              maxPages: 1,
             });
 
             const fallbackContributors = members
@@ -225,7 +216,7 @@ export class GitlabManager implements GitManager {
                 avatarUrl: member.avatar_url,
                 pullRequestsCount: 0,
               }))
-              .slice(0, 500);
+              .slice(0, 100);
             return fallbackContributors;
           } catch (fallbackError) {
             console.error('Fallback also failed:', fallbackError);
@@ -247,31 +238,60 @@ export class GitlabManager implements GitManager {
       createCacheKey('gitlab', 'issues', identifier),
       async () => {
         try {
-          // GitLab API doesn't support 'all' as a state, lol
-          const openIssues = await this.gitlab.Issues.all({
-            projectId: identifier,
-            state: 'opened',
-            perPage: 100,
-          });
+          const fetchIssuesWithState = async (state: 'opened' | 'closed'): Promise<any[]> => {
+            const allIssues: any[] = [];
+            let page = 1;
+            const maxPages = 5;
+            let hasMore = true;
 
-          const closedIssues = await this.gitlab.Issues.all({
-            projectId: identifier,
-            state: 'closed',
-            perPage: 100,
-          });
+            while (hasMore && page <= maxPages) {
+              try {
+                const issues = await this.gitlab.Issues.all({
+                  projectId: identifier,
+                  state: state,
+                  perPage: 100,
+                  page: page,
+                  orderBy: 'updated_at',
+                  sort: 'desc',
+                });
+
+                if (!issues || issues.length === 0) {
+                  hasMore = false;
+                  break;
+                }
+
+                allIssues.push(...issues);
+                if (issues.length < 100) {
+                  hasMore = false;
+                }
+
+                page++;
+              } catch (pageError) {
+                hasMore = false;
+                break;
+              }
+            }
+
+            return allIssues;
+          };
+
+          const [openIssues, closedIssues] = await Promise.all([
+            fetchIssuesWithState('opened'),
+            fetchIssuesWithState('closed'),
+          ]);
 
           const issues = [...openIssues, ...closedIssues];
           return issues.map((i: any) => ({
+            ...i,
             id: i.id,
             title: i.title,
-            state: i.state === 'opened' ? 'open' : i.state, // to match github format
+            state: i.state === 'opened' ? 'open' : i.state,
             url: i.web_url,
-            number: i.iid, // adding to match github format
-            pull_request: null, // adding to match github format
+            number: i.iid,
+            pull_request: null,
             user: {
               login: i.author?.username,
             },
-            ...i,
           }));
         } catch (error) {
           console.error('Error fetching GitLab issues:', error);
@@ -336,12 +356,13 @@ export class GitlabManager implements GitManager {
           const mergeRequests = [...openMRs, ...closedMRs, ...mergedMRs];
 
           return mergeRequests.map((mr: any) => ({
+            ...mr,
             id: mr.id,
             title: mr.title,
-            state: mr.state === 'opened' ? 'open' : mr.state, // Map GitLab 'opened' to 'open' to match GitHub format
+            state: mr.state === 'opened' ? 'open' : mr.state,
             url: mr.web_url,
             merged_at: mr.merged_at || null,
-            number: mr.iid, // GitLab uses iid for user-facing MR numbers
+            number: mr.iid,
             created_at: mr.created_at,
             updated_at: mr.updated_at,
             user: {
@@ -352,7 +373,6 @@ export class GitlabManager implements GitManager {
             },
             draft: mr.work_in_progress || mr.draft || false, // Handle both work_in_progress and draft fields
             labels: mr.labels || [],
-            ...mr,
           }));
         } catch (error) {
           console.error('Error fetching GitLab pull requests:', error);
