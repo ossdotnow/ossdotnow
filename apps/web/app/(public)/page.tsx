@@ -7,14 +7,14 @@ import Image from 'next/image';
 
 export default function Page() {
   return (
-    <div className="flex h-[calc(100vh-66px)] overflow-hidden p-6 md:min-h-[calc(100vh-80px)]">
+    <div className="relative flex h-[calc(100vh-66px)] overflow-hidden p-6 md:min-h-[calc(100vh-80px)]">
       <Image
         src="/home-background.png"
         alt=""
         aria-hidden="true"
         width={960}
         height={860}
-        className="pointer-events-none fixed top-0 right-0 left-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
+        className="pointer-events-none absolute top-0 right-0 left-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
       />
 
       <div className="relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-8 overflow-hidden text-center">
