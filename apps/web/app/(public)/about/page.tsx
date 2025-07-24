@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Code2,
-  Rocket,
-  Users,
-  Trophy,
-  Sparkles,
-  Heart,
-  GitBranch,
-  Zap,
-} from 'lucide-react';
+import { Code2, Rocket, Users, Trophy, Sparkles, Heart, GitBranch, Zap } from 'lucide-react';
 import { Badge } from '@workspace/ui/components/badge';
 import Link from '@workspace/ui/components/link';
 import { useEffect, useState } from 'react';
@@ -80,9 +71,11 @@ export default function AboutPage() {
         <div className="space-y-16 py-12">
           <section className="space-y-6">
             <div className="space-y-4">
-              <Badge variant="secondary" className="mb-2 border-neutral-700 bg-neutral-800 ">
-                <Zap className="mr-1 h-3 w-3 text-cyan-400 animate-pulse" />
-                <span className="text-cyan-400 animate-pulse">The Open Source Discovery Platform</span>
+              <Badge variant="secondary" className="mb-2 border-neutral-700 bg-neutral-800">
+                <Zap className="mr-1 h-3 w-3 animate-pulse text-cyan-400" />
+                <span className="animate-pulse text-cyan-400">
+                  The Open Source Discovery Platform
+                </span>
               </Badge>
               <h1 className="text-5xl font-semibold tracking-tight text-white">
                 Where Great Projects
@@ -98,16 +91,16 @@ export default function AboutPage() {
             </div>
           </section>
 
-        <section className="space-y-6">
-          <div className="space-y-4">
-            <h2 className="text-3xl font-bold text-white">Our Mission</h2>
-            <p className="max-w-4xl text-lg leading-relaxed text-neutral-400">
-              We exist to democratize open source discovery. Too many incredible projects remain
-              hidden in the depths of GitHub and GitLab. We&apos;re changing that by creating a
-              vibrant marketplace of ideas where quality projects get the visibility they deserve.
-            </p>
-          </div>
-        </section>
+          <section className="space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold text-white">Our Mission</h2>
+              <p className="max-w-4xl text-lg leading-relaxed text-neutral-400">
+                We exist to democratize open source discovery. Too many incredible projects remain
+                hidden in the depths of GitHub and GitLab. We&apos;re changing that by creating a
+                vibrant marketplace of ideas where quality projects get the visibility they deserve.
+              </p>
+            </div>
+          </section>
 
           <section className="space-y-6">
             <h2 className="text-3xl font-bold text-white">What We Do</h2>
@@ -115,10 +108,10 @@ export default function AboutPage() {
               {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="border-neutral-800 bg-neutral-900/50 p-6 transition-all hover:border-cyan-500/50 border shadow-sm flex flex-col gap-6"
+                  className="flex flex-col gap-6 border border-neutral-800 bg-neutral-900/50 p-6 shadow-sm transition-all hover:border-cyan-500/50"
                 >
                   <div className="flex items-start space-x-4">
-                    <div className="bg-cyan-500/20 p-3 text-cyan-400 border-cyan-600/20 border-2">
+                    <div className="border-2 border-cyan-600/20 bg-cyan-500/20 p-3 text-cyan-400">
                       {feature.icon}
                     </div>
                     <div className="space-y-2">
@@ -134,7 +127,7 @@ export default function AboutPage() {
           <section className="space-y-6">
             <h2 className="text-3xl font-bold text-white">Our Values</h2>
             <div className="grid gap-4 md:grid-cols-3">
-              {values.map((value, idx) => (
+              {values.map((value) => (
                 <div
                   key={value.title}
                   className="space-y-3 border border-neutral-800 bg-neutral-900/30 p-6"
@@ -142,9 +135,7 @@ export default function AboutPage() {
                   <div className="flex items-center space-x-3">
                     <div
                       className={
-                        value.title === "Community Driven"
-                          ? "text-emerald-400"
-                          : "text-cyan-400"
+                        value.title === 'Community Driven' ? 'text-emerald-400' : 'text-cyan-400'
                       }
                     >
                       {value.icon}
@@ -165,13 +156,13 @@ export default function AboutPage() {
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
                 <Link
                   href="/projects"
-                  className="bg-cyan-500 px-6 py-3 font-medium text-black transition-colors hover:bg-cyan-600 text-center"
+                  className="bg-cyan-500 px-6 py-3 text-center font-medium text-black transition-colors hover:bg-cyan-600"
                 >
                   Explore Projects
                 </Link>
                 <Link
                   href="/early-submission"
-                  className="border border-neutral-700 bg-neutral-800 px-6 py-3 font-medium text-white transition-colors hover:bg-neutral-700 text-center"
+                  className="border border-neutral-700 bg-neutral-800 px-6 py-3 text-center font-medium text-white transition-colors hover:bg-neutral-700"
                 >
                   Submit Your Project
                 </Link>

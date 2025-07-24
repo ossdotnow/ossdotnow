@@ -1,5 +1,5 @@
 {
-  "name": "shadcn-ui-monorepo",
+  "name": "ossdotnow",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -19,7 +19,6 @@
     "db:make-all-admin": "dotenv -- turbo run db:make-all-admin"
   },
   "devDependencies": {
-    "@types/minimatch": "^6.0.0",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
     "dotenv-cli": "^8.0.0",
@@ -27,7 +26,7 @@
     "prettier": "^3.5.3",
     "prettier-plugin-sort-imports": "^1.8.8",
     "prettier-plugin-tailwindcss": "^0.6.13",
-    "turbo": "^2.5.4",
+    "turbo": "^2.5.5",
     "typescript": "5.8.3"
   },
   "engines": {
@@ -41,5 +40,8 @@
   "trustedDependencies": [
     "@tailwindcss/oxide",
     "core-js-pure"
-  ]
+  ],
+  "dependencies": {
+    "minimatch": "^10.0.3"
+  }
 }

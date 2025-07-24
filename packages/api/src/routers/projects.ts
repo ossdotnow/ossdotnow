@@ -1,4 +1,9 @@
-import { categoryProjectStatuses, categoryProjectTypes, categoryTags } from '@workspace/db/schema';
+import {
+  categoryProjectStatuses,
+  categoryProjectTypes,
+  categoryTags,
+  projectApprovalStatusEnum,
+} from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
 import { and, asc, count, desc, eq, or, ilike, inArray } from 'drizzle-orm';
@@ -22,6 +27,7 @@ const createProjectInput = createInsertSchema(project)
     status: z.string().min(1, 'Project status is required'),
     type: z.string().min(1, 'Project type is required'),
     tags: z.array(z.string()).default([]),
+    approvalStatus: z.enum(projectApprovalStatusEnum.enumValues),
   });
 
 type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
@@ -59,8 +65,6 @@ export const projectsRouter = createTRPCRouter({
     .input(
       z.object({
         approvalStatus: z.enum(['approved', 'rejected', 'pending', 'all']).optional(),
-        page: z.number().min(1).default(1),
-        pageSize: z.number().min(1).max(100).default(20),
         searchQuery: z.string().optional(),
         statusFilter: z.string().optional(),
         typeFilter: z.string().optional(),
@@ -71,8 +75,6 @@ export const projectsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const {
-        page,
-        pageSize,
         approvalStatus,
         searchQuery,
         statusFilter,
@@ -81,7 +83,6 @@ export const projectsRouter = createTRPCRouter({
         providerFilter,
         sortBy,
       } = input;
-      const offset = (page - 1) * pageSize;
 
       const conditions = [];
 
@@ -151,28 +152,20 @@ export const projectsRouter = createTRPCRouter({
       const [totalCountResult] = await countQuery;
 
       const orderByClause = [];
-      if(!searchQuery){
+      if (!searchQuery) {
         orderByClause.push(desc(project.isPinned));
       }
 
       if (searchQuery) {
         const lowerSearchQuery = searchQuery.toLowerCase();
 
-        orderByClause.push(
-          desc(ilike(project.name, searchQuery))
-        );
+        orderByClause.push(desc(ilike(project.name, searchQuery)));
 
-        orderByClause.push(
-          desc(ilike(project.name, `${searchQuery}%`))
-        );
+        orderByClause.push(desc(ilike(project.name, `${searchQuery}%`)));
 
-        orderByClause.push(
-          desc(ilike(project.name, `%${searchQuery}%`))
-        );
+        orderByClause.push(desc(ilike(project.name, `%${searchQuery}%`)));
 
-        orderByClause.push(
-          desc(ilike(project.gitRepoUrl, `%${searchQuery}%`))
-        );
+        orderByClause.push(desc(ilike(project.gitRepoUrl, `%${searchQuery}%`)));
       }
 
       switch (sortBy) {
@@ -196,10 +189,7 @@ export const projectsRouter = createTRPCRouter({
           break;
       }
 
-      const projectResults = await query
-        .orderBy(...orderByClause)
-        .limit(pageSize)
-        .offset(offset);
+      const projectResults = await query.orderBy(...orderByClause);
 
       const projectIds = projectResults.map((r) => r.project.id);
       const tagRelations =
@@ -230,22 +220,7 @@ export const projectsRouter = createTRPCRouter({
         tagRelations: tagsByProject[r.project.id] || [],
       }));
 
-      const totalCount = totalCountResult?.totalCount ?? 0;
-      const totalPages = Math.ceil(totalCount / pageSize);
-      const hasNextPage = page < totalPages;
-      const hasPreviousPage = page > 1;
-
-      return {
-        data: projects,
-        pagination: {
-          page,
-          pageSize,
-          totalCount,
-          totalPages,
-          hasNextPage,
-          hasPreviousPage,
-        },
-      };
+      return projects;
     }),
   getProjects: publicProcedure
     .input(
@@ -344,29 +319,21 @@ export const projectsRouter = createTRPCRouter({
       const [totalCountResult] = await countQuery;
 
       const orderByClause = [];
-      if(!searchQuery){
+      if (!searchQuery) {
         orderByClause.push(desc(project.isPinned));
       }
 
-    if (searchQuery) {
-          const lowerSearchQuery = searchQuery.toLowerCase();
+      if (searchQuery) {
+        const lowerSearchQuery = searchQuery.toLowerCase();
 
-          orderByClause.push(
-            desc(ilike(project.name, searchQuery))
-          );
+        orderByClause.push(desc(ilike(project.name, searchQuery)));
 
-          orderByClause.push(
-            desc(ilike(project.name, `${searchQuery}%`))
-          );
+        orderByClause.push(desc(ilike(project.name, `${searchQuery}%`)));
 
-          orderByClause.push(
-            desc(ilike(project.name, `%${searchQuery}%`))
-          );
+        orderByClause.push(desc(ilike(project.name, `%${searchQuery}%`)));
 
-          orderByClause.push(
-            desc(ilike(project.gitRepoUrl, `%${searchQuery}%`))
-          );
-        }
+        orderByClause.push(desc(ilike(project.gitRepoUrl, `%${searchQuery}%`)));
+      }
 
       switch (sortBy) {
         case 'name':
@@ -544,48 +511,47 @@ export const projectsRouter = createTRPCRouter({
       return newProject;
     });
   }),
-  updateProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
-    if (!input.id) throw new Error('Project ID is required for update');
-    if (!ctx.session.userId) throw new Error('User not authenticated');
-    const projectId = input.id;
-    const userId = ctx.session.userId;
+  updateProject: adminProcedure
+    .input(createProjectInput.extend({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const projectId = input.id;
 
-    const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
-      status: input.status,
-      type: input.type,
-      tags: input.tags,
-    });
+      const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
+        status: input.status,
+        type: input.type,
+        tags: input.tags,
+      });
 
-    return await ctx.db.transaction(async (tx) => {
-      const [updatedProject] = await tx
-        .update(project)
-        .set({
-          ...input,
-          statusId,
-          typeId,
-        })
-        .where(and(eq(project.id, projectId), eq(project.ownerId, userId)))
-        .returning();
+      return await ctx.db.transaction(async (tx) => {
+        const [updatedProject] = await tx
+          .update(project)
+          .set({
+            ...input,
+            statusId,
+            typeId,
+          })
+          .where(eq(project.id, projectId))
+          .returning();
 
-      if (!updatedProject) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Project not found or not owned by you',
-        });
-      }
-      await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
+        if (!updatedProject) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          });
+        }
+        await tx.delete(projectTagRelations).where(eq(projectTagRelations.projectId, projectId));
 
-      if (tagIds.length > 0) {
-        const tagRelations = tagIds.map((tagId: string) => ({
-          projectId: projectId,
-          tagId: tagId as string,
-        }));
-        await tx.insert(projectTagRelations).values(tagRelations);
-      }
+        if (tagIds.length > 0) {
+          const tagRelations = tagIds.map((tagId: string) => ({
+            projectId: projectId,
+            tagId: tagId as string,
+          }));
+          await tx.insert(projectTagRelations).values(tagRelations);
+        }
 
-      return updatedProject;
-    });
-  }),
+        return updatedProject;
+      });
+    }),
   acceptProject: adminProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -968,7 +934,8 @@ export const projectsRouter = createTRPCRouter({
       if (!foundProject.gitHost || !foundProject.gitRepoUrl) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'Project must have both gitHost and gitRepoUrl configured to refresh repository status',
+          message:
+            'Project must have both gitHost and gitRepoUrl configured to refresh repository status',
         });
       }
 
@@ -982,7 +949,8 @@ export const projectsRouter = createTRPCRouter({
       }
 
       // Validate repository URL format early
-      const urlPattern = PROVIDER_URL_PATTERNS[foundProject.gitHost as keyof typeof PROVIDER_URL_PATTERNS];
+      const urlPattern =
+        PROVIDER_URL_PATTERNS[foundProject.gitHost as keyof typeof PROVIDER_URL_PATTERNS];
       if (!urlPattern) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -1010,7 +978,10 @@ export const projectsRouter = createTRPCRouter({
 
       try {
         // Get the driver for the git host
-        const driver = await getActiveDriver(foundProject.gitHost as 'github' | 'gitlab', ctx as Context);
+        const driver = await getActiveDriver(
+          foundProject.gitHost as 'github' | 'gitlab',
+          ctx as Context,
+        );
 
         // Fetch repository data
         const repoData = await driver.getRepo(repoIdentifier);
@@ -1067,7 +1038,11 @@ export const projectsRouter = createTRPCRouter({
           }
 
           // Authentication/authorization errors
-          if (error.message.includes('Unauthorized') || error.message.includes('401') || error.message.includes('403')) {
+          if (
+            error.message.includes('Unauthorized') ||
+            error.message.includes('401') ||
+            error.message.includes('403')
+          ) {
             throw new TRPCError({
               code: 'UNAUTHORIZED',
               message: `Authentication failed for ${foundProject.gitHost}. Please check your credentials and permissions.`,
@@ -1083,7 +1058,11 @@ export const projectsRouter = createTRPCRouter({
           }
 
           // Network or connection errors
-          if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED') || error.message.includes('timeout')) {
+          if (
+            error.message.includes('ENOTFOUND') ||
+            error.message.includes('ECONNREFUSED') ||
+            error.message.includes('timeout')
+          ) {
             throw new TRPCError({
               code: 'INTERNAL_SERVER_ERROR',
               message: `Network error connecting to ${foundProject.gitHost}. Please try again later.`,
@@ -1111,5 +1090,15 @@ export const projectsRouter = createTRPCRouter({
           message: 'An unexpected error occurred while refreshing repository status',
         });
       }
+    }),
+
+  getContributors: publicProcedure
+    .input(z.object({ url: z.string(), provider: z.enum(['github', 'gitlab']) }))
+    .query(async ({ ctx, input }) => {
+      const driver = await getActiveDriver(input.provider, ctx as Context);
+
+      const contributors = await driver.getContributors(input.url);
+
+      return contributors;
     }),
 });

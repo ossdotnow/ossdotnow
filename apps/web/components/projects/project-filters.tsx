@@ -8,12 +8,12 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
+import { Filter, Search, X } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useQuery } from '@tanstack/react-query';
-import { Filter, Search, X } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 
@@ -57,7 +57,7 @@ export default function ProjectFilters() {
           placeholder="Search projects..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="border-t-none w-full rounded-none border border-t-0 border-[#404040] bg-neutral-900 py-2.5 pr-10 pl-10 text-xs text-white placeholder-neutral-500 focus:border-neutral-700 focus:outline-none md:text-sm"
+          className="border-t-none w-full rounded-none border border-t-0 border-[#404040] bg-neutral-900 py-2.5 pr-10 pl-10 text-xs text-white placeholder-neutral-500 focus:outline-none focus-visible:ring-0 md:text-sm"
         />
         {searchQuery.trim() && (
           <button
@@ -74,10 +74,10 @@ export default function ProjectFilters() {
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="flex items-center gap-2 rounded-none border-t-0 border-b border-l-0 border-[#404040] bg-transparent px-4 py-2.5 text-xs text-neutral-300 hover:border-neutral-700 md:text-sm"
+              className="flex items-center gap-2 rounded-none border-t-0 border-b border-l-0 border-[#404040] bg-transparent px-2 py-2.5 text-xs text-neutral-300 hover:border-neutral-700 md:px-4 md:text-sm"
             >
               <Filter size={16} />
-              Filters
+              <span className="hidden md:inline">Filters</span>
               {activeFiltersCount > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                   {activeFiltersCount}
@@ -157,8 +157,8 @@ export default function ProjectFilters() {
         </Popover>
 
         <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="border-l-none border-t-none w-30 rounded-none border border-t-0 border-l-0 border-[#404040] bg-neutral-900 px-4 py-2.5 text-xs text-neutral-300 focus:border-neutral-700 focus:outline-none md:w-32 md:text-sm">
-            <SelectValue placeholder="Order by" />
+          <SelectTrigger className="border-l-none border-t-none w-10 rounded-none border border-t-0 border-l-0 border-[#404040] bg-neutral-900 px-2 py-2.5 text-xs text-neutral-300 focus:border-neutral-700 focus:outline-none md:w-32 md:px-4 md:text-sm">
+            <SelectValue placeholder="Order by" className="hidden md:block" />
           </SelectTrigger>
           <SelectContent className="rounded-none">
             <SelectItem className="rounded-none" value="recent">

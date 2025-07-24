@@ -9,6 +9,27 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import ProjectCard from './project-card';
+import { useInView } from 'react-intersection-observer';
+import { project as projectSchema } from '@workspace/db/schema';
+type Project = typeof projectSchema.$inferSelect;
+import React from 'react';
+
+interface VirtualizedProjectCardProps {
+  project: Project;
+  height?: number;
+}
+
+const VirtualizedProjectCard = React.memo(function VirtualizedProjectCard({ project, height = 160 }: VirtualizedProjectCardProps) {
+  const { ref, inView } = useInView({
+    rootMargin: '400px 0px',
+    triggerOnce: false,
+  });
+  return (
+    <div ref={ref} style={{ minHeight: height }}>
+      {inView ? <ProjectCard project={project} /> : <div style={{ height }} />}
+    </div>
+  );
+});
 
 export default function ProjectsPage() {
   const trpc = useTRPC();
@@ -32,13 +53,12 @@ export default function ProjectsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Reset page when filters change
   useEffect(() => {
     setPage('1');
   }, [searchQuery, statusFilter, typeFilter, tagFilter, sortBy, setPage]);
 
   const pageNumber = parseInt(page, 10);
-  const pageSize = 20;
+  const pageSize = 50;
 
   const { data, isLoading, isError } = useQuery(
     trpc.projects.getProjects.queryOptions({
@@ -115,7 +135,7 @@ export default function ProjectsPage() {
         ) : projects.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {projects.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <VirtualizedProjectCard key={project.id} project={project} />
             ))}
           </div>
         ) : hasActiveFilters ? (

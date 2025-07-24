@@ -61,7 +61,7 @@ export default function NavUser() {
           </Link>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-neutral-800" />
-        {user?.role === 'admin' && (
+        {user?.role !== 'user' && (
           <>
             <DropdownMenuItem
               asChild

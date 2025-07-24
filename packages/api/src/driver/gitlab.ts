@@ -5,6 +5,10 @@ import {
   GitManagerConfig,
   IssueData,
   PullRequestData,
+  ReadmeData,
+  ContributingData,
+  CodeOfConductData,
+  FileData,
   RepoData,
   UserData,
   UserPullRequestData,
@@ -56,7 +60,8 @@ export class GitlabManager implements GitManager {
         try {
           const projectData = await this.gitlab.Projects.show(identifier);
 
-          const isPrivate = projectData.visibility === 'private' || projectData.visibility === 'internal';
+          const isPrivate =
+            projectData.visibility === 'private' || projectData.visibility === 'internal';
 
           return {
             ...projectData,
@@ -139,25 +144,91 @@ export class GitlabManager implements GitManager {
     }
   }
 
-  async getContributors(identifier: string): Promise<ContributorData[]> {
+  async getContributors(identifier: string, limit?: number): Promise<ContributorData[]> {
     this.parseRepoIdentifier(identifier);
+    const contributorLimit = limit && limit > 0 ? limit : 100;
 
     return getCached(
       createCacheKey('gitlab', 'contributors', identifier),
       async () => {
-        const members = await this.gitlab.ProjectMembers.all(identifier, {
-          perPage: 100,
-          maxPages: 50,
-        });
+        try {
+          const contributorMap = new Map<string, ContributorData>();
 
-        return members.map((m: any) => ({
-          ...m,
-          id: m.id,
-          username: m.username,
-          avatarUrl: m.avatar_url,
-        }));
+          const maxPages = 5;
+          const perPage = 100;
+
+          for (let page = 1; page <= maxPages; page++) {
+            try {
+              const mergedMRs = await this.gitlab.MergeRequests.all({
+                projectId: identifier,
+                state: 'merged',
+                perPage: perPage,
+                page: page,
+                orderBy: 'updated_at',
+                sort: 'desc',
+              });
+              if (!mergedMRs || mergedMRs.length === 0) {
+                break;
+              }
+
+              mergedMRs.forEach((mr: any) => {
+                if (mr?.author?.username) {
+                  const username = mr.author.username;
+                  const authorId = mr.author.id;
+                  const avatarUrl = mr.author.avatar_url;
+
+                  if (contributorMap.has(username)) {
+                    const contributor = contributorMap.get(username)!;
+                    contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
+                  } else {
+                    contributorMap.set(username, {
+                      id: authorId || username,
+                      username: username,
+                      avatarUrl: avatarUrl || '',
+                      pullRequestsCount: 1,
+                    });
+                  }
+                }
+              });
+
+              if (contributorMap.size >= contributorLimit || mergedMRs.length < perPage) {
+                break;
+              }
+            } catch (pageError) {
+              break;
+            }
+          }
+          const contributors = Array.from(contributorMap.values());
+          contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
+
+          return contributors.slice(0, contributorLimit);
+        } catch (error) {
+          console.error('Error fetching GitLab contributors via MRs:', error);
+          try {
+            const members = await this.gitlab.ProjectMembers.all(identifier, {
+              perPage: 100,
+              maxPages: 1,
+            });
+
+            const fallbackContributors = members
+              .map((member: any) => ({
+                id: member.id,
+                username: member.username,
+                avatarUrl: member.avatar_url,
+                pullRequestsCount: 0,
+              }))
+              .slice(0, contributorLimit);
+            return fallbackContributors;
+          } catch (fallbackError) {
+            console.error('Fallback also failed:', fallbackError);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve contributors for this GitLab repository',
+            });
+          }
+        }
       },
-      { ttl: 60 * 60 },
+      { ttl: 4 * 60 * 60 },
     );
   }
 
@@ -167,18 +238,66 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'issues', identifier),
       async () => {
-        const issues = await this.gitlab.Issues.all({
-          projectId: identifier,
-          state: 'opened',
-          perPage: 100,
-        });
-        return issues.map((i: any) => ({
-          id: i.id,
-          title: i.title,
-          state: i.state,
-          url: i.web_url,
-          ...i,
-        }));
+        try {
+          const fetchIssuesWithState = async (state: 'opened' | 'closed'): Promise<any[]> => {
+            const allIssues: any[] = [];
+            let page = 1;
+            const maxPages = 5;
+            let hasMore = true;
+
+            while (hasMore && page <= maxPages) {
+              try {
+                const issues = await this.gitlab.Issues.all({
+                  projectId: identifier,
+                  state: state,
+                  perPage: 100,
+                  page: page,
+                  orderBy: 'updated_at',
+                  sort: 'desc',
+                });
+
+                if (!issues || issues.length === 0) {
+                  hasMore = false;
+                  break;
+                }
+
+                allIssues.push(...issues);
+                if (issues.length < 100) {
+                  hasMore = false;
+                }
+
+                page++;
+              } catch (pageError) {
+                hasMore = false;
+                break;
+              }
+            }
+
+            return allIssues;
+          };
+
+          const [openIssues, closedIssues] = await Promise.all([
+            fetchIssuesWithState('opened'),
+            fetchIssuesWithState('closed'),
+          ]);
+
+          const issues = [...openIssues, ...closedIssues];
+          return issues.map((i: any) => ({
+            ...i,
+            id: i.id,
+            title: i.title,
+            state: i.state === 'opened' ? 'open' : i.state,
+            url: i.web_url,
+            number: i.iid,
+            pull_request: null,
+            user: {
+              login: i.author?.username,
+            },
+          }));
+        } catch (error) {
+          console.error('Error fetching GitLab issues:', error);
+          return [];
+        }
       },
       { ttl: 10 * 60 },
     );
@@ -190,36 +309,300 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'pulls', identifier),
       async () => {
-        const mergeRequests = await this.gitlab.MergeRequests.all({
-          projectId: identifier,
-          state: 'opened',
-          perPage: 100,
-        });
-        return mergeRequests.map((mr: any) => ({
-          id: mr.id,
-          title: mr.title,
-          state: mr.state,
-          url: mr.web_url,
-          ...mr,
-        }));
+        try {
+          const fetchMRsWithState = async (
+            state: 'opened' | 'closed' | 'merged',
+          ): Promise<any[]> => {
+            const allMRs: any[] = [];
+            let page = 1;
+            const maxPages = 5;
+            let hasMore = true;
+
+            while (hasMore && page <= maxPages) {
+              try {
+                const mrs = await this.gitlab.MergeRequests.all({
+                  projectId: identifier,
+                  state: state,
+                  perPage: 100,
+                  page: page,
+                  orderBy: 'updated_at',
+                  sort: 'desc',
+                });
+
+                if (!mrs || mrs.length === 0) {
+                  hasMore = false;
+                  break;
+                }
+
+                allMRs.push(...mrs);
+                if (mrs.length < 100) {
+                  hasMore = false;
+                }
+
+                page++;
+              } catch (pageError) {
+                hasMore = false;
+                break;
+              }
+            }
+
+            return allMRs;
+          };
+          const [openMRs, closedMRs, mergedMRs] = await Promise.all([
+            fetchMRsWithState('opened'),
+            fetchMRsWithState('closed'),
+            fetchMRsWithState('merged'),
+          ]);
+
+          const mergeRequests = [...openMRs, ...closedMRs, ...mergedMRs];
+
+          return mergeRequests.map((mr: any) => ({
+            ...mr,
+            id: mr.id,
+            title: mr.title,
+            state: mr.state === 'opened' ? 'open' : mr.state,
+            url: mr.web_url,
+            merged_at: mr.merged_at || null,
+            number: mr.iid,
+            created_at: mr.created_at,
+            updated_at: mr.updated_at,
+            user: {
+              login: mr.author?.username,
+            },
+            author: {
+              username: mr.author?.username,
+            },
+            draft: mr.work_in_progress || mr.draft || false, // Handle both work_in_progress and draft fields
+            labels: mr.labels || [],
+          }));
+        } catch (error) {
+          console.error('Error fetching GitLab pull requests:', error);
+          return [];
+        }
       },
       { ttl: 10 * 60 },
     );
   }
 
+  async getIssuesCount(identifier: string): Promise<number> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'open_issues_count', identifier),
+      async () => {
+        try {
+          const issues = await this.gitlab.Issues.all({
+            projectId: identifier,
+            state: 'opened',
+            perPage: 100,
+            maxPages: 10,
+          });
+
+          return issues.length;
+        } catch (error) {
+          console.error('Error fetching GitLab issues count:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve issues count for this GitLab repository',
+          });
+        }
+      },
+      { ttl: 10 * 60 },
+    );
+  }
+
+  async getPullRequestsCount(identifier: string): Promise<number> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', 'open_pull_requests_count', identifier),
+      async () => {
+        try {
+          let totalCount = 0;
+          let page = 1;
+          const maxPages = 10;
+          let hasMore = true;
+
+          while (hasMore && page <= maxPages) {
+            try {
+              const mergeRequests = await this.gitlab.MergeRequests.all({
+                projectId: identifier,
+                state: 'opened',
+                perPage: 100,
+                page: page,
+              });
+
+              if (!mergeRequests || mergeRequests.length === 0) {
+                hasMore = false;
+                break;
+              }
+
+              totalCount += mergeRequests.length;
+              if (mergeRequests.length < 100) {
+                hasMore = false;
+              }
+
+              page++;
+            } catch (pageError) {
+              console.error(`Error fetching page ${page} of open MRs count:`, pageError);
+              hasMore = false;
+              break;
+            }
+          }
+
+          return totalCount;
+        } catch (error) {
+          console.error('Error fetching GitLab pull requests count:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to retrieve pull requests count for this GitLab repository',
+          });
+        }
+      },
+      { ttl: 10 * 60 },
+    );
+  }
+
+  private async fetchRepositoryFile(
+    identifier: string,
+    cacheType: string,
+    possibleFilenames: string[],
+    errorMessage: string,
+  ): Promise<FileData> {
+    this.parseRepoIdentifier(identifier);
+
+    return getCached(
+      createCacheKey('gitlab', cacheType, identifier),
+      async () => {
+        try {
+          // Get project info first to find the default branch
+          const project = await this.gitlab.Projects.show(identifier);
+          const defaultBranch = project.default_branch || 'main';
+          let file = null;
+          let fileName = '';
+          // Try to find the file
+          for (const filename of possibleFilenames) {
+            try {
+              file = await this.gitlab.RepositoryFiles.show(
+                identifier,
+                filename,
+                defaultBranch as string,
+              );
+              fileName = filename;
+              break;
+            } catch (error) {
+              // Continue to next filename if this one doesn't exist
+            }
+          }
+          if (!file) {
+            throw new Error(`No ${cacheType} file found`);
+          }
+          return {
+            content: file.content,
+            encoding: file.encoding as 'base64' | 'utf8',
+            name: fileName,
+            path: fileName,
+            size: file.size,
+            download_url: undefined,
+            html_url: `${project.web_url}/-/blob/${defaultBranch}/${fileName}`,
+          };
+        } catch (error) {
+          console.error(`Error fetching GitLab ${cacheType}:`, error);
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: errorMessage,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
+  }
+
+  async getReadme(identifier: string): Promise<ReadmeData> {
+    const readmeFiles = [
+      'README.md',
+      'README.rst',
+      'README.txt',
+      'README',
+      'readme.md',
+      'readme.rst',
+      'readme.txt',
+      'readme',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'readme',
+      readmeFiles,
+      'README not found for this GitLab project',
+    );
+  }
+
+  async getContributing(identifier: string): Promise<ContributingData> {
+    const contributingFiles = [
+      'CONTRIBUTING.md',
+      'CONTRIBUTING.rst',
+      'CONTRIBUTING.txt',
+      'CONTRIBUTING',
+      'contributing.md',
+      'contributing.rst',
+      'contributing.txt',
+      'contributing',
+      '.gitlab/CONTRIBUTING.md',
+      'docs/CONTRIBUTING.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'contributing',
+      contributingFiles,
+      'Contributing guidelines not found for this GitLab project',
+    );
+  }
+
+  async getCodeOfConduct(identifier: string): Promise<CodeOfConductData> {
+    const cocFiles = [
+      'CODE_OF_CONDUCT.md',
+      'CODE_OF_CONDUCT.rst',
+      'CODE_OF_CONDUCT.txt',
+      'CODE_OF_CONDUCT',
+      'code_of_conduct.md',
+      'code_of_conduct.rst',
+      'code_of_conduct.txt',
+      'code_of_conduct',
+      'COC.md',
+      'COC.rst',
+      'COC.txt',
+      'COC',
+      'coc.md',
+      'coc.rst',
+      'coc.txt',
+      'coc',
+      '.gitlab/CODE_OF_CONDUCT.md',
+      '.gitlab/COC.md',
+      'docs/CODE_OF_CONDUCT.md',
+      'docs/COC.md',
+    ];
+    return this.fetchRepositoryFile(
+      identifier,
+      'codeofconduct',
+      cocFiles,
+      'Code of conduct not found for this GitLab project',
+    );
+  }
+
   async getRepoData(identifier: string) {
-    const [repo, contributors, issues, pullRequests] = await Promise.all([
-      this.getRepo(identifier),
+    const repo = await this.getRepo(identifier);
+
+    const [contributors, issuesCount, pullRequestsCount] = await Promise.all([
       this.getContributors(identifier),
-      this.getIssues(identifier),
-      this.getPullRequests(identifier),
+      this.getIssuesCount(identifier),
+      this.getPullRequestsCount(identifier),
     ]);
 
     return {
       repo,
       contributors,
-      issues,
-      pullRequests,
+      issuesCount,
+      pullRequestsCount,
     };
   }
 
@@ -361,7 +744,9 @@ export class GitlabManager implements GitManager {
       // In GitLab, organizations are called "Groups"
       // First, get the user ID from username
       const users = await this.gitlab.Users.all({ username });
-      const user = users.find((u: any) => u.username === username);
+      const user = users.find(
+        (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
+      );
 
       if (!user) {
         throw new Error('User not found');
@@ -406,7 +791,11 @@ export class GitlabManager implements GitManager {
             });
           }
 
-          const user = users[0];
+          // Find exact match first, then case-insensitive match
+          const user =
+            users.find((u: any) => u.username === username) ||
+            users.find((u: any) => u.username.toLowerCase() === username.toLowerCase()) ||
+            users[0];
 
           const userDetails = await this.gitlab.Users.show(user!.id);
 
@@ -441,8 +830,29 @@ export class GitlabManager implements GitManager {
     );
   }
 
-  getContributions(username: string): Promise<ContributionData[]> {
-    throw new Error('Method not implemented.');
+  async getContributions(username: string): Promise<ContributionData> {
+    return getCached(
+      createCacheKey('gitlab', 'contributions', username),
+      async () => {
+        try {
+          // GitLab doesn't provide a direct contributions API like GitHub
+          // We could potentially fetch user's recent events or activity, but that's limited
+          // For now, return empty contribution data
+          console.warn(`GitLab contributions API not available for user: ${username}`);
+
+          return {
+            totalContributions: 0,
+            days: [],
+          };
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch GitLab contributions: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 60 * 60 },
+    );
   }
 
   async getUserPullRequests(
@@ -462,7 +872,9 @@ export class GitlabManager implements GitManager {
 
     try {
       const users = await this.gitlab.Users.all({ username });
-      const user = users.find((u: any) => u.username === username);
+      const user = users.find(
+        (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
+      );
 
       if (!user) {
         throw new TRPCError({

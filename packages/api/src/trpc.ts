@@ -1,11 +1,9 @@
 import { TRPCError, initTRPC } from '@trpc/server';
+import { auth } from '@workspace/auth/server';
+import { db } from '@workspace/db';
 import superjson from 'superjson';
 import { ZodError } from 'zod/v4';
 import 'server-only';
-
-import { auth } from '@workspace/auth/server';
-import { env } from '@workspace/env/server';
-import { db } from '@workspace/db';
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth.api.getSession({
@@ -58,7 +56,7 @@ export const adminProcedure = t.procedure.use(({ ctx, next }) => {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 
-  if (ctx.user.role !== 'admin') {
+  if (ctx.user.role === 'user') {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'You do not have permission to access this resource',

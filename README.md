@@ -1,9 +1,9 @@
-# oss.now
-
 <div align="center">
+  <h1>oss.now</h1>
   <h3>A platform for open source project discovery, collaboration, and growth</h3>
   <p>Connecting project owners with contributors</p>
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20now-yellow)](https://l.oss.now/discord)
 [![Website](https://img.shields.io/badge/Website-oss.now-blue)](https://l.oss.now)
 [![License](https://img.shields.io/badge/license-MIT-green)](#license)
 [![Powered by Turbo](https://img.shields.io/badge/Powered%20by-Turbo-red)](https://turbo.build)
@@ -12,7 +12,18 @@
 
 ---
 
-## 🚀 About
+<div align="center">
+<br/>
+<a href="https://vercel.com/oss">
+  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
+</a>
+<br/>
+<br/>
+</div>
+
+---
+
+## About
 
 oss.now is a modern platform designed to bridge the gap between open source project maintainers and contributors. Whether you're looking to showcase your project, find contributors with specific skills, or discover exciting projects to contribute to, oss.now provides the tools and community to make it happen.
 
@@ -36,7 +47,7 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 - **Analytics**: Databuddy
 - **Deployment**: Vercel
 
-## 📁 Project Structure
+## Project Structure
 
 This is a monorepo managed with Turbo:
 
@@ -53,7 +64,7 @@ ossdotnow/
 └── turbo.json        # Turbo configuration
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -106,7 +117,7 @@ ossdotnow/
 
    The application will be available at `http://localhost:3000`
 
-## 📝 Available Scripts
+## Available Scripts
 
 ### Development
 
@@ -132,7 +143,7 @@ ossdotnow/
 - `bun format` - Format code with Prettier
 - `bun typecheck` - Run TypeScript type checking
 
-## 🔐 Setting up OAuth Providers
+## Setting up OAuth Providers
 
 ### GitHub OAuth
 
@@ -179,7 +190,7 @@ We love contributions! Please read our [Contributing Guide](CONTRIBUTING.md) to 
 - Make sure no other Next.js apps are running locally as it may interfere with OAuth flows
 - The application is currently in development mode on production to prevent public access
 
-## 🚀 Deployment
+## Deployment
 
 The application is designed to be deployed on Vercel:
 
@@ -194,7 +205,7 @@ For production deployments, ensure you:
 - Use production database and Redis instances
 - Set `VERCEL_ENV=production`
 
-## 📚 Architecture
+## Architecture
 
 ### Frontend
 
@@ -219,7 +230,7 @@ For production deployments, ensure you:
 - Project launches and comments
 - Voting and reporting systems
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -236,11 +247,11 @@ For production deployments, ensure you:
    - All required variables must be set
    - Run `bun dev` to see validation errors
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Built with [Next.js](https://nextjs.org/)
 - UI components from [shadcn/ui](https://ui.shadcn.com/)

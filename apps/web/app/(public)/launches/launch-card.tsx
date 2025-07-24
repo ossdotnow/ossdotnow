@@ -9,6 +9,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
+import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null,
@@ -39,16 +40,24 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
     staleTime: 1000 * 60 * 60 * 24,
   });
 
+  const router = useRouter();
+  const currentPath = usePathname();
+
   const rankBadge = getRankBadge(index ?? 0);
 
   const voteMutation = useMutation({
     ...trpc.launches.voteProject.mutationOptions(),
     onSuccess: () => {
+      toast.success('Vote recorded!');
+      // Refetch all launch lists so UI updates instantly
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
       });
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
       });
     },
     onError: () => {
@@ -58,6 +67,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
 
   const handleVote = async (projectId: string) => {
     if (!session?.user) {
+      await router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }
@@ -90,30 +100,33 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
               alt={project.name ?? 'Project Logo'}
               width={256}
               height={256}
-              className="h-[78px] w-[78px] rounded-none"
+              className="h-12 w-12 rounded-none sm:h-[78px] sm:w-[78px]"
             />
           ) : (
-            <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
+            <div className="h-12 w-12 animate-pulse bg-neutral-900 sm:h-[78px] sm:w-[78px]" />
           )}
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-semibold text-white md:text-base">
-              {project.name} -{' '}
-              <span className="font-light text-neutral-300">{project.gitRepoUrl}</span>
+            <h3 className="text-sm font-semibold text-white md:text-base">
+              <span className="block truncate sm:inline">{project.name}</span>
+              <span className="hidden sm:inline"> - </span>
+              <span className="block truncate font-light text-neutral-300 sm:inline">
+                {project.gitRepoUrl}
+              </span>
             </h3>
-            <p className="line-clamp-1 text-xs leading-relaxed text-neutral-400 md:text-sm">
+            <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 sm:line-clamp-1 md:text-sm">
               {project.description}
             </p>
-            <span className="mt-2 flex w-full flex-row gap-2 overflow-x-scroll">
-              <span className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300">
+            <span className="mt-2 flex w-full flex-row gap-1 overflow-x-auto sm:gap-2">
+              <span className="rounded-none bg-[#171717] px-1.5 py-1 text-xs font-medium text-nowrap text-neutral-300 sm:px-2">
                 {project?.status || 'Unknown Status'}
               </span>
-              <span className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300">
+              <span className="rounded-none bg-[#171717] px-1.5 py-1 text-xs font-medium text-nowrap text-neutral-300 sm:px-2">
                 {project?.type || 'Unknown Type'}
               </span>
               {project.tags.map((tag: string) => (
                 <span
                   key={tag}
-                  className="rounded-none bg-[#171717] px-2 py-1 text-xs font-medium text-nowrap text-neutral-300"
+                  className="rounded-none bg-[#171717] px-1.5 py-1 text-xs font-medium text-nowrap text-neutral-300 sm:px-2"
                 >
                   {tag}
                 </span>
@@ -125,7 +138,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
 
       <div>
         <div className="flex items-center justify-between pt-1">
-          <div className="flex h-full items-center gap-2 pl-2">
+          <div className="hidden h-full items-center gap-2 pl-2 sm:flex">
             {project.owner?.image ? (
               <Image
                 src={project.owner?.image}
@@ -135,15 +148,15 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                 className="size-6 rounded-full"
               />
             ) : (
-              <div className="size-8 animate-pulse bg-neutral-700" />
+              <div className="size-6 animate-pulse bg-neutral-700" />
             )}
-            <div className="flex flex-col">
-              <p className="text-sm font-medium text-white">{project.owner?.name}</p>
+            <div className="flex">
+              <p className="text-xs font-medium text-white">{project.owner?.name}</p>
               <p className="text-xs text-neutral-400">/{project.owner?.username}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-xs md:text-sm">
-            <div className="flex flex-row items-center gap-4">
+          <div className="flex w-full items-center justify-between gap-2 text-xs sm:w-auto sm:justify-end sm:gap-4 md:text-sm">
+            <div className="flex flex-row items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-1">
                 <Icons.star className="h-3 w-3 text-yellow-600 md:h-3.5 md:w-3.5" />
                 <span className="text-neutral-300">
@@ -163,8 +176,8 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
             </div>
             <div className="flex flex-row items-center gap-1">
               <div className="flex items-center gap-1">
-                <div className="flex h-8 flex-row items-center gap-1 border border-[#404040] p-2 text-xs text-neutral-400">
-                  <MessageCircle className="h-4 w-4" />
+                <div className="flex h-7 flex-row items-center gap-1 border border-[#404040] p-1.5 text-xs text-neutral-400 sm:h-8 sm:p-2">
+                  <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="tabular-nums">{project.commentCount}</span>
                 </div>
               </div>
@@ -172,7 +185,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                 <Button
                   variant={project.hasVoted ? 'default' : 'outline'}
                   size="sm"
-                  className={`flex h-8 cursor-pointer flex-row items-center gap-1 rounded-none border p-2 ${
+                  className={`flex h-7 cursor-pointer flex-row items-center gap-1 rounded-none border p-1.5 sm:h-8 sm:p-2 ${
                     project.hasVoted
                       ? 'border-[#404040] bg-[#262626] text-white hover:border-[#343434] hover:bg-[#343434] hover:text-white'
                       : 'border-neutral-300 bg-neutral-300 text-black hover:border-neutral-400 hover:bg-neutral-400 hover:text-black'
@@ -180,7 +193,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                   onClick={() => handleVote(project.id)}
                   disabled={voteMutation.isPending}
                 >
-                  <ArrowUp className="h-4 w-4" />
+                  <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs font-semibold tabular-nums">{project.voteCount}</span>
                 </Button>
               </div>

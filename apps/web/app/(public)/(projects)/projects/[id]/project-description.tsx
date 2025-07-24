@@ -33,28 +33,25 @@ export default function ProjectDescription({
   return (
     <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
       <div className="flex flex-col gap-4">
-        {/* Top row: Avatar + Title + Tags (left) */}
-        <div className="flex flex-col justify-between md:flex-row">
-          <div className="flex items-center gap-3">
-            <ProjectAvatar
-              avatarImage={avatarImage}
-              projectName={project.name}
-              repoOwnerName={repo?.owner?.name || repo?.namespace?.name || ''}
-              className="h-12 w-12 flex-shrink-0 rounded-none md:h-16 md:w-16"
+        {/* Top row: Avatar + Title + Tags */}
+        <div className="flex items-start gap-3">
+          <ProjectAvatar
+            avatarImage={avatarImage}
+            projectName={project.name}
+            repoOwnerName={repo?.owner?.name || repo?.namespace?.name || ''}
+            className="h-12 w-12 flex-shrink-0 rounded-none md:h-16 md:w-16"
+          />
+          <div className="w-full flex-1">
+            <ProjectTitleAndTicks
+              project={project}
+              className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
             />
-            <div className="w-full flex-1">
-              <ProjectTitleAndTicks
-                project={project}
-                className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
-              />
-              <StatusBadges project={project} />
-            </div>
+            <StatusBadges project={project} />
           </div>
         </div>
 
-        {/* Content: Social + Description (full width) */}
+        {/* Content: Description (full width) */}
         <div className="space-y-4 md:col-span-2">
-          <SocialLinks project={project} />
           <ProjectDescriptionText project={project} />
         </div>
       </div>
@@ -118,9 +115,12 @@ function ProjectTitleAndTicks({
   className: string;
 }) {
   return (
-    <div className="flex items-center gap-2 md:gap-3">
-      <h1 className={className}>{project?.name}</h1>
-      <ProjectTicks project={project} />
+    <div className="flex items-center justify-between gap-2 md:gap-3">
+      <div className="flex items-center gap-2 md:gap-3">
+        <h1 className={className}>{project?.name}</h1>
+        <ProjectTicks project={project} />
+      </div>
+      <SocialLinks project={project} />
     </div>
   );
 }
@@ -136,10 +136,9 @@ function SocialLinks({ project }: { project: ProjectWithRelations }) {
           target="_blank"
           event="project_page_website_link_clicked"
           eventObject={{ projectId: project.id }}
-          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+          className="flex items-center text-neutral-300 transition-colors hover:text-white"
         >
           <Globe className="h-4 w-4 flex-shrink-0" />
-          <span className="text-sm">Website</span>
         </Link>
       )}
       {project.socialLinks.discord && (
@@ -149,10 +148,9 @@ function SocialLinks({ project }: { project: ProjectWithRelations }) {
           rel="noopener noreferrer"
           event="project_page_discord_link_clicked"
           eventObject={{ projectId: project.id }}
-          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+          className="flex items-center text-neutral-300 transition-colors hover:text-white"
         >
           <Icons.discord className="h-4 w-4 flex-shrink-0" />
-          <span className="text-sm">Discord</span>
         </Link>
       )}
       {project.socialLinks.twitter && (
@@ -162,10 +160,9 @@ function SocialLinks({ project }: { project: ProjectWithRelations }) {
           rel="noopener noreferrer"
           event="project_page_twitter_link_clicked"
           eventObject={{ projectId: project.id }}
-          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+          className="flex items-center text-neutral-300 transition-colors hover:text-white"
         >
           <Icons.twitter className="h-4 w-4 flex-shrink-0" />
-          <span className="text-sm">Twitter</span>
         </Link>
       )}
       {project.socialLinks.linkedin && (
@@ -175,10 +172,9 @@ function SocialLinks({ project }: { project: ProjectWithRelations }) {
           rel="noopener noreferrer"
           event="project_page_linkedin_link_clicked"
           eventObject={{ projectId: project.id }}
-          className="flex items-center gap-1.5 text-neutral-300 transition-colors hover:text-white"
+          className="flex items-center text-neutral-300 transition-colors hover:text-white"
         >
           <Linkedin className="h-4 w-4 flex-shrink-0" />
-          <span className="text-sm">LinkedIn</span>
         </Link>
       )}
     </div>

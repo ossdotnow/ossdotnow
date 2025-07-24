@@ -73,24 +73,24 @@ function LaunchesPage() {
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
       <div className="mx-auto min-h-screen max-w-[1080px] pt-20">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="fixed top-[calc(32px+65px)] z-10 mb-6 flex w-full max-w-[1080px] rounded-none border border-t-0 border-[#404040] bg-[#262626]">
+          <TabsList className="fixed top-[calc(32px+65px)] z-10 mb-6 flex w-full max-w-[calc(100vw-3rem)] lg:max-w-[1080px] rounded-none border border-t-0 border-[#404040] bg-[#262626]">
             <TabsTrigger
               value="today"
-              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
             >
               <Calendar className="h-4 w-4" />
               Today
             </TabsTrigger>
             <TabsTrigger
               value="yesterday"
-              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
             >
               <TrendingUp className="h-4 w-4" />
               Yesterday
             </TabsTrigger>
             <TabsTrigger
               value="all"
-              className="flex shrink items-center gap-2 rounded-none data-[state=active]:!bg-neutral-900/60"
+    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
             >
               <TrendingUp className="h-4 w-4" />
               All Launches
