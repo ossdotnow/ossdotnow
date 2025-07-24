@@ -9,6 +9,7 @@ import { connection } from 'next/server';
 import { Toaster } from 'sonner';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
+import { env } from 'process';
 import './globals.css';
 
 const fontSans = Geist({
@@ -54,7 +55,13 @@ export default function RootLayout({
         <Providers>
           {children}
           <Analytics />
-          <Databuddy clientId="kg5_9BY_IEWCCEbukXJPm" enableBatching={true} />
+          <Databuddy
+            clientId={env.DATABUDDY_CLIENT_ID!}
+            enableBatching={true}
+            trackErrors
+            trackOutgoingLinks
+            disabled={env.VERCEL_ENV === 'development'}
+          />
           <Toaster />
         </Providers>
       </body>
