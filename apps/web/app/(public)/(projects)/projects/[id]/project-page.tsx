@@ -574,7 +574,7 @@ export default function ProjectPage({ id }: { id: string }) {
                   <TabsContent value="pull-requests">
                     {otherQueries[1].isLoading ? (
                       <div className="flex w-full justify-center py-4">
-                        <LoadingSpinner className="h-16 w-16" />
+                        <LoadingSpinner/>
                       </div>
                     ) : pullRequests ? (
                       pullRequests.length === 0 ? (
