@@ -14,7 +14,7 @@ export default function Page() {
         aria-hidden="true"
         width={960}
         height={860}
-        className="pointer-events-none absolute top-0 right-0 left-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
+        className="pointer-events-none fixed top-0 right-0 left-0 z-0 h-full w-full object-cover object-right-bottom opacity-70 mix-blend-screen"
       />
 
       <div className="relative z-10 mx-auto flex w-full flex-col items-center justify-center gap-8 overflow-hidden text-center">
