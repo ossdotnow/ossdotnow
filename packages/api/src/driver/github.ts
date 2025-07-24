@@ -323,8 +323,11 @@ export class GithubManager implements GitManager {
   }
 
   async getRepoData(identifier: string) {
-    const [repoData, contributors, issuesCount, pullRequestsCount] = await Promise.all([
-      this.getRepo(identifier),
+    // Fetch repo data first as it's needed for other operations
+    const repoData = await this.getRepo(identifier);
+
+    // Then fetch the rest concurrently for better performance
+    const [contributors, issuesCount, pullRequestsCount] = await Promise.all([
       this.getContributors(identifier),
       this.getIssuesCount(identifier),
       this.getPullRequestsCount(identifier),
@@ -773,55 +776,129 @@ export class GithubManager implements GitManager {
       createCacheKey('github', 'contributors', identifier),
       async () => {
         try {
-          const allPullRequests: Array<{
-            id: number;
-            user: { id: number; login: string; avatar_url: string } | null;
-            merged_at: string | null;
-          }> = [];
+          try {
+            const allContributors: any[] = [];
+            let page = 1;
+            let hasMore = true;
+            const maxContributorPages = 10;
+
+            console.log(`Starting contributors API fetch for ${owner}/${repo}`);
+
+            while (hasMore && page <= maxContributorPages) {
+              console.log(`Fetching contributors page ${page}...`);
+
+              const { data: contributors } = await this.octokit.rest.repos.listContributors({
+                owner,
+                repo,
+                per_page: 100,
+                page: page,
+              });
+
+              console.log(`Page ${page}: received ${contributors?.length || 0} contributors`);
+
+              if (contributors && contributors.length > 0) {
+                allContributors.push(...contributors);
+                page++;
+                if (contributors.length < 100) {
+                  console.log(
+                    `Reached end of contributors at page ${page - 1} (got ${contributors.length} contributors)`,
+                  );
+                  hasMore = false;
+                }
+                if (allContributors.length >= 1000) {
+                  console.log(
+                    `Early termination: reached ${allContributors.length} contributors via API`,
+                  );
+                  break;
+                }
+              } else {
+                console.log(`No contributors found on page ${page}, stopping`);
+                hasMore = false;
+              }
+            }
+            if (allContributors.length > 0) {
+              const contributorData = allContributors
+                .map((contributor) => ({
+                  id: contributor.id || contributor.login,
+                  username: contributor.login,
+                  avatarUrl: contributor.avatar_url,
+                  pullRequestsCount: contributor.contributions || 0,
+                }))
+                .slice(0, 500);
+
+              console.log(
+                `Successfully found ${allContributors.length} total contributors, returning ${contributorData.length} via contributors API`,
+              );
+              return contributorData;
+            } else {
+              console.log('Contributors API returned no results, falling back to PR analysis');
+            }
+          } catch (contributorsApiError) {
+            console.log(
+              'Contributors API failed, falling back to PR analysis:',
+              contributorsApiError,
+            );
+          }
+          const contributorMap = new Map<string, ContributorData>();
           let page = 1;
           let hasMore = true;
+          const maxPages = 20;
+          let processedPRs = 0;
+          const maxPRsToProcess = 2000;
 
-          while (hasMore) {
+          while (hasMore && page <= maxPages && processedPRs < maxPRsToProcess) {
             const { data: closedPRs } = await this.octokit.rest.pulls.list({
               owner,
               repo,
               state: 'closed',
               per_page: 100,
               page: page,
+              sort: 'updated',
+              direction: 'desc',
             });
 
             if (closedPRs.length === 0) {
               hasMore = false;
-            } else {
-              const mergedPRs = closedPRs.filter((pr) => pr.merged_at !== null);
-              allPullRequests.push(...mergedPRs);
-              page++;
+              break;
+            }
+
+            const mergedPRs = closedPRs.filter((pr) => pr.merged_at !== null);
+            processedPRs += closedPRs.length;
+
+            mergedPRs.forEach((pr) => {
+              if (pr.user?.login && pr.merged_at) {
+                const username = pr.user.login;
+                if (contributorMap.has(username)) {
+                  const contributor = contributorMap.get(username)!;
+                  contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
+                } else {
+                  contributorMap.set(username, {
+                    id: pr.user.id,
+                    username: username,
+                    avatarUrl: pr.user.avatar_url,
+                    pullRequestsCount: 1,
+                  });
+                }
+              }
+            });
+
+            page++;
+
+            if (contributorMap.size >= 500) {
+              console.log('Early termination: reached 500 contributors');
+              break;
             }
           }
-          const contributorMap = new Map<string, ContributorData>();
-
-          allPullRequests.forEach((pr) => {
-            if (pr.user?.login && pr.merged_at) {
-              const username = pr.user.login;
-              if (contributorMap.has(username)) {
-                const contributor = contributorMap.get(username)!;
-                contributor.pullRequestsCount = (contributor.pullRequestsCount || 0) + 1;
-              } else {
-                contributorMap.set(username, {
-                  id: pr.user.id,
-                  username: username,
-                  avatarUrl: pr.user.avatar_url,
-                  pullRequestsCount: 1,
-                });
-              }
-            }
-          });
 
           const contributors = Array.from(contributorMap.values());
           contributors.sort((a, b) => (b.pullRequestsCount || 0) - (a.pullRequestsCount || 0));
 
-          console.log(`Found ${contributors.length} unique contributors`);
-          return contributors;
+          const limitedContributors = contributors.slice(0, 500);
+
+          console.log(
+            `Found ${limitedContributors.length} unique contributors from ${processedPRs} PRs`,
+          );
+          return limitedContributors;
         } catch (error) {
           console.error('Error fetching GitHub contributors:', error);
           throw new TRPCError({
@@ -830,7 +907,7 @@ export class GithubManager implements GitManager {
           });
         }
       },
-      { ttl: 60 * 60 },
+      { ttl: 4 * 60 * 60 },
     );
   }
 }
