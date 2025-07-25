@@ -22,6 +22,8 @@ export const env = createEnv({
     GITLAB_TOKEN: z.string().min(1),
     // Databuddy
     DATABUDDY_CLIENT_ID: z.string().min(1),
+    // Sentry
+    SENTRY_DSN: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
   skipValidation: process.env.NODE_ENV !== 'production',
