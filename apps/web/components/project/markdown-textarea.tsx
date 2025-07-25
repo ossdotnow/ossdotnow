@@ -55,6 +55,7 @@ export function MarkdownTextarea({
             variant={mode === 'write' ? 'default' : 'ghost'}
             size="sm"
             className="rounded-none"
+            type="button"
             onClick={() => setMode('write')}
           >
             <Edit className="mr-1 h-4 w-4" />
@@ -64,6 +65,7 @@ export function MarkdownTextarea({
             variant={mode === 'preview' ? 'default' : 'ghost'}
             size="sm"
             className="rounded-none"
+            type="button"
             onClick={() => setMode('preview')}
           >
             <Eye className="mr-1 h-4 w-4" />
