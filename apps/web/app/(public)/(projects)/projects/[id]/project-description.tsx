@@ -8,6 +8,8 @@ import Link from '@workspace/ui/components/link';
 import { Globe, Linkedin } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
+import { useTRPC } from '@/hooks/use-trpc';
+import { useQuery } from '@tanstack/react-query';
 
 export default function ProjectDescription({
   repo,
@@ -18,6 +20,12 @@ export default function ProjectDescription({
   project: ProjectWithRelations;
   isOwner: boolean;
 }) {
+  const trpc = useTRPC();
+  const { data: launchData, isLoading: launchLoading } = useQuery(
+    trpc.launches.getLaunchByProjectId.queryOptions({ projectId: project.id })
+  );
+  const isAlreadyLaunched = !!launchData;
+
   const getAvatarImage = (): string => {
     if (repo && repo.owner && typeof repo.owner.avatar_url === 'string') {
       return repo.owner.avatar_url;
@@ -62,6 +70,7 @@ export default function ProjectDescription({
           project={project}
           repo={repo}
           className="flex flex-row items-stretch gap-2"
+          isAlreadyLaunched={isAlreadyLaunched}
         />
       </div>
     </div>
@@ -218,11 +227,13 @@ function ActionButtons({
   project,
   repo,
   className,
+  isAlreadyLaunched,
 }: {
   isOwner: boolean;
   project: ProjectWithRelations;
   repo: ProjectData;
   className: string;
+  isAlreadyLaunched?: boolean;
 }) {
   const getRepoUrl = () => {
     if (project.gitHost === 'github') {
@@ -243,6 +254,7 @@ function ActionButtons({
           isRepoPrivate={project.isRepoPrivate || repo?.isPrivate}
           gitRepoUrl={project.gitRepoUrl || undefined}
           gitHost={project.gitHost || undefined}
+          isAlreadyLaunched={isAlreadyLaunched}
         />
       )}
       {repoUrl && (
