@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import { useRouter, usePathname } from 'next/navigation';
 import { ArrowUp, MessageCircle } from 'lucide-react';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
+import { motion } from 'motion/react';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null,
@@ -77,14 +78,18 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   if (isError) return <div>Error</div>;
 
   return (
-    <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
+    <motion.div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
       <span className="sr-only">View {project.name}</span>
       {rankBadge && (
-        <div
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.3 }}
           className={`bg-gradient-to-r ${rankBadge.color} mb-1 flex h-8 items-center px-2 py-1 text-xs font-semibold`}
         >
           <span className={`text-xs font-semibold text-white`}>{rankBadge.text}</span>
-        </div>
+        </motion.div>
       )}
       <Link
         href={`/launches/${project.id}`}
@@ -182,25 +187,35 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <Button
-                  variant={project.hasVoted ? 'default' : 'outline'}
-                  size="sm"
-                  className={`flex h-7 cursor-pointer flex-row items-center gap-1 rounded-none border p-1.5 sm:h-8 sm:p-2 ${
-                    project.hasVoted
-                      ? 'border-[#404040] bg-[#262626] text-white hover:border-[#343434] hover:bg-[#343434] hover:text-white'
-                      : 'border-neutral-300 bg-neutral-300 text-black hover:border-neutral-400 hover:bg-neutral-400 hover:text-black'
-                  }`}
-                  onClick={() => handleVote(project.id)}
-                  disabled={voteMutation.isPending}
-                >
-                  <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs font-semibold tabular-nums">{project.voteCount}</span>
-                </Button>
+                <motion.div whileTap={{ scale: 0.95 }} transition={{ duration: 0.1 }}>
+                  <Button
+                    variant={project.hasVoted ? 'default' : 'outline'}
+                    size="sm"
+                    className={`flex h-7 cursor-pointer flex-row items-center gap-1 rounded-none border p-1.5 sm:h-8 sm:p-2 ${
+                      project.hasVoted
+                        ? 'border-[#404040] bg-[#262626] text-white hover:border-[#343434] hover:bg-[#343434] hover:text-white'
+                        : 'border-neutral-300 bg-neutral-300 text-black hover:border-neutral-400 hover:bg-neutral-400 hover:text-black'
+                    }`}
+                    onClick={() => handleVote(project.id)}
+                    disabled={voteMutation.isPending}
+                  >
+                    <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <motion.span
+                      key={project.voteCount}
+                      initial={{ scale: 1.2, opacity: 0.8 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-xs font-semibold tabular-nums"
+                    >
+                      {project.voteCount}
+                    </motion.span>
+                  </Button>
+                </motion.div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
