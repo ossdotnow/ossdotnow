@@ -2,8 +2,8 @@
 
 import { Button } from '@workspace/ui/components/button';
 import { MarkdownContent } from './markdown-content';
-import { Eye, Edit, Split } from 'lucide-react';
 import { cn } from '@workspace/ui/lib/utils';
+import { Eye, Edit } from 'lucide-react';
 import { useState } from 'react';
 import * as React from 'react';
 
@@ -35,7 +35,7 @@ export function MarkdownTextarea({
   ...props
 }: MarkdownTextareaProps) {
   const [content, setContent] = useState(value);
-  const [mode, setMode] = useState<'write' | 'preview' | 'split'>('write');
+  const [mode, setMode] = useState<'write' | 'preview'>('write');
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
@@ -69,15 +69,6 @@ export function MarkdownTextarea({
             <Eye className="mr-1 h-4 w-4" />
             Preview
           </Button>
-          <Button
-            variant={mode === 'split' ? 'default' : 'ghost'}
-            size="sm"
-            className="rounded-none"
-            onClick={() => setMode('split')}
-          >
-            <Split className="mr-1 h-4 w-4" />
-            Split
-          </Button>
         </div>
       </div>
 
@@ -93,25 +84,8 @@ export function MarkdownTextarea({
         )}
 
         {mode === 'preview' && (
-          <div className="min-h-[200px] border-0">
+          <div className="min-h-[200px] border-0 px-3">
             <MarkdownContent content={content} />
-          </div>
-        )}
-
-        {mode === 'split' && (
-          <div className="grid min-h-[200px] grid-cols-2">
-            <div className="border-r">
-              <Textarea
-                value={content}
-                onChange={handleChange}
-                placeholder={placeholder}
-                className="min-h-[200px] resize-none rounded-none border-0"
-                {...props}
-              />
-            </div>
-            <div>
-              <MarkdownContent content={content} />
-            </div>
           </div>
         )}
       </div>
