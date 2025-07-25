@@ -140,20 +140,52 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
         <div className="flex items-center justify-between pt-1">
           <div className="hidden h-full items-center gap-2 pl-2 sm:flex">
             {project.owner?.image ? (
-              <Image
-                src={project.owner?.image}
-                alt={project.owner?.name ?? 'Project Owner'}
-                width={256}
-                height={256}
-                className="size-6 rounded-full"
-              />
+              project.owner.id ? (
+                <Link
+                  href={`/profile/${project.owner.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="hidden h-full items-center gap-2 pl-2 sm:flex hover:opacity-80 transition-opacity"
+                >
+                  {project.owner.image ? (
+                    <Image
+                      src={project.owner.image}
+                      alt={project.owner.name ?? 'Project Owner'}
+                      width={256}
+                      height={256}
+                      className="size-6 rounded-full"
+                    />
+                  ) : (
+                    <div className="size-6 shrink-0 rounded-full bg-neutral-700" />
+                  )}
+                  <div className="flex">
+                    <p className="text-xs font-medium text-white">{project.owner.name}</p>
+                    {project.owner.username && (
+                      <p className="text-xs text-neutral-400">/{project.owner.username}</p>
+                    )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="hidden h-full items-center gap-2 pl-2 sm:flex">
+                  {project.owner.image ? (
+                    <Image
+                      src={project.owner.image}
+                      alt={project.owner.name ?? 'Project Owner'}
+                      width={256}
+                      height={256}
+                      className="size-6 rounded-full"
+                    />
+                  ) : (
+                    <div className="size-6 shrink-0 rounded-full bg-neutral-700" />
+                  )}
+                  <div className="flex">
+                    <p className="text-xs font-medium text-white">{project.owner?.name}</p>
+                    <p className="text-xs text-neutral-400">/{project.owner?.username}</p>
+                  </div>
+                </div>
+              )
             ) : (
               <div className="size-6 animate-pulse bg-neutral-700" />
             )}
-            <div className="flex">
-              <p className="text-xs font-medium text-white">{project.owner?.name}</p>
-              <p className="text-xs text-neutral-400">/{project.owner?.username}</p>
-            </div>
           </div>
           <div className="flex w-full items-center justify-between gap-2 text-xs sm:w-auto sm:justify-end sm:gap-4 md:text-sm">
             <div className="flex flex-row items-center gap-2 sm:gap-4">
