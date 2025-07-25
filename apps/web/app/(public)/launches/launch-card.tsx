@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import { useRouter, usePathname } from 'next/navigation';
 import { ArrowUp, MessageCircle } from 'lucide-react';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
@@ -9,7 +10,6 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 import { toast } from 'sonner';
-import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null,
@@ -74,7 +74,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
     voteMutation.mutate({ projectId });
   };
 
-  if (isError) return <div>Error</div>;
+  if (isError || !repo) return null;
 
   return (
     <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
