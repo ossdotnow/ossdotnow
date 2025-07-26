@@ -389,7 +389,13 @@ export const launchesRouter = createTRPCRouter({
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
-        .where(and(eq(project.approvalStatus, 'approved'), eq(project.isRepoPrivate, false)))
+        .where(
+          and(
+            eq(project.approvalStatus, 'approved'),
+            eq(project.isRepoPrivate, false),
+            lt(projectLaunch.launchDate, new Date()),
+          ),
+        )
         .groupBy(
           project.id,
           projectLaunch.id,
@@ -576,13 +582,28 @@ export const launchesRouter = createTRPCRouter({
         projectId: z.string(),
         tagline: z.string().min(10).max(100),
         detailedDescription: z.string().optional(),
-        launchDate: z.coerce.date().optional(),
+        launchDate: z.coerce.date(),
+        launchTime: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const foundProject = await ctx.db.query.project.findFirst({
         where: eq(project.id, input.projectId),
       });
+
+      if (input.launchTime) {
+        const [hours, minutes] = input.launchTime.split(':').map(Number);
+        const launchDate = new Date(input.launchDate);
+        launchDate.setHours(hours!, minutes);
+        input.launchDate = launchDate;
+      }
+
+      if (input.launchDate.getTime() < Date.now()) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Launch date cannot be in the past',
+        });
+      }
 
       if (!foundProject) {
         throw new TRPCError({
