@@ -71,6 +71,7 @@ export function LaunchProjectDialog({
       hour12: false,
     }),
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentDate, setCurrentDate] = useState(
     new Date().toLocaleDateString('en-US', {
       year: 'numeric',
@@ -101,8 +102,8 @@ export function LaunchProjectDialog({
     defaultValues: {
       tagline: '',
       detailedDescription: '',
-      launchDate: undefined as Date | undefined,
-      launchTime: undefined,
+      launchDate: new Date(currentDate),
+      launchTime: currentTime,
     },
   });
 
