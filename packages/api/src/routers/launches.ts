@@ -576,6 +576,7 @@ export const launchesRouter = createTRPCRouter({
         projectId: z.string(),
         tagline: z.string().min(10).max(100),
         detailedDescription: z.string().optional(),
+        launchDate: z.coerce.date().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -600,7 +601,8 @@ export const launchesRouter = createTRPCRouter({
       if (foundProject.isRepoPrivate) {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: 'You cannot launch a project with a private repository. Please make your repository public first.',
+          message:
+            'You cannot launch a project with a private repository. Please make your repository public first.',
         });
       }
 
@@ -615,12 +617,20 @@ export const launchesRouter = createTRPCRouter({
         });
       }
 
+      if (input.launchDate && input.launchDate.getTime() < Date.now()) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Launch date cannot be in the past',
+        });
+      }
+
       const [launch] = await ctx.db
         .insert(projectLaunch)
         .values({
           projectId: input.projectId,
           tagline: input.tagline,
           detailedDescription: input.detailedDescription,
+          launchDate: input.launchDate ?? undefined,
         })
         .returning();
 
