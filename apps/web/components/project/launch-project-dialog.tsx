@@ -20,9 +20,9 @@ import {
 } from '@workspace/ui/components/form';
 import { Rocket, Loader2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Textarea } from '@workspace/ui/components/textarea';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
+import { MarkdownTextarea } from './markdown-textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
@@ -35,7 +35,10 @@ const launchSchema = z.object({
     .string()
     .min(10, 'Tagline must be at least 10 characters')
     .max(100, 'Tagline must be less than 100 characters'),
-  detailedDescription: z.string().optional(),
+  detailedDescription: z
+    .string()
+    .min(25, 'Description must be at 25 characters')
+    .max(1000, 'Description must be less than 1000 characters'),
 });
 
 type LaunchFormData = z.infer<typeof launchSchema>;
@@ -274,7 +277,7 @@ export function LaunchProjectDialog({
               Launch Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="rounded-none sm:max-w-[600px]">
+          <DialogContent className="max-h-[80vh] overflow-y-auto rounded-none sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Launch {projectName}</DialogTitle>
               <DialogDescription>
@@ -310,12 +313,13 @@ export function LaunchProjectDialog({
                   name="detailedDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Detailed Description (Optional)</FormLabel>
+                      <FormLabel>Detailed Description</FormLabel>
                       <FormControl>
-                        <Textarea
+                        <MarkdownTextarea
                           placeholder="Tell us more about your project, what problem it solves, key features, etc."
                           className="min-h-[120px] rounded-none"
                           {...field}
+                          required
                         />
                       </FormControl>
                       <FormDescription>

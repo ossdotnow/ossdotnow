@@ -1,5 +1,4 @@
 import ReactMarkdown, { Components } from 'react-markdown';
-import React from 'react';
 import Link from '@workspace/ui/components/link';
 import rehypeSanitize from 'rehype-sanitize';
 import { Check, Copy } from 'lucide-react';
@@ -7,10 +6,11 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Base64 } from 'js-base64';
 import { useState } from 'react';
+import React from 'react';
 
 interface MarkdownContentProps {
   content: string;
-  encoding: 'base64' | 'utf8';
+  encoding?: 'base64' | 'utf8';
 }
 
 function decodeBase64Content(content: string): string {

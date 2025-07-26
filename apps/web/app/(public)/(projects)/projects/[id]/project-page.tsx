@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
+import { MarkdownContent } from '@/components/project/markdown-content';
 import { ContributorData, ProjectWithRelations } from '@workspace/api';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -27,7 +28,6 @@ import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import ProjectDescription from './project-description';
 import ProjectErrorPage from '../project-error-page';
-import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
 import { useEffect, useState, useRef } from 'react';
 import Link from '@workspace/ui/components/link';
@@ -574,7 +574,7 @@ export default function ProjectPage({ id }: { id: string }) {
                   <TabsContent value="pull-requests">
                     {otherQueries[1].isLoading ? (
                       <div className="flex w-full justify-center py-4">
-                        <LoadingSpinner/>
+                        <LoadingSpinner />
                       </div>
                     ) : pullRequests ? (
                       pullRequests.length === 0 ? (

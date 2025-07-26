@@ -1,5 +1,6 @@
 'use client';
 
+import { MarkdownContent } from '@/components/project/markdown-content';
 import LaunchComments from './components/launch-comments';
 import LaunchSidebar from './components/launch-sidebar';
 import LaunchHeader from './components/launch-header';
@@ -60,9 +61,7 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
             {(launch.detailedDescription || launch.description) && (
               <div className="border border-neutral-800 bg-neutral-900/50 p-6">
                 <h2 className="mb-4 text-lg font-semibold text-white">About</h2>
-                <p className="text-neutral-400">
-                  {launch.detailedDescription || launch.description}
-                </p>
+                <MarkdownContent content={launch.detailedDescription ?? launch.description ?? ''} />
               </div>
             )}
 
