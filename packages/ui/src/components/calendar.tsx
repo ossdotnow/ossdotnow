@@ -9,21 +9,21 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn('p-3', className)}
+      className={cn('p-0', className)}
       classNames={{
         months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
         month: 'space-y-4',
-        caption: 'flex justify-between relative items-center gap-2 px-2',
+        caption: 'flex justify-between items-center relative px-0 mb-4',
         caption_label: 'text-sm font-medium sr-only',
-        caption_dropdowns: 'flex gap-2 item-center',
-        dropdown_month: 'px-3 py-1 mr-2',
-        dropdown_year: 'px-3 py-1 ml-2',
+        caption_dropdowns: 'flex gap-2 items-center absolute left-1/2 transform -translate-x-1/2',
+        dropdown_month: 'px-3 py-1',
+        dropdown_year: 'px-3 py-1',
         dropdown: 'px-3 py-1 bg-background border border-input rounded-md',
-        nav: 'flex items-center gap-1',
+        nav: 'flex justify-between items-center w-full absolute inset-0 pointer-events-none',
         nav_button:
-          'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-7 w-7',
-        nav_button_previous: '',
-        nav_button_next: '',
+          'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-7 w-7 pointer-events-auto',
+        nav_button_previous: 'absolute left-0 top-0',
+        nav_button_next: 'absolute right-0 top-0',
         table: 'w-full border-collapse space-y-1',
         head_row: 'flex',
         head_cell: 'text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]',
