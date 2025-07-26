@@ -599,28 +599,30 @@ export const launchesRouter = createTRPCRouter({
       }
 
       if (input.launchTime) {
-        const timeParts = input.launchTime.split(':');
-        if (timeParts.length !== 2) {
+        const timeRegex = /^([0-9]{1,2}):([0-9]{2})$/;
+        const match = input.launchTime.match(timeRegex);
+
+        if (!match) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Invalid time format. Please use HH:MM format',
+            message: 'Invalid time format. Please use HH:MM format (e.g., 14:30 or 9:05)',
           });
         }
 
-        const hours = parseInt(timeParts[0]!, 10);
-        const minutes = parseInt(timeParts[1]!, 10);
+        const hours = parseInt(match[1]!, 10);
+        const minutes = parseInt(match[2]!, 10);
 
-        if (
-          isNaN(hours) ||
-          isNaN(minutes) ||
-          hours < 0 ||
-          hours > 23 ||
-          minutes < 0 ||
-          minutes > 59
-        ) {
+        if (hours < 0 || hours > 23) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Invalid time values. Hours must be 0-23 and minutes must be 0-59',
+            message: 'Invalid hour value. Hours must be between 0 and 23',
+          });
+        }
+
+        if (minutes < 0 || minutes > 59) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid minute value. Minutes must be between 0 and 59',
           });
         }
 

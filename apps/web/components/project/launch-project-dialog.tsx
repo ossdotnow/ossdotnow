@@ -432,11 +432,17 @@ export function LaunchProjectDialog({
                             type="time"
                             id="time-picker"
                             step="1"
-                            value={field.value ?? currentTime}
+                            value={field.value || ''}
+                            min={
+                              form.watch('launchDate')?.toDateString() === new Date().toDateString()
+                                ? currentTime
+                                : undefined
+                            }
                             onChange={(e) => field.onChange(e.target.value)}
                             className="bg-background appearance-none rounded-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                           />
                         </FormControl>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
