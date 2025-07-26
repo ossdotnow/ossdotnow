@@ -629,10 +629,6 @@ export class GitlabManager implements GitManager {
       isOwner = true;
       ownershipType = 'repository owner';
     } else if (repoData.owner.type === 'Organization') {
-      console.log(
-        `Checking org ownership for ${currentUser.username} in org ${repoData.owner.login}`,
-      );
-
       try {
         const repoPermissions = await this.getRepoPermissions(identifier);
 
@@ -659,19 +655,17 @@ export class GitlabManager implements GitManager {
               }
             }
           } catch (orgError) {
-            console.log('User is not a member of the group or group check failed:', orgError);
+            // TODO: handle error
+            console.error('Error checking GitLab group membership:', orgError);
           }
         }
       } catch (error) {
-        console.log(
-          'User does not have collaborator access to the repository:',
-          error instanceof Error ? error.message : String(error),
-        );
+        // TODO: handle error
+        console.error('Error checking GitLab repository permissions:', error);
       }
     }
 
     if (!isOwner) {
-      console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
       await ctx.db.insert(projectClaim).values({
         projectId,
         userId: ctx.session!.userId,
@@ -691,8 +685,6 @@ export class GitlabManager implements GitManager {
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
       });
     }
-
-    console.log(`Claim approved: ${currentUser.username} is ${ownershipType} for ${owner}/${repo}`);
 
     const updatedProject = await ctx.db
       .update(project)

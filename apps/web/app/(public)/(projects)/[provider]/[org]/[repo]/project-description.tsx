@@ -13,10 +13,12 @@ export default function ProjectDescription({
   repo,
   project,
   isOwner,
+  isNotInDatabase,
 }: {
   repo: ProjectData;
   project: ProjectWithRelations;
   isOwner: boolean;
+  isNotInDatabase: boolean;
 }) {
   const getAvatarImage = (): string => {
     if (repo && repo.owner && typeof repo.owner.avatar_url === 'string') {
@@ -41,12 +43,14 @@ export default function ProjectDescription({
             repoOwnerName={repo?.owner?.name || repo?.namespace?.name || ''}
             className="h-12 w-12 flex-shrink-0 rounded-none md:h-16 md:w-16"
           />
+
           <div className="w-full flex-1">
             <ProjectTitleAndTicks
               project={project}
               className="truncate text-lg font-bold text-white sm:text-2xl md:text-xl"
+              isNotInDatabase={isNotInDatabase}
             />
-            <StatusBadges project={project} />
+            {!isNotInDatabase && <StatusBadges project={project} />}
           </div>
         </div>
 
@@ -110,17 +114,19 @@ function StatusBadges({ project }: { project: ProjectWithRelations }) {
 function ProjectTitleAndTicks({
   project,
   className,
+  isNotInDatabase,
 }: {
   project: ProjectWithRelations;
   className: string;
+  isNotInDatabase: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-2 md:gap-3">
       <div className="flex items-center gap-2 md:gap-3">
         <h1 className={className}>{project?.name}</h1>
-        <ProjectTicks project={project} />
+        {!isNotInDatabase && <ProjectTicks project={project} />}
       </div>
-      <SocialLinks project={project} />
+      {!isNotInDatabase && <SocialLinks project={project} />}
     </div>
   );
 }

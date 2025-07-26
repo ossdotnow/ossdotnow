@@ -21,12 +21,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { ClaimProjectDialog } from '@/components/project/claim-project-dialog';
 import { ContributorData, ProjectWithRelations } from '@workspace/api';
+import ProjectErrorPage from '../../../projects/project-error-page';
 import { Separator } from '@workspace/ui/components/separator';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import ProjectDescription from './project-description';
-import ProjectErrorPage from '../project-error-page';
 import { MarkdownContent } from './markdown-content';
 import { authClient } from '@workspace/auth/client';
 import { useEffect, useState, useRef } from 'react';
@@ -93,6 +93,17 @@ interface Repository {
   id?: string;
   name?: string;
   url?: string;
+  description?: string;
+  homepage?: string;
+  isPrivate?: boolean;
+  private?: boolean;
+  topics?: string[];
+  owner?: {
+    avatar_url?: string;
+  };
+  namespace?: {
+    avatar_url?: string;
+  };
 }
 
 interface RepoData {
@@ -101,53 +112,53 @@ interface RepoData {
   pullRequestsCount?: number;
 }
 
-interface Project {
-  id: string;
-  ownerId: string | null;
-  logoUrl: string | null;
-  gitRepoUrl: string | null;
-  gitHost: string | null;
-  name: string;
-  description: string | null;
-  socialLinks: {
-    twitter?: string;
-    discord?: string;
-    linkedin?: string;
-    website?: string;
-    [key: string]: string | undefined;
-  } | null;
-  approvalStatus: 'pending' | 'approved' | 'rejected';
-  isPinned: boolean;
-  hasBeenAcquired: boolean;
-  isLookingForContributors: boolean;
-  isLookingForInvestors: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  isRepoPrivate: boolean;
-  acquiredBy: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  statusId: string;
-  typeId: string;
-  deletedAt: Date | null;
-  status?: {
-    id: string;
-    name: string;
-    displayName?: string;
-  };
-  type?: {
-    id: string;
-    name: string;
-    displayName?: string;
-  };
-  tagRelations?: Array<{
-    tag?: {
-      id?: string;
-      name: string;
-      displayName?: string;
-    };
-  }>;
-}
+// interface Project {
+//   id: string;
+//   ownerId: string | null;
+//   logoUrl: string | null;
+//   gitRepoUrl: string | null;
+//   gitHost: string | null;
+//   name: string;
+//   description: string | null;
+//   socialLinks: {
+//     twitter?: string;
+//     discord?: string;
+//     linkedin?: string;
+//     website?: string;
+//     [key: string]: string | undefined;
+//   } | null;
+//   approvalStatus: 'pending' | 'approved' | 'rejected';
+//   isPinned: boolean;
+//   hasBeenAcquired: boolean;
+//   isLookingForContributors: boolean;
+//   isLookingForInvestors: boolean;
+//   isHiring: boolean;
+//   isPublic: boolean;
+//   isRepoPrivate: boolean;
+//   acquiredBy: string | null;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   statusId: string;
+//   typeId: string;
+//   deletedAt: Date | null;
+//   status?: {
+//     id: string;
+//     name: string;
+//     displayName?: string;
+//   };
+//   type?: {
+//     id: string;
+//     name: string;
+//     displayName?: string;
+//   };
+//   tagRelations?: Array<{
+//     tag?: {
+//       id?: string;
+//       name: string;
+//       displayName?: string;
+//     };
+//   }>;
+// }
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -155,19 +166,35 @@ const isValidProvider = (
   return provider === 'github' || provider === 'gitlab';
 };
 
-function useProject(id: string) {
+function useProject(provider: string, org: string, repo: string) {
   const trpc = useTRPC();
-  const query = useQuery(trpc.projects.getProject.queryOptions({ id }, { retry: false }));
+  const query = useQuery(
+    trpc.projects.getProjectByRepo.queryOptions({ provider, org, repo }, { retry: false }),
+  );
 
   return {
-    project: query.data as ProjectWithRelations | undefined,
+    project: query.data as ProjectWithRelations | null | undefined,
     isLoading: query.isLoading,
     error: query.error,
+    isNotInDatabase: query.data === null,
   };
 }
 
-export default function ProjectPage({ id }: { id: string }) {
-  const { project, isLoading: projectLoading, error: projectError } = useProject(id);
+export default function ProjectPage({
+  provider,
+  org,
+  repoId,
+}: {
+  provider: string;
+  org: string;
+  repoId: string;
+}) {
+  const {
+    project,
+    isLoading: projectLoading,
+    error: projectError,
+    isNotInDatabase,
+  } = useProject(provider, org, repoId);
   const { data: session } = authClient.useSession();
   const user = session?.user;
   const [showShadow, setShowShadow] = useState(false);
@@ -183,7 +210,6 @@ export default function ProjectPage({ id }: { id: string }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Scroll active tab into view on smaller screens
   useEffect(() => {
     if (tabsListRef.current) {
       const activeTabElement = tabsListRef.current.querySelector(
@@ -209,14 +235,17 @@ export default function ProjectPage({ id }: { id: string }) {
 
   const trpc = useTRPC();
 
+  const normalizedProvider = provider === 'gh' ? 'github' : provider === 'gl' ? 'gitlab' : provider;
+  const gitRepoUrl = `${org}/${repoId}`;
+
   const repoQuery = useQuery(
     trpc.repository.getRepo.queryOptions(
       {
-        url: project?.gitRepoUrl as string,
-        provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        url: gitRepoUrl,
+        provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
       },
       {
-        enabled: !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        enabled: (!!project?.gitRepoUrl || isNotInDatabase) && isValidProvider(normalizedProvider),
         retry: false,
       },
     ),
@@ -225,11 +254,14 @@ export default function ProjectPage({ id }: { id: string }) {
   const repoDataQuery = useQuery(
     trpc.repository.getRepoData.queryOptions(
       {
-        url: project?.gitRepoUrl as string,
-        provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+        url: gitRepoUrl,
+        provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
       },
       {
-        enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+        enabled:
+          !!repoQuery.data &&
+          (!!project?.gitRepoUrl || isNotInDatabase) &&
+          isValidProvider(normalizedProvider),
         retry: false,
       },
     ),
@@ -239,61 +271,79 @@ export default function ProjectPage({ id }: { id: string }) {
     queries: [
       trpc.repository.getIssues.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
       trpc.repository.getPullRequests.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
       trpc.repository.getReadme.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
       trpc.repository.getContributing.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
       trpc.repository.getCodeOfConduct.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
-      trpc.projects.getContributors.queryOptions(
+      trpc.repository.getContributors.queryOptions(
         {
-          url: project?.gitRepoUrl as string,
-          provider: project?.gitHost as (typeof projectProviderEnum.enumValues)[number],
+          url: gitRepoUrl,
+          provider: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
         },
         {
-          enabled: !!repoQuery.data && !!project?.gitRepoUrl && isValidProvider(project?.gitHost),
+          enabled:
+            !!repoQuery.data &&
+            (!!project?.gitRepoUrl || isNotInDatabase) &&
+            isValidProvider(normalizedProvider),
           retry: false,
         },
       ),
@@ -308,12 +358,8 @@ export default function ProjectPage({ id }: { id: string }) {
     );
   }
 
-  if (projectError || !project) {
+  if (projectError && !isNotInDatabase) {
     return <ProjectErrorPage type="projectNotFound" />;
-  }
-
-  if (!project.gitRepoUrl) {
-    return <ProjectErrorPage type="repoNotAvailable" />;
   }
 
   if (repoQuery.isLoading) {
@@ -328,14 +374,58 @@ export default function ProjectPage({ id }: { id: string }) {
     return <ProjectErrorPage type="repoNotFound" onTryAgain={() => repoQuery.refetch()} />;
   }
 
-  const isUnclaimed = !project.ownerId;
-  const isOwner = user?.id === project.ownerId;
   const repoData = repoQuery.data as Repository;
+
+  const projectData: ProjectWithRelations = isNotInDatabase
+    ? {
+        id: `virtual-${normalizedProvider}-${org}-${repoId}`,
+        ownerId: null,
+        logoUrl: repoData.owner?.avatar_url || repoData.namespace?.avatar_url || null,
+        gitRepoUrl: gitRepoUrl,
+        gitHost: normalizedProvider as (typeof projectProviderEnum.enumValues)[number],
+        name: repoData.name || repoId,
+        description: repoData.description || null,
+        socialLinks: repoData.homepage ? { website: repoData.homepage } : null,
+        approvalStatus: 'approved' as const,
+        isPinned: false,
+        hasBeenAcquired: false,
+        isLookingForContributors:
+          repoData.topics?.includes('help-wanted') ||
+          repoData.topics?.includes('good-first-issue') ||
+          false,
+        isLookingForInvestors:
+          repoData.topics?.includes('seeking-funding') ||
+          repoData.topics?.includes('investment') ||
+          false,
+        isHiring: repoData.topics?.includes('hiring') || repoData.topics?.includes('jobs') || false,
+        isPublic: true,
+        isRepoPrivate: repoData.isPrivate || repoData.private || false,
+        acquiredBy: null,
+        createdAt: repoData.created_at ? new Date(repoData.created_at) : new Date(),
+        updatedAt: repoData.updated_at ? new Date(repoData.updated_at) : new Date(),
+        statusId: '',
+        typeId: '',
+        deletedAt: null,
+        status: undefined,
+        type: undefined,
+        tagRelations:
+          repoData.topics?.map((topic: string) => ({
+            tag: {
+              id: topic,
+              name: topic,
+              displayName: topic,
+            },
+          })) || [],
+      }
+    : project!;
+
+  const isUnclaimed = !projectData.ownerId;
+  const isOwner = user?.id === projectData.ownerId;
   const repo = {
     ...repoData,
     id: repoData.html_url || repoData.web_url || '',
-    name: project.gitRepoUrl?.split('/').pop() || '',
-    url: repoData.html_url || repoData.web_url || project.gitRepoUrl || '',
+    name: projectData.gitRepoUrl?.split('/').pop() || '',
+    url: repoData.html_url || repoData.web_url || projectData.gitRepoUrl || '',
   };
   const repoStats = repoDataQuery.data as RepoData | undefined;
   const issuesCount = repoStats?.issuesCount || 0;
@@ -356,15 +446,26 @@ export default function ProjectPage({ id }: { id: string }) {
       />
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
       <div className="mx-auto max-w-[1080px] py-4">
-        <ClaimProjectSection
-          isUnclaimed={isUnclaimed}
-          user={user}
-          project={project}
-          className="mt-0 mb-4 w-full rounded-none border border-neutral-800 bg-neutral-900/50 p-2"
-        />
+        {!isNotInDatabase ? (
+          <ClaimProjectSection
+            isUnclaimed={isUnclaimed}
+            user={user}
+            project={projectData}
+            className="mt-0 mb-4 w-full rounded-none border border-neutral-800 bg-neutral-900/50 p-2"
+          />
+        ) : (
+          <div className="mb-4 w-full rounded-none border border-neutral-800 bg-neutral-900/50 p-2">
+            <p className="text-sm text-neutral-400">This repo has not yet been added to oss.now.</p>
+          </div>
+        )}
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="flex min-w-0 flex-col gap-4 overflow-hidden lg:col-span-2">
-            <ProjectDescription isOwner={isOwner} project={project} repo={repo} />
+            <ProjectDescription
+              isOwner={isOwner}
+              project={projectData}
+              repo={repo}
+              isNotInDatabase={isNotInDatabase}
+            />
 
             <div className="">
               <Tabs defaultValue="readme" className="w-full" onValueChange={setActiveTab}>
@@ -493,7 +594,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                     <Link
                                       href={issue.html_url || issue.web_url || '#'}
                                       event="project_page_issue_link_clicked"
-                                      eventObject={{ projectId: project.id }}
+                                      eventObject={{ projectId: projectData.id }}
                                       target="_blank"
                                       className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                                     >
@@ -550,17 +651,17 @@ export default function ProjectPage({ id }: { id: string }) {
                           {issuesCount > 10 && (
                             <Link
                               href={
-                                project?.gitHost === 'github'
+                                projectData.gitHost === 'github'
                                   ? `${repo?.html_url}/issues?q=is%3Aopen`
                                   : `${repo?.web_url}/-/issues?state=opened`
                               }
                               target="_blank"
                               event="project_page_issues_link_clicked"
-                              eventObject={{ projectId: project.id }}
+                              eventObject={{ projectId: projectData.id }}
                               className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
                             >
                               View all {issuesCount} open issues on{' '}
-                              {project?.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
+                              {projectData.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
                             </Link>
                           )}
                         </div>
@@ -574,7 +675,7 @@ export default function ProjectPage({ id }: { id: string }) {
                   <TabsContent value="pull-requests">
                     {otherQueries[1].isLoading ? (
                       <div className="flex w-full justify-center py-4">
-                        <LoadingSpinner/>
+                        <LoadingSpinner />
                       </div>
                     ) : pullRequests ? (
                       pullRequests.length === 0 ? (
@@ -621,7 +722,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                       href={pr.html_url || pr.web_url || '#'}
                                       target="_blank"
                                       event="project_page_pull_request_link_clicked"
-                                      eventObject={{ projectId: project.id }}
+                                      eventObject={{ projectId: projectData.id }}
                                       className="mt-2 block text-sm font-medium text-neutral-300 transition-colors hover:text-white"
                                     >
                                       {pr.title}
@@ -672,7 +773,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   <Link
                                     href={pr.html_url || pr.web_url || '#'}
                                     event="project_page_pull_request_link_clicked"
-                                    eventObject={{ projectId: project.id }}
+                                    eventObject={{ projectId: projectData.id }}
                                     target="_blank"
                                     className="text-neutral-400 transition-colors hover:text-white"
                                   >
@@ -684,17 +785,17 @@ export default function ProjectPage({ id }: { id: string }) {
                           {pullRequestsCount > 10 && (
                             <Link
                               href={
-                                project?.gitHost === 'github'
+                                projectData.gitHost === 'github'
                                   ? `${repo?.html_url}/pulls?q=is%3Apr+is%3Aopen`
                                   : `${repo?.web_url}/-/merge_requests?state=opened`
                               }
                               target="_blank"
                               event="project_page_pull_requests_link_clicked"
-                              eventObject={{ projectId: project.id }}
+                              eventObject={{ projectId: projectData.id }}
                               className="block pt-2 text-center text-sm text-neutral-400 transition-colors hover:text-white"
                             >
                               View all {pullRequestsCount} open pull requests on{' '}
-                              {project?.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
+                              {projectData.gitHost === 'github' ? 'GitHub' : 'GitLab'} →
                             </Link>
                           )}
                         </div>
@@ -780,10 +881,13 @@ export default function ProjectPage({ id }: { id: string }) {
                             <Link
                               rel="noopener noreferrer"
                               key={contributor.id}
-                              href={`https://${project?.gitHost === 'github' ? 'github.com' : 'gitlab.com'}/${contributor.username}`}
+                              href={`https://${projectData.gitHost === 'github' ? 'github.com' : 'gitlab.com'}/${contributor.username}`}
                               target="_blank"
                               event="project_page_contributor_link_clicked"
-                              eventObject={{ projectId: project.id, contributorId: contributor.id }}
+                              eventObject={{
+                                projectId: projectData.id,
+                                contributorId: contributor.id,
+                              }}
                               className={`flex items-center gap-3 rounded-none border p-3 transition-all hover:bg-neutral-800/50 ${
                                 contributor.pullRequestsCount !== undefined &&
                                 contributor.pullRequestsCount >= 500
@@ -902,7 +1006,7 @@ export default function ProjectPage({ id }: { id: string }) {
               <div>
                 <h3 className="mb-3 text-sm font-medium text-neutral-300">About</h3>
                 <div className="space-y-2 text-sm">
-                  {project?.createdAt && (
+                  {projectData?.createdAt && (
                     <div className="flex items-center justify-between">
                       <span className="text-neutral-400">Created</span>
                       <span className="text-neutral-300">
@@ -910,7 +1014,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       </span>
                     </div>
                   )}
-                  {project?.updatedAt && (
+                  {projectData?.updatedAt && (
                     <div className="flex items-center justify-between">
                       <span className="text-neutral-400">Updated</span>
                       <span className="text-neutral-300">
@@ -918,40 +1022,42 @@ export default function ProjectPage({ id }: { id: string }) {
                       </span>
                     </div>
                   )}
-                  {project?.gitHost && (
+                  {projectData?.gitHost && (
                     <div className="flex items-center justify-between">
                       <span className="text-neutral-400">Host</span>
-                      <span className="text-neutral-300 capitalize">{project?.gitHost}</span>
+                      <span className="text-neutral-300 capitalize">{projectData?.gitHost}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between">
                     <span className="text-neutral-400">Visibility</span>
                     <span className="text-neutral-300">
-                      {project?.isPublic ? 'Public' : 'Private'}
+                      {projectData?.isPublic ? 'Public' : 'Private'}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
-                <Tag className="h-5 w-5" />
-                Tags
-              </h2>
-              <div className="flex flex-wrap gap-1.5 md:gap-2">
-                {project?.tagRelations?.map((relation, index: number) => (
-                  <span
-                    key={index}
-                    className="rounded-none bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
-                  >
-                    {relation.tag?.displayName || relation.tag?.name}
-                  </span>
-                ))}
+            {!isNotInDatabase && (
+              <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
+                <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-white">
+                  <Tag className="h-5 w-5" />
+                  Tags
+                </h2>
+                <div className="flex flex-wrap gap-1.5 md:gap-2">
+                  {projectData?.tagRelations?.map((relation, index: number) => (
+                    <span
+                      key={index}
+                      className="rounded-none bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
+                    >
+                      {relation.tag?.displayName || relation.tag?.name}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {project?.hasBeenAcquired && project?.acquiredBy && (
+            {projectData?.hasBeenAcquired && projectData?.acquiredBy && (
               <div className="border border-yellow-500/20 bg-yellow-500/5 p-4 md:p-6">
                 <div className="flex items-center gap-2 text-yellow-400">
                   <Building className="h-5 w-5" />
@@ -960,13 +1066,13 @@ export default function ProjectPage({ id }: { id: string }) {
                 <p className="mt-2 text-sm text-neutral-300">This project has been acquired</p>
               </div>
             )}
-            {(project?.isLookingForContributors ||
-              project?.isLookingForInvestors ||
-              project?.isHiring) && (
+            {(projectData?.isLookingForContributors ||
+              projectData?.isLookingForInvestors ||
+              projectData?.isHiring) && (
               <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
                 <h2 className="mb-4 text-lg font-semibold text-white">Opportunities</h2>
                 <div className="space-y-3">
-                  {project?.isLookingForContributors && (
+                  {projectData?.isLookingForContributors && (
                     <div className="flex items-start gap-3 rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 p-3 text-[#00D492]">
                       <Users className="mt-0.5 h-5 w-5 text-emerald-400" />
                       <div>
@@ -977,7 +1083,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       </div>
                     </div>
                   )}
-                  {project?.isLookingForInvestors && (
+                  {projectData?.isLookingForInvestors && (
                     <div className="flex items-start gap-3 rounded-none border border-blue-500/30 bg-blue-500/10 p-3">
                       <DollarSign className="mt-0.5 h-5 w-5 text-blue-400" />
                       <div>
@@ -988,7 +1094,7 @@ export default function ProjectPage({ id }: { id: string }) {
                       </div>
                     </div>
                   )}
-                  {project?.isHiring && (
+                  {projectData?.isHiring && (
                     <div className="flex items-start gap-3 rounded-none border border-purple-500/20 bg-purple-500/10 p-3">
                       <Briefcase className="mt-0.5 h-5 w-5 text-purple-400" />
                       <div>

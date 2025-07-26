@@ -364,10 +364,6 @@ export class GithubManager implements GitManager {
       isOwner = true;
       ownershipType = 'repository owner';
     } else if (repoData.owner.type === 'Organization') {
-      console.log(
-        `Checking org ownership for ${currentUser.username} in org ${repoData.owner.login}`,
-      );
-
       try {
         const { data: repoPermissions } =
           await this.octokit.rest.repos.getCollaboratorPermissionLevel({
@@ -376,10 +372,6 @@ export class GithubManager implements GitManager {
             username: currentUser.username,
           });
 
-        console.log(
-          `User ${currentUser.username} has ${repoPermissions.permission} permission on the repository`,
-        );
-
         if (repoPermissions.permission === 'admin') {
           try {
             const { data: membership } = await this.octokit.rest.orgs.getMembershipForUser({
@@ -387,26 +379,16 @@ export class GithubManager implements GitManager {
               username: currentUser.username,
             });
 
-            console.log(
-              `User ${currentUser.username} has role '${membership.role}' in org with state '${membership.state}'`,
-            );
-
             if (membership.role === 'admin' && membership.state === 'active') {
               isOwner = true;
               ownershipType = 'organization owner';
             }
           } catch (orgError) {
-            console.log('Error checking org membership:', orgError);
             isOwner = true;
             ownershipType = 'repository admin';
           }
         }
       } catch (error) {
-        console.log(
-          'User does not have collaborator access to the repository:',
-          error instanceof Error ? error.message : String(error),
-        );
-
         try {
           const { data: membership } = await this.octokit.rest.orgs.getMembershipForUser({
             org: repoData.owner.login,
@@ -418,13 +400,12 @@ export class GithubManager implements GitManager {
             ownershipType = 'organization owner';
           }
         } catch (orgError) {
-          console.log('User is not a member of the organization');
+          // TODO: handle error
         }
       }
     }
 
     if (!isOwner) {
-      console.log(`Claim denied for user ${currentUser.username} on repo ${owner}/${repo}`);
       await ctx.db.insert(projectClaim).values({
         projectId,
         userId: ctx.session!.userId,
@@ -444,8 +425,6 @@ export class GithubManager implements GitManager {
         message: `You don't have the required permissions to claim this project. You must be either the repository owner or an organization owner. Current user: ${currentUser.username}, Repository owner: ${repoData.owner.login}`,
       });
     }
-
-    console.log(`Claim approved: ${currentUser.username} is ${ownershipType} for ${owner}/${repo}`);
 
     const updatedProject = await ctx.db
       .update(project)
@@ -782,11 +761,7 @@ export class GithubManager implements GitManager {
             let hasMore = true;
             const maxContributorPages = 10;
 
-            console.log(`Starting contributors API fetch for ${owner}/${repo}`);
-
             while (hasMore && page <= maxContributorPages) {
-              console.log(`Fetching contributors page ${page}...`);
-
               const { data: contributors } = await this.octokit.rest.repos.listContributors({
                 owner,
                 repo,
@@ -794,25 +769,16 @@ export class GithubManager implements GitManager {
                 page: page,
               });
 
-              console.log(`Page ${page}: received ${contributors?.length || 0} contributors`);
-
               if (contributors && contributors.length > 0) {
                 allContributors.push(...contributors);
                 page++;
                 if (contributors.length < 100) {
-                  console.log(
-                    `Reached end of contributors at page ${page - 1} (got ${contributors.length} contributors)`,
-                  );
                   hasMore = false;
                 }
                 if (allContributors.length >= 1000) {
-                  console.log(
-                    `Early termination: reached ${allContributors.length} contributors via API`,
-                  );
                   break;
                 }
               } else {
-                console.log(`No contributors found on page ${page}, stopping`);
                 hasMore = false;
               }
             }
@@ -826,18 +792,11 @@ export class GithubManager implements GitManager {
                 }))
                 .slice(0, 500);
 
-              console.log(
-                `Successfully found ${allContributors.length} total contributors, returning ${contributorData.length} via contributors API`,
-              );
               return contributorData;
-            } else {
-              console.log('Contributors API returned no results, falling back to PR analysis');
             }
           } catch (contributorsApiError) {
-            console.log(
-              'Contributors API failed, falling back to PR analysis:',
-              contributorsApiError,
-            );
+            // TODO: handle error
+            console.error('Error fetching GitHub contributors:', contributorsApiError);
           }
           const contributorMap = new Map<string, ContributorData>();
           let page = 1;
@@ -885,7 +844,6 @@ export class GithubManager implements GitManager {
             page++;
 
             if (contributorMap.size >= 500) {
-              console.log('Early termination: reached 500 contributors');
               break;
             }
           }
@@ -895,11 +853,9 @@ export class GithubManager implements GitManager {
 
           const limitedContributors = contributors.slice(0, 500);
 
-          console.log(
-            `Found ${limitedContributors.length} unique contributors from ${processedPRs} PRs`,
-          );
           return limitedContributors;
         } catch (error) {
+          // TODO: handle error
           console.error('Error fetching GitHub contributors:', error);
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',

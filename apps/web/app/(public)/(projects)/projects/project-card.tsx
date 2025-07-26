@@ -27,9 +27,14 @@ export default function ProjectCard({ project }: { project: Project }) {
 
   if (isError) return <div>Error</div>;
 
+  const normalizedProvider =
+    project.gitHost === 'github' ? 'gh' : project.gitHost === 'gitlab' ? 'gl' : project.gitHost;
+
+  const href = `/${normalizedProvider}/${project.gitRepoUrl}`;
+
   return (
     <Link
-      href={`/projects/${project.id}`}
+      href={href}
       event="project_card_link_clicked"
       eventObject={{ projectId: project.id }}
       className="group/project relative flex h-full flex-col bg-[#171717] p-1"
@@ -68,24 +73,24 @@ export default function ProjectCard({ project }: { project: Project }) {
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
           )}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2 mb-1">
-            <h3 className="truncate text-sm font-semibold text-white md:text-base">
-              {project.name}
-            </h3>
-            {(project.isLookingForContributors || project.hasBeenAcquired) && (
-              <div className="flex flex-wrap gap-1 md:gap-1.5">
-                {project.isLookingForContributors && (
-                  <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492] md:px-2">
-                    Open to contributors
-                  </span>
-                )}
-                {project.hasBeenAcquired && (
-                  <span className="rounded-none bg-yellow-500/10 px-1.5 py-0.5 text-xs font-medium text-yellow-400 md:px-2">
-                    Acquired
-                  </span>
-                )}
-              </div>
-            )}
+            <div className="mb-1 flex items-center justify-between gap-2">
+              <h3 className="truncate text-sm font-semibold text-white md:text-base">
+                {project.name}
+              </h3>
+              {(project.isLookingForContributors || project.hasBeenAcquired) && (
+                <div className="flex flex-wrap gap-1 md:gap-1.5">
+                  {project.isLookingForContributors && (
+                    <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492] md:px-2">
+                      Open to contributors
+                    </span>
+                  )}
+                  {project.hasBeenAcquired && (
+                    <span className="rounded-none bg-yellow-500/10 px-1.5 py-0.5 text-xs font-medium text-yellow-400 md:px-2">
+                      Acquired
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 md:text-sm">
               {project.description}
