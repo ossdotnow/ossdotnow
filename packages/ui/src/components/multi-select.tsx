@@ -153,6 +153,7 @@ export function MultiSelect({
                 <CommandItem
                   key={option.value}
                   value={option.value}
+                  className="rounded-none"
                   onSelect={() => handleSelect(option.value)}
                 >
                   <Check
