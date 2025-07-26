@@ -37,8 +37,8 @@ const launchSchema = z.object({
     .max(100, 'Tagline must be less than 100 characters'),
   detailedDescription: z
     .string()
-    .min(25, 'Description must be at 10 characters')
-    .max(1000, 'Description must be less than 200 characters'),
+    .min(25, 'Description must be at 25 characters')
+    .max(1000, 'Description must be less than 1000 characters'),
 });
 
 type LaunchFormData = z.infer<typeof launchSchema>;
