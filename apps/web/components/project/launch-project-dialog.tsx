@@ -64,6 +64,9 @@ export function LaunchProjectDialog({
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const now = new Date();
+  const defaultTime = now.toTimeString().slice(0, 5);
+  const [time, setTime] = useState(defaultTime);
 
   const form = useForm<LaunchFormData>({
     resolver: zodResolver(launchSchema),
@@ -124,9 +127,19 @@ export function LaunchProjectDialog({
   );
 
   const onSubmit = (data: LaunchFormData) => {
+    const launchDate = data.launchDate;
+
+    let finalDate: Date | undefined = undefined;
+    if (launchDate && time) {
+      const [hours, minutes] = time.split(':').map(Number);
+      finalDate = new Date(launchDate);
+      finalDate.setHours(hours, minutes);
+    }
+
     launchMutation.mutate({
       projectId,
       ...data,
+      launchDate: finalDate,
     });
   };
 
@@ -342,6 +355,8 @@ export function LaunchProjectDialog({
                         <DateTimePicker
                           value={field.value}
                           onChange={(date) => field.onChange(date)}
+                          time={time}
+                          onTimeChange={setTime}
                         />
                       </FormControl>
                       <FormMessage />
