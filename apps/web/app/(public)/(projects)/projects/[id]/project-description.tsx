@@ -5,11 +5,11 @@ import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
+import { useQuery } from '@tanstack/react-query';
 import { Globe, Linkedin } from 'lucide-react';
+import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import Image from 'next/image';
-import { useTRPC } from '@/hooks/use-trpc';
-import { useQuery } from '@tanstack/react-query';
 
 export default function ProjectDescription({
   repo,
@@ -22,7 +22,7 @@ export default function ProjectDescription({
 }) {
   const trpc = useTRPC();
   const { data: launchData, isLoading: launchLoading } = useQuery(
-    trpc.launches.getLaunchByProjectId.queryOptions({ projectId: project.id })
+    trpc.launches.getLaunchByProjectId.queryOptions({ projectId: project.id }),
   );
   const isAlreadyLaunched = !!launchData;
 

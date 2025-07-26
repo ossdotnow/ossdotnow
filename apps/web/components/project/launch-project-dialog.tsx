@@ -31,7 +31,10 @@ import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
 const launchSchema = z.object({
-  tagline: z.string().min(10).max(100),
+  tagline: z
+    .string()
+    .min(10, 'Tagline must be at least 10 characters')
+    .max(100, 'Tagline must be less than 100 characters'),
   detailedDescription: z.string().optional(),
 });
 
