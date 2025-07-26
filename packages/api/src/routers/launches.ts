@@ -591,10 +591,41 @@ export const launchesRouter = createTRPCRouter({
         where: eq(project.id, input.projectId),
       });
 
+      if (!foundProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
       if (input.launchTime) {
-        const [hours, minutes] = input.launchTime.split(':').map(Number);
+        const timeParts = input.launchTime.split(':');
+        if (timeParts.length !== 2) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid time format. Please use HH:MM format',
+          });
+        }
+
+        const hours = parseInt(timeParts[0]!, 10);
+        const minutes = parseInt(timeParts[1]!, 10);
+
+        if (
+          isNaN(hours) ||
+          isNaN(minutes) ||
+          hours < 0 ||
+          hours > 23 ||
+          minutes < 0 ||
+          minutes > 59
+        ) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid time values. Hours must be 0-23 and minutes must be 0-59',
+          });
+        }
+
         const launchDate = new Date(input.launchDate);
-        launchDate.setHours(hours!, minutes);
+        launchDate.setHours(hours, minutes, 0, 0);
         input.launchDate = launchDate;
       }
 
@@ -602,13 +633,6 @@ export const launchesRouter = createTRPCRouter({
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Launch date cannot be in the past',
-        });
-      }
-
-      if (!foundProject) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Project not found',
         });
       }
 
@@ -635,13 +659,6 @@ export const launchesRouter = createTRPCRouter({
         throw new TRPCError({
           code: 'CONFLICT',
           message: 'This project has already been launched',
-        });
-      }
-
-      if (input.launchDate && input.launchDate.getTime() < Date.now()) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Launch date cannot be in the past',
         });
       }
 
