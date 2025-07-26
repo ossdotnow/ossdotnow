@@ -12,13 +12,13 @@
   },
   "dependencies": {
     "@t3-oss/env-nextjs": "^0.13.8",
-    "zod": "^3.25.67"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^24",
-    "eslint": "^9",
-    "typescript": "^5"
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

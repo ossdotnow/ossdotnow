@@ -11,30 +11,30 @@
     "lint": "eslint ."
   },
   "peerDependencies": {
-    "@trpc/server": "^11.4.2",
-    "better-auth": "^1.2.10",
-    "next": "^15",
-    "server-only": "^0.0.1",
-    "superjson": "^2.2.2",
-    "zod": "^3.24.4"
+    "@trpc/server": "catalog:",
+    "better-auth": "catalog:",
+    "next": "catalog:",
+    "server-only": "catalog:",
+    "superjson": "catalog:",
+    "zod": "catalog:"
   },
   "dependencies": {
-    "@gitbeaker/rest": "^42.5.0",
-    "@octokit/core": "^7.0.2",
-    "@octokit/plugin-rest-endpoint-methods": "^16.0.0",
-    "@upstash/ratelimit": "^2.0.5",
-    "@upstash/redis": "^1.35.0",
+    "@gitbeaker/rest": "^43.3.0",
+    "@octokit/core": "^7.0.3",
+    "@octokit/plugin-rest-endpoint-methods": "catalog:",
+    "@upstash/ratelimit": "^2.0.6",
+    "@upstash/redis": "^1.35.1",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.44.2",
-    "drizzle-zod": "^0.8.2"
+    "drizzle-orm": "catalog:",
+    "drizzle-zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^24",
+    "@types/node": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "eslint": "^9",
-    "typescript": "^5"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

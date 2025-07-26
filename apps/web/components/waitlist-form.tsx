@@ -2,15 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Form, FormField } from '@workspace/ui/components/form';
-import { track as vercelTrack } from '@vercel/analytics/react';
 import { ComponentProps, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
-import { track as databuddyTrack } from '@databuddy/sdk';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
+import { track } from '@databuddy/sdk';
 import { waitlistForm } from '@/forms';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
@@ -38,13 +37,11 @@ function useWaitlistCount() {
         if (isMounted) {
           localStorage.setItem('waitlist-joined', 'true');
         }
-        vercelTrack('waitlist_join_success');
-        databuddyTrack('waitlist_join_success');
+        track('waitlist_join_success');
       },
       onError: () => {
         toast.error('Something went wrong. Please try again.');
-        vercelTrack('waitlist_join_error');
-        databuddyTrack('waitlist_join_error');
+        track('waitlist_join_error');
       },
     }),
   );

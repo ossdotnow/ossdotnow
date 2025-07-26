@@ -20,16 +20,16 @@
   },
   "dependencies": {
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "catalog:",
     "postgres": "^3.4.7",
-    "server-only": "^0.0.1"
+    "server-only": "catalog:"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^24",
+    "@types/node": "catalog:",
     "drizzle-kit": "^0.31.1",
-    "eslint": "^9",
-    "typescript": "^5"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }
