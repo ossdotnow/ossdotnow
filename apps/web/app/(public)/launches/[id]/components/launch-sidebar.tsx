@@ -9,16 +9,16 @@ import {
   Star,
   Users,
 } from 'lucide-react';
-import { Separator } from '@workspace/ui/components/separator';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Separator } from '@workspace/ui/components/separator';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import { useRouter, usePathname } from 'next/navigation';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
-import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -101,6 +101,9 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   const contributors = repoStats?.contributors;
   const issuesCount = repoStats?.issuesCount || 0;
   const pullRequestsCount = repoStats?.pullRequestsCount || 0;
+
+  const provider = project.gitHost === 'github' ? 'gh' : 'gl';
+  const href = `/${provider}/${repoData?.owner.login}/${repoData?.name}`;
 
   return (
     <div className="flex flex-col gap-4 lg:col-span-1">
@@ -216,7 +219,7 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
 
         <div>
           <Button variant="outline" className="w-full gap-2 rounded-none" asChild>
-            <Link href={`/projects/${projectId}`}>
+            <Link href={href}>
               <ExternalLink className="h-4 w-4" />
               View Project
             </Link>

@@ -482,6 +482,35 @@ export const projectsRouter = createTRPCRouter({
       },
     });
   }),
+
+  getProjectByRepo: publicProcedure
+    .input(z.object({ provider: z.string(), org: z.string(), repo: z.string() }))
+    .query(async ({ ctx, input }) => {
+      let provider = input.provider;
+      if (provider === 'gh') {
+        provider = 'github';
+      } else if (provider === 'gl') {
+        provider = 'gitlab';
+      }
+
+      const repo = await ctx.db.query.project.findFirst({
+        where: and(
+          eq(project.gitHost, provider as (typeof projectProviderEnum.enumValues)[number]),
+          eq(project.gitRepoUrl, `${input.org}/${input.repo}`),
+        ),
+        with: {
+          status: true,
+          type: true,
+          tagRelations: {
+            with: {
+              tag: true,
+            },
+          },
+        },
+      });
+
+      return repo || null;
+    }),
   addProject: protectedProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
     const { statusId, typeId, tagIds } = await resolveAllIds(ctx.db, {
       status: input.status,
