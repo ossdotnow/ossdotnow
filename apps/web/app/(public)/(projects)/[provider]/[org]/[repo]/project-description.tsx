@@ -194,8 +194,6 @@ function ProjectDescriptionText({ project }: { project: ProjectWithRelations }) 
   const isLong = description.length > CHAR_LIMIT;
   const displayText = expanded || !isLong ? description : description.slice(0, CHAR_LIMIT) + '...';
 
-  console.log(description);
-
   return (
     <div className="md:mb-6">
       <p
