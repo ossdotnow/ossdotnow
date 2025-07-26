@@ -1,6 +1,7 @@
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
+import { motion, AnimatePresence } from 'motion/react';
 import { Suspense, useEffect, useState } from 'react';
 import { Card } from '@workspace/ui/components/card';
 import { Calendar, TrendingUp } from 'lucide-react';
@@ -73,24 +74,24 @@ function LaunchesPage() {
       <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
       <div className="mx-auto min-h-screen max-w-[1080px] pt-20">
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="fixed top-[calc(32px+65px)] z-10 mb-6 flex w-full max-w-[calc(100vw-3rem)] lg:max-w-[1080px] rounded-none border border-t-0 border-[#404040] bg-[#262626]">
+          <TabsList className="fixed top-[calc(32px+65px)] z-10 mb-6 flex w-full max-w-[calc(100vw-3rem)] rounded-none border border-t-0 border-[#404040] bg-[#262626] lg:max-w-[1080px]">
             <TabsTrigger
               value="today"
-    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
+              className="flex shrink items-center gap-2 rounded-none text-xs data-[state=active]:!bg-neutral-900/60 sm:text-base"
             >
               <Calendar className="h-4 w-4" />
               Today
             </TabsTrigger>
             <TabsTrigger
               value="yesterday"
-    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
+              className="flex shrink items-center gap-2 rounded-none text-xs data-[state=active]:!bg-neutral-900/60 sm:text-base"
             >
               <TrendingUp className="h-4 w-4" />
               Yesterday
             </TabsTrigger>
             <TabsTrigger
               value="all"
-    className="flex shrink items-center gap-2 rounded-none text-xs sm:text-base data-[state=active]:!bg-neutral-900/60"
+              className="flex shrink items-center gap-2 rounded-none text-xs data-[state=active]:!bg-neutral-900/60 sm:text-base"
             >
               <TrendingUp className="h-4 w-4" />
               All Launches
@@ -103,12 +104,30 @@ function LaunchesPage() {
                 <p className="text-neutral-400">Loading today&apos;s launches...</p>
               </div>
             ) : todayLaunches && todayLaunches.length > 0 ? (
-              <>
-                {todayLaunches[0] && <LaunchCard project={todayLaunches[0]} />}
-                {todayLaunches.slice(1).map((project, index) => (
-                  <LaunchCard key={project.id} project={project} index={index + 1} />
-                ))}
-              </>
+              <motion.div layout className="space-y-4">
+                <AnimatePresence mode="popLayout">
+                  {todayLaunches.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{
+                        layout: {
+                          duration: 0.5,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'tween',
+                        },
+                        opacity: { duration: 0.3 },
+                        y: { duration: 0.3 },
+                      }}
+                    >
+                      <LaunchCard project={project} index={index} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             ) : (
               <Card className="rounded-none p-12 text-center">
                 <p className="text-neutral-400">No launches today yet.</p>
@@ -125,12 +144,30 @@ function LaunchesPage() {
                 <p className="text-neutral-400">Loading yesterday&apos;s launches...</p>
               </div>
             ) : yesterdayLaunches && yesterdayLaunches.length > 0 ? (
-              <>
-                {yesterdayLaunches[0] && <LaunchCard project={yesterdayLaunches[0]} />}
-                {yesterdayLaunches.slice(1).map((project, index) => (
-                  <LaunchCard key={project.id} project={project} index={index + 1} />
-                ))}
-              </>
+              <motion.div layout className="space-y-4">
+                <AnimatePresence mode="popLayout">
+                  {yesterdayLaunches.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{
+                        layout: {
+                          duration: 0.5,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'tween',
+                        },
+                        opacity: { duration: 0.3 },
+                        y: { duration: 0.3 },
+                      }}
+                    >
+                      <LaunchCard project={project} index={index} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             ) : (
               <Card className="rounded-none p-12 text-center">
                 <p className="text-neutral-400">No launches yesterday.</p>
@@ -144,12 +181,30 @@ function LaunchesPage() {
                 <p className="text-neutral-400">Loading all launches...</p>
               </div>
             ) : allLaunches && allLaunches.length > 0 ? (
-              <>
-                {allLaunches[0] && <LaunchCard project={allLaunches[0]} />}
-                {allLaunches.slice(1).map((project, index) => (
-                  <LaunchCard key={project.id} project={project} index={index + 1} />
-                ))}
-              </>
+              <motion.div layout className="space-y-4">
+                <AnimatePresence mode="popLayout">
+                  {allLaunches.map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -20 }}
+                      transition={{
+                        layout: {
+                          duration: 0.5,
+                          ease: [0.4, 0, 0.2, 1],
+                          type: 'tween',
+                        },
+                        opacity: { duration: 0.3 },
+                        y: { duration: 0.3 },
+                      }}
+                    >
+                      <LaunchCard project={project} index={index} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </motion.div>
             ) : (
               <Card className="rounded-none p-12 text-center">
                 <p className="text-neutral-400">No launches yet.</p>
