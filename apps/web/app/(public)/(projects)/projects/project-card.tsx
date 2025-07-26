@@ -39,14 +39,31 @@ export default function ProjectCard({ project }: { project: Project }) {
         <div className="mb-3 flex items-center gap-3">
           {(repo && repo?.owner && repo?.owner?.avatar_url) ||
           (repo?.namespace && repo?.namespace?.avatar_url) ? (
-            <Image
-              src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
-              alt={project.name ?? 'Project Logo'}
-              width={256}
-              height={256}
-              className="h-[78px] w-[78px] rounded-none"
-              loading="lazy"
-            />
+            project.ownerId ? (
+              <Link
+                href={`/profile/${project.ownerId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="z-10 shrink-0 rounded-none"
+              >
+                <Image
+                  src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
+                  alt={project.name ?? 'Project Logo'}
+                  width={256}
+                  height={256}
+                  className="h-[78px] w-[78px] rounded-none hover:opacity-80 transition-opacity"
+                  loading="lazy"
+                />
+              </Link>
+            ) : (
+              <Image
+                src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
+                alt={project.name ?? 'Project Logo'}
+                width={256}
+                height={256}
+                className="h-[78px] w-[78px] rounded-none"
+                loading="lazy"
+              />
+            )
           ) : (
             <div className="h-[78px] w-[78px] animate-pulse bg-neutral-900" />
           )}
