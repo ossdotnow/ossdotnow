@@ -69,4 +69,9 @@ const projects = [
     url: 'https://github.com/better-auth/better-auth',
     avatar: 'https://avatars.githubusercontent.com/u/163827765',
   },
+  {
+    name: 'ultracite',
+    url: 'https://github.com/haydenbleasel/ultracite',
+    avatar: 'https://oss.now/logos/ultracite.png',
+  },
 ];
