@@ -42,6 +42,9 @@
     "core-js-pure"
   ],
   "dependencies": {
+    "@octokit/core": "^7.0.3",
+    "@octokit/request": "^10.0.3",
+    "@octokit/rest": "^22.0.0",
     "minimatch": "^10.0.3"
   }
 }

@@ -19,6 +19,7 @@ import {
   FormMessage,
 } from '@workspace/ui/components/form';
 import { Rocket, Loader2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import { DateTimePicker } from '@workspace/ui/components/date-time-picker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Button } from '@workspace/ui/components/button';
@@ -36,6 +37,10 @@ const launchSchema = z.object({
     .min(10, 'Tagline must be at least 10 characters')
     .max(100, 'Tagline must be less than 100 characters'),
   detailedDescription: z.string().optional(),
+  launchDate: z.preprocess(
+    (val) => (val ? new Date(val as string) : undefined),
+    z.date().optional(),
+  ),
 });
 
 type LaunchFormData = z.infer<typeof launchSchema>;
@@ -59,12 +64,16 @@ export function LaunchProjectDialog({
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const now = new Date();
+  const defaultTime = now.toTimeString().slice(0, 5);
+  const [time, setTime] = useState(defaultTime);
 
   const form = useForm<LaunchFormData>({
     resolver: zodResolver(launchSchema),
     defaultValues: {
       tagline: '',
       detailedDescription: '',
+      launchDate: undefined,
     },
   });
 
@@ -118,9 +127,19 @@ export function LaunchProjectDialog({
   );
 
   const onSubmit = (data: LaunchFormData) => {
+    const launchDate = data.launchDate;
+
+    let finalDate: Date | undefined = undefined;
+    if (launchDate && time) {
+      const [hours, minutes] = time.split(':').map(Number);
+      finalDate = new Date(launchDate);
+      finalDate.setHours(hours, minutes);
+    }
+
     launchMutation.mutate({
       projectId,
       ...data,
+      launchDate: finalDate,
     });
   };
 
@@ -321,6 +340,25 @@ export function LaunchProjectDialog({
                       <FormDescription>
                         Provide more context about your project for interested users
                       </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="launchDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Schedule Launch (Optional)</FormLabel>
+                      <FormControl>
+                        <DateTimePicker
+                          value={field.value}
+                          onChange={(date) => field.onChange(date)}
+                          time={time}
+                          onTimeChange={setTime}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
