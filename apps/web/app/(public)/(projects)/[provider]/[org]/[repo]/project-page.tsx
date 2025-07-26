@@ -257,8 +257,6 @@ export default function ProjectPage({
       }
     : project;
 
-  console.dir(virtualProject, { depth: null });
-
   const repoQuery = useQuery(
     trpc.repository.getRepo.queryOptions(
       {

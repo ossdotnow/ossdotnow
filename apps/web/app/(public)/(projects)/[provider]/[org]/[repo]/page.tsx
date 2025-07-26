@@ -7,7 +7,5 @@ export default async function Page({
 }) {
   const { provider, org, repo } = await params;
 
-  console.log(provider, org, repo);
-
   return <ProjectPage provider={provider} org={org} repoId={repo} />;
 }
