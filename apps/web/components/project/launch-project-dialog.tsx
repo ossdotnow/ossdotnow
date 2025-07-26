@@ -44,6 +44,7 @@ interface LaunchProjectDialogProps {
   projectId: string;
   projectName: string;
   isRepoPrivate?: boolean;
+  isAlreadyLaunched?: boolean;
   gitRepoUrl?: string;
   gitHost?: string;
 }
@@ -54,9 +55,12 @@ export function LaunchProjectDialog({
   isRepoPrivate,
   gitRepoUrl,
   gitHost,
+  isAlreadyLaunched,
 }: LaunchProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
+  const [hasLaunched, setHasLaunched] = useState(isAlreadyLaunched ?? false);
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -71,12 +75,9 @@ export function LaunchProjectDialog({
   const refreshRepoStatusMutation = useMutation(
     trpc.projects.refreshRepoStatus.mutationOptions({
       onSuccess: (data) => {
-        // Always invalidate queries to ensure fresh data
         queryClient.invalidateQueries({
           queryKey: trpc.projects.getProject.queryKey({ id: projectId }),
         });
-
-        // Also invalidate repository data cache
         queryClient.invalidateQueries({
           predicate: (query) => query.queryKey[0] === 'repository',
         });
@@ -84,8 +85,6 @@ export function LaunchProjectDialog({
         if (data.statusChanged && !data.isNowPrivate) {
           toast.success('Repository is now public! You can launch your project.');
           setPrivateRepoDialogOpen(false);
-          // Force a page refresh to ensure UI updates with new data
-          setTimeout(() => window.location.reload(), 1000);
         } else if (data.statusChanged && data.isNowPrivate) {
           toast.info('Repository is now private.');
         } else if (!data.statusChanged && data.isNowPrivate) {
@@ -105,6 +104,7 @@ export function LaunchProjectDialog({
     trpc.launches.launchProject.mutationOptions({
       onSuccess: () => {
         toast.success('Project launched successfully!');
+        setHasLaunched(true);
         setOpen(false);
         form.reset();
         queryClient.invalidateQueries({
@@ -118,29 +118,22 @@ export function LaunchProjectDialog({
   );
 
   const onSubmit = (data: LaunchFormData) => {
-    launchMutation.mutate({
-      projectId,
-      ...data,
-    });
+    launchMutation.mutate({ projectId, ...data });
   };
 
   const getRepoSettingsUrl = () => {
     if (!gitRepoUrl || !gitHost) return '';
 
     try {
-      // Handle different URL formats
       let repoPath = '';
-
       if (gitRepoUrl.includes('github.com') || gitRepoUrl.includes('gitlab.com')) {
         const url = new URL(gitRepoUrl);
         repoPath = url.pathname;
       } else {
-        // Handle formats like "owner/repo" or "owner/repo.git"
         repoPath = `/${gitRepoUrl}`;
       }
 
       const pathParts = repoPath.split('/').filter(Boolean);
-
       if (pathParts.length >= 2) {
         const owner = pathParts[0];
         const repo = pathParts[1]?.replace(/\.git$/, '') || '';
@@ -153,8 +146,6 @@ export function LaunchProjectDialog({
       }
     } catch (e) {
       console.error('Failed to parse repository URL:', e);
-
-      // Fallback: try to extract owner/repo from the URL string
       const match = gitRepoUrl.match(
         /(?:github\.com|gitlab\.com)[/:]([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/,
       );
@@ -168,7 +159,6 @@ export function LaunchProjectDialog({
       }
     }
 
-    // Final fallback - return the original repo URL
     return gitRepoUrl.replace(/\.git$/, '');
   };
 
@@ -176,7 +166,6 @@ export function LaunchProjectDialog({
     refreshRepoStatusMutation.mutate({ projectId });
   };
 
-  // Private Repository Dialog
   const PrivateRepoDialog = () => (
     <Dialog open={privateRepoDialogOpen} onOpenChange={setPrivateRepoDialogOpen}>
       <DialogContent className="rounded-none sm:max-w-[500px]">
@@ -253,7 +242,14 @@ export function LaunchProjectDialog({
 
   return (
     <>
-      {isRepoPrivate ? (
+      {hasLaunched ? (
+        <Button asChild className="gap-2 rounded-none" size="sm" variant="default">
+          <a href={`/launches/${projectId}`} target="_blank" rel="noopener noreferrer">
+            <Rocket className="h-4 w-4" />
+            View Project
+          </a>
+        </Button>
+      ) : isRepoPrivate ? (
         <>
           <Button
             className="gap-2 rounded-none"
@@ -304,7 +300,6 @@ export function LaunchProjectDialog({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="detailedDescription"
@@ -325,7 +320,6 @@ export function LaunchProjectDialog({
                     </FormItem>
                   )}
                 />
-
                 <DialogFooter>
                   <Button
                     type="button"

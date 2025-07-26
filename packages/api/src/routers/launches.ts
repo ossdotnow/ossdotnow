@@ -570,60 +570,60 @@ export const launchesRouter = createTRPCRouter({
       return comments;
     }),
 
-  launchProject: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-        tagline: z.string().min(10).max(100),
-        detailedDescription: z.string().optional(),
+    launchProject: protectedProcedure
+      .input(
+        z.object({
+          projectId: z.string(),
+          tagline: z.string().min(10).max(100),
+          detailedDescription: z.string().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const foundProject = await ctx.db.query.project.findFirst({
+          where: eq(project.id, input.projectId),
+        });
+
+        if (!foundProject) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Project not found',
+          });
+        }
+
+        if (foundProject.ownerId !== ctx.session.userId) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You can only launch your own projects',
+          });
+        }
+
+        if (foundProject.isRepoPrivate) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'You cannot launch a project with a private repository. Please make your repository public first.',
+          });
+        }
+
+        const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
+          where: eq(projectLaunch.projectId, input.projectId),
+        });
+
+        if (existingLaunch) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This project has already been launched',
+          });
+        }
+
+        const [launch] = await ctx.db
+          .insert(projectLaunch)
+          .values({
+            projectId: input.projectId,
+            tagline: input.tagline,
+            detailedDescription: input.detailedDescription,
+          })
+          .returning();
+
+        return launch;
       }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const foundProject = await ctx.db.query.project.findFirst({
-        where: eq(project.id, input.projectId),
-      });
-
-      if (!foundProject) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Project not found',
-        });
-      }
-
-      if (foundProject.ownerId !== ctx.session.userId) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You can only launch your own projects',
-        });
-      }
-
-      if (foundProject.isRepoPrivate) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You cannot launch a project with a private repository. Please make your repository public first.',
-        });
-      }
-
-      const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
-        where: eq(projectLaunch.projectId, input.projectId),
-      });
-
-      if (existingLaunch) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'This project has already been launched',
-        });
-      }
-
-      const [launch] = await ctx.db
-        .insert(projectLaunch)
-        .values({
-          projectId: input.projectId,
-          tagline: input.tagline,
-          detailedDescription: input.detailedDescription,
-        })
-        .returning();
-
-      return launch;
-    }),
-});
+  });
