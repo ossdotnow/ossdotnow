@@ -178,8 +178,10 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                     <div className="size-6 shrink-0 rounded-full bg-neutral-700" />
                   )}
                   <div className="flex">
-                    <p className="text-xs font-medium text-white">{project.owner?.name}</p>
-                    <p className="text-xs text-neutral-400">/{project.owner?.username}</p>
+                    <p className="text-xs font-medium text-white">{project.owner.name}</p>
+                    {project.owner.username && (
+                      <p className="text-xs text-neutral-400">/{project.owner.username}</p>
+                    )}
                   </div>
                 </div>
               )
