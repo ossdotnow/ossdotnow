@@ -389,7 +389,13 @@ export const launchesRouter = createTRPCRouter({
         .leftJoin(user, eq(project.ownerId, user.id))
         .leftJoin(projectVote, eq(projectVote.projectId, project.id))
         .leftJoin(projectComment, eq(projectComment.projectId, project.id))
-        .where(and(eq(project.approvalStatus, 'approved'), eq(project.isRepoPrivate, false)))
+        .where(
+          and(
+            eq(project.approvalStatus, 'approved'),
+            eq(project.isRepoPrivate, false),
+            lt(projectLaunch.launchDate, new Date()),
+          ),
+        )
         .groupBy(
           project.id,
           projectLaunch.id,
@@ -576,6 +582,8 @@ export const launchesRouter = createTRPCRouter({
         projectId: z.string(),
         tagline: z.string().min(10).max(100),
         detailedDescription: z.string().optional(),
+        launchDate: z.coerce.date(),
+        launchTime: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -590,6 +598,46 @@ export const launchesRouter = createTRPCRouter({
         });
       }
 
+      if (input.launchTime) {
+        const timeRegex = /^([0-9]{1,2}):([0-9]{2})$/;
+        const match = input.launchTime.match(timeRegex);
+
+        if (!match) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid time format. Please use HH:MM format (e.g., 14:30 or 9:05)',
+          });
+        }
+
+        const hours = parseInt(match[1]!, 10);
+        const minutes = parseInt(match[2]!, 10);
+
+        if (hours < 0 || hours > 23) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid hour value. Hours must be between 0 and 23',
+          });
+        }
+
+        if (minutes < 0 || minutes > 59) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid minute value. Minutes must be between 0 and 59',
+          });
+        }
+
+        const launchDate = new Date(input.launchDate);
+        launchDate.setHours(hours, minutes, 0, 0);
+        input.launchDate = launchDate;
+      }
+
+      if (input.launchDate.getTime() < Date.now()) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Launch date cannot be in the past',
+        });
+      }
+
       if (foundProject.ownerId !== ctx.session.userId) {
         throw new TRPCError({
           code: 'FORBIDDEN',
@@ -600,7 +648,8 @@ export const launchesRouter = createTRPCRouter({
       if (foundProject.isRepoPrivate) {
         throw new TRPCError({
           code: 'FORBIDDEN',
-          message: 'You cannot launch a project with a private repository. Please make your repository public first.',
+          message:
+            'You cannot launch a project with a private repository. Please make your repository public first.',
         });
       }
 
@@ -621,6 +670,7 @@ export const launchesRouter = createTRPCRouter({
           projectId: input.projectId,
           tagline: input.tagline,
           detailedDescription: input.detailedDescription,
+          launchDate: input.launchDate ?? undefined,
         })
         .returning();
 

@@ -18,15 +18,19 @@ import {
   FormLabel,
   FormMessage,
 } from '@workspace/ui/components/form';
-import { Rocket, Loader2, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import { AlertCircle, CalendarIcon, ExternalLink, Loader2, RefreshCw, Rocket } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Textarea } from '@workspace/ui/components/textarea';
+import { Calendar } from '@workspace/ui/components/calendar';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { cn } from '@workspace/ui/lib/utils';
+import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -36,6 +40,8 @@ const launchSchema = z.object({
     .min(10, 'Tagline must be at least 10 characters')
     .max(100, 'Tagline must be less than 100 characters'),
   detailedDescription: z.string().optional(),
+  launchDate: z.date(),
+  launchTime: z.string().optional(),
 });
 
 type LaunchFormData = z.infer<typeof launchSchema>;
@@ -57,14 +63,56 @@ export function LaunchProjectDialog({
 }: LaunchProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(
+    new Date().toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }),
+  );
+
+  const [currentDate, setCurrentDate] = useState(
+    new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
+  );
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const now = new Date();
+    const timer = setInterval(() => {
+      setCurrentTime(
+        now.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }),
+      );
+      const newDate = now.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      if (newDate !== currentDate) {
+        setCurrentDate(newDate);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentDate]);
 
   const form = useForm<LaunchFormData>({
     resolver: zodResolver(launchSchema),
     defaultValues: {
       tagline: '',
       detailedDescription: '',
+      launchDate: new Date(currentDate),
+      launchTime: currentTime,
     },
   });
 
@@ -111,17 +159,14 @@ export function LaunchProjectDialog({
           queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
         });
       },
-      onError: (error: any) => {
+      onError: (error) => {
         toast.error(error.message || 'Failed to launch project');
       },
     }),
   );
 
   const onSubmit = (data: LaunchFormData) => {
-    launchMutation.mutate({
-      projectId,
-      ...data,
-    });
+    launchMutation.mutate({ projectId, ...data });
   };
 
   const getRepoSettingsUrl = () => {
@@ -325,6 +370,83 @@ export function LaunchProjectDialog({
                     </FormItem>
                   )}
                 />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="launchDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Launch Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={'outline'}
+                                className={cn(
+                                  'bg-input/30 rounded-none pl-3 text-left font-normal',
+                                  'hover:bg-input/30',
+                                  !field.value && 'text-muted-foreground',
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, 'PPP')
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto rounded-none p-0" align="start">
+                            <Calendar
+                              buttonVariant="outline"
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              defaultMonth={new Date(currentDate)}
+                              disabled={(date) => {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const maxDate = new Date();
+                                maxDate.setDate(maxDate.getDate() + 40);
+                                return date < today || date > maxDate;
+                              }}
+                              captionLayout="dropdown"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="launchTime"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Launch Time</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            id="time-picker"
+                            step="1"
+                            value={field.value || ''}
+                            min={
+                              form.watch('launchDate')?.toDateString() === new Date().toDateString()
+                                ? currentTime
+                                : undefined
+                            }
+                            onChange={(e) => field.onChange(e.target.value)}
+                            className="bg-background appearance-none rounded-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <DialogFooter>
                   <Button
