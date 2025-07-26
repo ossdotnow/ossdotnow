@@ -127,6 +127,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
                 Share
               </Button>
               <Button
+                title="Report"
                 variant="outline"
                 onClick={handleReport}
                 className="gap-2 rounded-none"

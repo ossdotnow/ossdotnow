@@ -8,12 +8,12 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
-import { Filter, Search, X } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Badge } from '@workspace/ui/components/badge';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useQuery } from '@tanstack/react-query';
+import { Filter, Search, X } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 
@@ -90,13 +90,15 @@ export default function ProjectFilters() {
               <div>
                 <label className="mb-2 block text-sm font-medium">Status</label>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-none">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="all" className="rounded-none">
+                      All Statuses
+                    </SelectItem>
                     {projectStatuses?.map((status) => (
-                      <SelectItem key={status.id} value={status.name}>
+                      <SelectItem key={status.id} className="rounded-none" value={status.name}>
                         {status.displayName}
                       </SelectItem>
                     ))}
@@ -107,13 +109,15 @@ export default function ProjectFilters() {
               <div>
                 <label className="mb-2 block text-sm font-medium">Type</label>
                 <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-none">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="all" className="rounded-none">
+                      All Types
+                    </SelectItem>
                     {projectTypes?.map((type) => (
-                      <SelectItem key={type.id} value={type.name}>
+                      <SelectItem key={type.id} value={type.name} className="rounded-none">
                         {type.displayName}
                       </SelectItem>
                     ))}
@@ -124,13 +128,15 @@ export default function ProjectFilters() {
               <div>
                 <label className="mb-2 block text-sm font-medium">Tag</label>
                 <Select value={tagFilter} onValueChange={setTagFilter}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full rounded-none">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Tags</SelectItem>
+                  <SelectContent className="rounded-none">
+                    <SelectItem value="all" className="rounded-none">
+                      All Tags
+                    </SelectItem>
                     {tags?.map((tag) => (
-                      <SelectItem key={tag.id} value={tag.name}>
+                      <SelectItem key={tag.id} value={tag.name} className="rounded-none">
                         {tag.displayName}
                       </SelectItem>
                     ))}
@@ -141,7 +147,7 @@ export default function ProjectFilters() {
               {activeFiltersCount > 0 && (
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full rounded-none"
                   onClick={() => {
                     setStatusFilter('all');
                     setTypeFilter('all');
