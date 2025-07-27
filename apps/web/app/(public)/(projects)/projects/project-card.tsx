@@ -14,7 +14,8 @@ const isValidProvider = (
   return provider === 'github' || provider === 'gitlab';
 };
 
-export default function ProjectCard({ project }: { project: Project }) {
+export default function ProjectCard({ project, isOwnProfile = false }: { project: Project, isOwnProfile?: boolean }) {
+  
   const trpc = useTRPC();
   const { data: repo, isError } = useQuery({
     ...trpc.repository.getRepo.queryOptions({
@@ -77,6 +78,11 @@ export default function ProjectCard({ project }: { project: Project }) {
                   {project.isLookingForContributors && (
                     <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492] md:px-2">
                       Open to contributors
+                    </span>
+                  )}
+                   {project.approvalStatus === "pending" && isOwnProfile && (
+                    <span className="rounded-none border border-[#FF0000]/10 bg-[#FF0000]/10 px-1.5 py-0.5 text-xs font-medium text-[#BF0000] md:px-2">
+                      Pending
                     </span>
                   )}
                   {project.hasBeenAcquired && (
