@@ -13,8 +13,8 @@ import {
   user,
 } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
-import { eq, desc, and, sql, gte, lt, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays, differenceInDays } from 'date-fns';
+import { eq, desc, and, sql, gte, lt, inArray } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
 
@@ -655,11 +655,12 @@ export const launchesRouter = createTRPCRouter({
 
       const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
         where: eq(projectLaunch.projectId, input.projectId),
+        orderBy: desc(projectLaunch.createdAt),
       });
 
       if (existingLaunch) {
-        const now = new Date()
-        const daysPassed = differenceInDays(now, existingLaunch.launchDate);
+        const now = new Date();
+        const daysPassed = differenceInDays(now, existingLaunch.createdAt);
 
         if (daysPassed < 7) {
           const remainingDays = 7 - daysPassed;
