@@ -24,9 +24,9 @@ import { Textarea } from '@workspace/ui/components/textarea';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useState } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useForm } from 'react-hook-form';
-import { useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -60,6 +60,11 @@ export function LaunchProjectDialog({
   const [open, setOpen] = useState(false);
   const [privateRepoDialogOpen, setPrivateRepoDialogOpen] = useState(false);
   const [hasLaunched, setHasLaunched] = useState(isAlreadyLaunched ?? false);
+  useEffect(() => {
+    if (isAlreadyLaunched) {
+      setHasLaunched(true);
+    }
+  }, [isAlreadyLaunched]);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
