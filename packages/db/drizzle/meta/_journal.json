@@ -127,6 +127,20 @@
       "when": 1752802149277,
       "tag": "0017_neat_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1753540265849,
+      "tag": "0018_uneven_cammi",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1753541191960,
+      "tag": "0019_whole_nehzno",
+      "breakpoints": true
     }
   ]
 }

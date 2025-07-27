@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgEnum, pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
 import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from './categories';
 import { projectCompetitors } from './project-competitors';
 import { gitHostEnum } from './shared-enums';
@@ -49,6 +49,10 @@ export const project = pgTable(
     isPinned: boolean('is_pinned').notNull().default(false),
     isRepoPrivate: boolean('is_repo_private').notNull().default(false),
     acquiredBy: uuid('acquired_by').references(() => competitor.id, { onDelete: 'set null' }),
+    starsCount:  integer('stars_count').notNull().default(0),
+    starsUpdatedAt: timestamp('stars_updated_at', { mode: 'date', withTimezone: true }),
+    forksCount:  integer('forks_count').notNull().default(0),
+    forksUpdatedAt: timestamp('forks_updated_at', { mode: 'date', withTimezone: true }),
 
     deletedAt: timestamp('deleted_at', { mode: 'date' }),
     createdAt: timestamp('created_at', { mode: 'date', withTimezone: true }).defaultNow().notNull(),
