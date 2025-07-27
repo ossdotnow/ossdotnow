@@ -21,10 +21,10 @@ import {
 import { AlertCircle, CalendarIcon, ExternalLink, Loader2, RefreshCw, Rocket } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@workspace/ui/components/popover';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Textarea } from '@workspace/ui/components/textarea';
 import { Calendar } from '@workspace/ui/components/calendar';
 import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
+import { MarkdownTextarea } from './markdown-textarea';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { cn } from '@workspace/ui/lib/utils';
 import { useState, useEffect } from 'react';
@@ -39,7 +39,10 @@ const launchSchema = z.object({
     .string()
     .min(10, 'Tagline must be at least 10 characters')
     .max(100, 'Tagline must be less than 100 characters'),
-  detailedDescription: z.string().optional(),
+  detailedDescription: z
+    .string()
+    .min(25, 'Description must be at 10 characters')
+    .max(1000, 'Description must be less than 1000 characters'),
   launchDate: z.date(),
   launchTime: z.string().optional(),
 });
@@ -319,7 +322,7 @@ export function LaunchProjectDialog({
               Launch Project
             </Button>
           </DialogTrigger>
-          <DialogContent className="rounded-none sm:max-w-[600px]">
+          <DialogContent className="max-h-[80vh] overflow-y-auto rounded-none sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>Launch {projectName}</DialogTitle>
               <DialogDescription>
@@ -355,12 +358,13 @@ export function LaunchProjectDialog({
                   name="detailedDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Detailed Description (Optional)</FormLabel>
+                      <FormLabel>Detailed Description</FormLabel>
                       <FormControl>
-                        <Textarea
+                        <MarkdownTextarea
                           placeholder="Tell us more about your project, what problem it solves, key features, etc."
                           className="min-h-[120px] rounded-none"
                           {...field}
+                          required
                         />
                       </FormControl>
                       <FormDescription>
