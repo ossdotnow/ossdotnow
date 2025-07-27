@@ -75,7 +75,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
     voteMutation.mutate({ projectId });
   };
 
-  if (isError) return <div>Error</div>;
+  if (isError || !repo) return null;
 
   return (
     <motion.div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
