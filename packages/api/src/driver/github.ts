@@ -617,7 +617,7 @@ export class GithubManager implements GitManager {
     const stateFilter = options?.state || 'all';
 
     return getCached(
-      createCacheKey('github', 'user_pull_requests', username),
+      createCacheKey('github', 'user_pull_requests', `${username}_${stateFilter}_${limit}`),
       async () => {
         // Start with a simpler query and add fields progressively
         const query = `
@@ -732,9 +732,10 @@ export class GithubManager implements GitManager {
               },
             }));
 
+            // Apply filtering logic based on state
             const filteredPRs = formattedPRs.filter((pr) => {
               if (stateFilter === 'all') return true;
-              if (stateFilter === 'open') return pr.state === 'open';
+              if (stateFilter === 'open') return pr.state === 'open' && !pr.mergedAt;
               if (stateFilter === 'closed') return pr.state === 'closed' && !pr.mergedAt;
               if (stateFilter === 'merged') return !!pr.mergedAt;
               return true;
