@@ -50,6 +50,14 @@ export default function ProfilePage({ id }: { id: string }) {
 
   const githubUrlRegex = /(?:https?:\/\/github\.com\/|^)([^/]+)\/([^/]+?)(?:\.git|\/|$)/;
 
+  const ensureHttpProtocol = (url: string) => {
+    if (!url) return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return `https://${url}`;
+  };
+
   const projectQueries = useQueries({
     queries: (projects?.data || []).map((project) => {
       if (!project.gitRepoUrl) {
@@ -142,7 +150,7 @@ export default function ProfilePage({ id }: { id: string }) {
 
                               {profile?.git?.blog && (
                                 <Button variant="ghost" size="sm" asChild>
-                                  <Link href={profile?.git?.blog} target="_blank">
+                                  <Link href={ensureHttpProtocol(profile.git.blog)} target="_blank">
                                     <Globe className="h-4 w-4" />
                                   </Link>
                                 </Button>

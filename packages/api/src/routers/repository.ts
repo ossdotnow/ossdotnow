@@ -11,9 +11,21 @@ const createRepositoryProcedure = <T extends keyof GitManager>(methodName: T) =>
     .input(z.object({ url: z.string(), provider: z.enum(['github', 'gitlab']) }))
     .query(async ({ input, ctx }) => {
       const driver = await getActiveDriver(input.provider, ctx);
-      const output = await (driver[methodName] as any)(input.url);
 
-      return output as PromiseReturnType<GitManager[T]>;
+      try {
+        const output = await (driver[methodName] as any)(input.url);
+        return output as PromiseReturnType<GitManager[T]>;
+      } catch (error: any) {
+        if (
+          error?.status === 404 ||
+          error?.code === 'NOT_FOUND' ||
+          error?.message?.includes('Not Found')
+        ) {
+          await invalidateCache(`${input.provider}:repo:${input.url}`);
+        }
+
+        throw error;
+      }
     });
 
 export const repositoryRouter = createTRPCRouter({
@@ -31,7 +43,19 @@ export const repositoryRouter = createTRPCRouter({
       z.object({
         provider: z.enum(['github', 'gitlab']),
         identifier: z.string().optional(),
-        type: z.enum(['repo', 'contributors', 'issues', 'pulls', 'readme', 'contributing', 'codeofconduct', 'user', 'all']).optional(),
+        type: z
+          .enum([
+            'repo',
+            'contributors',
+            'issues',
+            'pulls',
+            'readme',
+            'contributing',
+            'codeofconduct',
+            'user',
+            'all',
+          ])
+          .optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -43,7 +67,16 @@ export const repositoryRouter = createTRPCRouter({
       };
 
       if (input.type === 'all') {
-        const types = ['repo', 'contributors', 'issues', 'pulls', 'readme', 'contributing', 'codeofconduct', 'user'];
+        const types = [
+          'repo',
+          'contributors',
+          'issues',
+          'pulls',
+          'readme',
+          'contributing',
+          'codeofconduct',
+          'user',
+        ];
         if (input.identifier) {
           for (const type of types) {
             if (type === 'user') {
