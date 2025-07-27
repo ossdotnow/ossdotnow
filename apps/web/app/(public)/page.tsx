@@ -78,7 +78,7 @@ export default function Homepage() {
   return (
     <>
       <div
-        className="absolute inset-0 -top-10 -z-10 h-full w-full bg-center bg-no-repeat mix-blend-color-dodge md:-left-60"
+        className="absolute -top-18 -z-10 h-full w-full bg-center bg-no-repeat mix-blend-color-dodge md:-top-10 md:-left-60"
         style={{
           backgroundImage: 'url(/sunshine1.png)',
           filter: 'blur(8px)',
