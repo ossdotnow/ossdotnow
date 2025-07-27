@@ -1,0 +1,2 @@
+CREATE INDEX "project_stars_count_desc_idx" ON "project" USING btree ("stars_count" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "project_forks_count_desc_idx" ON "project" USING btree ("forks_count" DESC NULLS LAST);

@@ -61,11 +61,17 @@ export interface DebugPermissionsResult {
   orgMembershipError?: string;
 }
 
-// Helper to fetch forks from GitHub or GitLab using drivers
-async function fetchForksWithDriver(gitRepoUrl: string | null, gitHost: string | null, ctx: any): Promise<number | null> {
+// Helper to fetch repository metrics from GitHub or GitLab using drivers
+async function fetchRepoMetric(
+  gitRepoUrl: string | null,
+  gitHost: string | null,
+  metric: 'stars' | 'forks',
+  ctx: any
+): Promise<number | null> {
   if (!gitRepoUrl || !gitHost) {
     return null;
   }
+
   try {
     let identifier: string;
     if (gitRepoUrl.startsWith('http')) {
@@ -74,40 +80,24 @@ async function fetchForksWithDriver(gitRepoUrl: string | null, gitHost: string |
     } else {
       identifier = gitRepoUrl;
     }
+
     const driver = await getActiveDriver(gitHost as 'github' | 'gitlab', ctx);
     const repo = await driver.getRepo(identifier);
-    if (gitHost === 'github') {
+
+    if (metric === 'forks') {
       return typeof repo.forks_count === 'number' ? repo.forks_count : null;
-    } else if (gitHost === 'gitlab') {
-      return typeof repo.forks_count === 'number' ? repo.forks_count : null;
-    }
-    return null;
-  } catch (e) {
-    return null;
-  }
-}
-// Helper to fetch stars from GitHub or GitLab using drivers
-async function fetchStarsWithDriver(gitRepoUrl: string | null, gitHost: string | null, ctx: any): Promise<number | null> {
-  if (!gitRepoUrl || !gitHost) {
-    return null;
-  }
-  try {
-    let identifier: string;
-    if (gitRepoUrl.startsWith('http')) {
-      const urlParts = gitRepoUrl.split('/');
-      identifier = urlParts.slice(-2).join('/');
     } else {
-      identifier = gitRepoUrl;
+      // stars
+      if (gitHost === 'github') {
+        return typeof repo.stargazers_count === 'number' ? repo.stargazers_count : null;
+      } else if (gitHost === 'gitlab') {
+        return typeof repo.star_count === 'number' ? repo.star_count : null;
+      }
     }
-    const driver = await getActiveDriver(gitHost as 'github' | 'gitlab', ctx);
-    const repo = await driver.getRepo(identifier);
-    if (gitHost === 'github') {
-      return typeof repo.stargazers_count === 'number' ? repo.stargazers_count : null;
-    } else if (gitHost === 'gitlab') {
-      return typeof repo.star_count === 'number' ? repo.star_count : null;
-    }
+
     return null;
   } catch (e) {
+    console.error(`Failed to fetch ${metric} for ${gitRepoUrl}:`, e);
     return null;
   }
 }
@@ -275,40 +265,80 @@ export const projectsRouter = createTRPCRouter({
       return projects;
     }),
 // API procedure to get only featured (pinned) projects
-  featuredProjects:publicProcedure
-  .input(
-    z.object({
-      sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
-      page: z.number().min(1).default(1),
-      pageSize: z.number().min(1).max(100).default(4),
-    })
-  )
-  .query(async ({ ctx, input }) => {
-    const { sortBy, page, pageSize } = input;
-    const offset = (page - 1) * pageSize;
-    const orderByClause = [];
-    switch (sortBy) {
-      case 'name':
-        orderByClause.push(asc(project.name));
-        break;
-      case 'stars':
-        orderByClause.push(desc(project.starsCount));
-        break;
-      case 'forks':
-        orderByClause.push(desc(project.forksCount));
-        break;
-      default:
-        orderByClause.push(desc(project.createdAt));
-        break;
-    }
-    const projects = await ctx.db.query.project.findMany({
-      where: eq(project.isPinned, true),
-      orderBy: orderByClause,
-      offset,
-      limit: pageSize,
-    });
-    return projects;
-  }),
+  featuredProjects: publicProcedure
+    .input(
+      z.object({
+        sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(4),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const { sortBy, page, pageSize } = input;
+      const offset = (page - 1) * pageSize;
+      const orderByClause = [];
+      switch (sortBy) {
+        case 'name':
+          orderByClause.push(asc(project.name));
+          break;
+        case 'stars':
+          orderByClause.push(desc(project.starsCount));
+          break;
+        case 'forks':
+          orderByClause.push(desc(project.forksCount));
+          break;
+        default:
+          orderByClause.push(desc(project.createdAt));
+          break;
+      }
+      // Only pinned and approved projects
+      const conditions = [eq(project.isPinned, true), eq(project.approvalStatus, 'approved')];
+      const query = ctx.db
+        .select({
+          project: project,
+          status: categoryProjectStatuses,
+          type: categoryProjectTypes,
+          tagCount: sql<number>`count(distinct ${projectTagRelations.tagId})`.as('tagCount'),
+        })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+        .where(and(...conditions))
+        .groupBy(project.id, categoryProjectStatuses.id, categoryProjectTypes.id)
+        .orderBy(...orderByClause)
+        .limit(pageSize)
+        .offset(offset);
+      const projectResults = await query;
+      const projectIds = projectResults.map((r) => r.project.id);
+      const tagRelations =
+        projectIds.length > 0
+          ? await ctx.db.query.projectTagRelations.findMany({
+              where: inArray(projectTagRelations.projectId, projectIds),
+              with: {
+                tag: true,
+              },
+            })
+          : [];
+      const tagsByProject = tagRelations.reduce(
+        (acc, rel) => {
+          if (!acc[rel.projectId]) {
+            acc[rel.projectId] = [];
+          }
+          acc[rel.projectId]?.push(rel);
+          return acc;
+        },
+        {} as Record<string, typeof tagRelations>,
+      );
+      const projects = projectResults.map((r) => ({
+        ...r.project,
+        status: r.status,
+        type: r.type,
+        tagRelations: tagsByProject[r.project.id] || [],
+      }));
+      return projects;
+    }),
   getProjects: publicProcedure
     .input(
       z.object({
@@ -459,9 +489,9 @@ export const projectsRouter = createTRPCRouter({
         return diff > CACHE_THRESHOLD_MINUTES;
       });
       if (outdatedStars.length > 0) {
-        await Promise.all(
+        const results = await Promise.allSettled(
           outdatedStars.map(async (r) => {
-            const stars = await fetchStarsWithDriver(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, ctx);
+            const stars = await fetchRepoMetric(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, 'stars', ctx);
             if (typeof stars === 'number') {
               await ctx.db.update(project)
                 .set({ starsCount: stars, starsUpdatedAt: new Date() })
@@ -470,6 +500,13 @@ export const projectsRouter = createTRPCRouter({
             }
           })
         );
+        // Log any failures for monitoring
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedStars[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update stars for project ${projectId}:`, result.reason);
+          }
+        });
       }
       // Update outdated forks
       const outdatedForks = projectResults.filter((r) => {
@@ -479,9 +516,9 @@ export const projectsRouter = createTRPCRouter({
         return diff > CACHE_THRESHOLD_MINUTES;
       });
       if (outdatedForks.length > 0) {
-        await Promise.all(
+        const results = await Promise.allSettled(
           outdatedForks.map(async (r) => {
-            const forks = await fetchForksWithDriver(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, ctx);
+            const forks = await fetchRepoMetric(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, 'forks', ctx);
             if (typeof forks === 'number') {
               await ctx.db.update(project)
                 .set({ forksCount: forks, forksUpdatedAt: new Date() })
@@ -490,6 +527,13 @@ export const projectsRouter = createTRPCRouter({
             }
           })
         );
+        // Log any failures for monitoring
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedForks[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update forks for project ${projectId}:`, result.reason);
+          }
+        });
       }
       if (needsRequery) {
         projectResults = await query
