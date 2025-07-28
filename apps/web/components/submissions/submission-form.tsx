@@ -136,9 +136,16 @@ function useSubmission(onSuccess?: () => void) {
 export default function SubmissionForm({
   earlySubmission = false,
   onSuccess,
+  quickSubmit,
 }: {
   earlySubmission?: boolean;
   onSuccess?: () => void;
+  quickSubmit?: {
+    repoUrl: string;
+    provider: 'github' | 'gitlab';
+    description?: string;
+    name: string;
+  };
 } = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -176,11 +183,11 @@ export default function SubmissionForm({
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
-      name: '',
-      description: '',
+      name: `${quickSubmit ? quickSubmit.name : ''}`,
+      description: `${quickSubmit ? quickSubmit.description : ''}`,
       logoUrl: '',
-      gitRepoUrl: '',
-      gitHost: 'github',
+      gitRepoUrl: `${quickSubmit ? quickSubmit.repoUrl : ''}`,
+      gitHost: `${quickSubmit ? quickSubmit.provider : 'github'}`,
       status: '',
       type: '',
       socialLinks: {
@@ -303,7 +310,8 @@ export default function SubmissionForm({
               setRepoValidation({
                 isValidating: false,
                 isValid: true,
-                message: 'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
+                message:
+                  'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
               });
             } else {
               setRepoValidation({
@@ -471,7 +479,7 @@ export default function SubmissionForm({
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-    const progress = ((currentStep + 1) / steps.length) * 100;
+  const progress = ((currentStep + 1) / steps.length) * 100;
   return success && env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
     // return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">

@@ -3,6 +3,7 @@ import { project, projectTagRelations, projectClaim } from '@workspace/db/schema
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { getActiveDriver } from '../driver/utils';
+import { invalidateCache } from '../utils/cache';
 import { createInsertSchema } from 'drizzle-zod';
 import { type Context } from '../driver/utils';
 import { user } from '@workspace/db/schema';
@@ -10,7 +11,6 @@ import { TRPCError } from '@trpc/server';
 import { count, eq } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
-
 const createProjectInput = createInsertSchema(project)
   .omit({
     id: true,
@@ -177,7 +177,8 @@ export const submissionRouter = createTRPCRouter({
           },
         });
       }
-
+      const username = input.gitRepoUrl.split('/')[0];
+      invalidateCache(`${input.gitHost as 'github' | 'gitlab'}:unsubmitted:${username}`);
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,

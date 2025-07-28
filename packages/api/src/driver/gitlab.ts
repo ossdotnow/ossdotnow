@@ -13,13 +13,13 @@ import {
   UserData,
   UserPullRequestData,
 } from './types';
-import { project, projectClaim } from '@workspace/db/schema';
+import { account, project, projectClaim } from '@workspace/db/schema';
 import { getCached, createCacheKey } from '../utils/cache';
 import { eq, and, isNull } from 'drizzle-orm';
+import { UnSubmittedRepo } from './types';
 import { Gitlab } from '@gitbeaker/rest';
 import { TRPCError } from '@trpc/server';
 import { type Context } from './utils';
-
 export class GitlabManager implements GitManager {
   private gitlab: InstanceType<typeof Gitlab>;
 
@@ -933,6 +933,64 @@ export class GitlabManager implements GitManager {
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: `Failed to fetch GitLab merge requests: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
+  }
+  async getUnsubmittedRepos(ctx: Context): Promise<UnSubmittedRepo[]> {
+    try {
+      const currentUser = await this.getCurrentUser();
+
+      return getCached(
+        createCacheKey('gitlab', 'unsubmitted', currentUser.username),
+        async () => {
+          try {
+            const gitLabProjects = await this.gitlab.Projects.all();
+            const submittedRepos = await ctx.db.query.project.findMany({
+              where: (project, { eq }) =>
+                eq(
+                  project.ownerId,
+                  ctx.db
+                    .select({ user_id: account.userId })
+                    .from(account)
+                    .where(eq(account.accountId, currentUser.id)),
+                ),
+            });
+            const notSubmitted = gitLabProjects.filter((repo) => {
+              return !submittedRepos.some(
+                (submitted) => submitted.gitRepoUrl === repo.path_with_namespace,
+              );
+            });
+            return notSubmitted.map((repo) => {
+              return {
+                name: repo.name,
+                repoUrl: repo.path_with_namespace as string,
+                stars: repo.star_count as number,
+                forks: repo.forks_count as number,
+                gitHost: 'gitlab',
+                description: repo.description,
+                created_at: repo.created_at! as string,
+                owner: {
+                  avatar_url: repo.avatar_url as string,
+                },
+              };
+            });
+          } catch (error) {
+            console.error('Error fetching GitLab unsubmitted repos:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve unsubmitted repositories from GitLab',
+            });
+          }
+        },
+        { ttl: 5 * 60 },
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch unsubmitted repos: ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }

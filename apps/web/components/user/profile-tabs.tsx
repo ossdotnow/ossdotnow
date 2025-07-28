@@ -1,4 +1,11 @@
 import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@workspace/ui/components/carousel';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -10,6 +17,7 @@ import { Heart, TrendingUp, GitFork, Clock, ExternalLink } from 'lucide-react';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
+import UnsubmittedRepoCard from './unsubmitted-project-card';
 import { Button } from '@workspace/ui/components/button';
 import { ContributionGraph } from './contribution-graph';
 import { ProjectWithGithubData } from '@/types/project';
@@ -21,7 +29,6 @@ import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
 import React, { useRef } from 'react';
 import { useQueryState } from 'nuqs';
-
 interface Profile {
   git?: {
     login: string;
@@ -49,6 +56,22 @@ interface PullRequestData {
   id: string | number;
 }
 
+export interface UnSubmittedRepo {
+  name: string;
+  repoUrl: string;
+  stars: number;
+  forks: number;
+  description?: string | null;
+  language?: string;
+  lastUpdated?: Date;
+  isPrivate?: boolean;
+  gitHost: 'github' | 'gitlab';
+  owner: {
+    avatar_url: string;
+  };
+  created_at: string;
+}
+
 interface ProfileTabsProps {
   profile: Profile | undefined;
   isProfileLoading: boolean;
@@ -56,6 +79,7 @@ interface ProfileTabsProps {
   setTab: (value: string) => void;
   featuredProjects: ProjectWithGithubData[];
   projectsWithGithubData: ProjectWithGithubData[];
+  unSubmittedProjects: UnSubmittedRepo[];
 }
 
 export function ProfileTabs({
@@ -65,6 +89,7 @@ export function ProfileTabs({
   setTab,
   featuredProjects,
   projectsWithGithubData,
+  unSubmittedProjects,
 }: ProfileTabsProps) {
   const featuredCarouselRef = useRef<HTMLDivElement>(null);
   return (
@@ -157,6 +182,23 @@ export function ProfileTabs({
               ))}
             </div>
           </div>
+
+          {unSubmittedProjects && unSubmittedProjects.length > 0 && (
+            <div className="relative mt-4">
+              <h2 className="font-semibold">Quicksubmit Projects:</h2>
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-4">
+                  {unSubmittedProjects.map((project, index) => (
+                    <CarouselItem key={index} className="basis-full pl-4">
+                      <UnsubmittedRepoCard repo={project} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="left-0" />
+                <CarouselNext className="right-0" />
+              </Carousel>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="contributions" className="mt-2">

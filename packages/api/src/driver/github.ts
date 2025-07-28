@@ -18,14 +18,14 @@ import {
   restEndpointMethods,
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
-import { project, projectClaim } from '@workspace/db/schema';
+import { account, project, projectClaim } from '@workspace/db/schema';
 import { createCacheKey, getCached } from '../utils/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { Octokit } from '@octokit/core';
 import { type Context } from './utils';
 const MyOctokit = Octokit.plugin(restEndpointMethods);
-
+import { UnSubmittedRepo } from './types';
 export class GithubManager implements GitManager {
   private octokit: InstanceType<typeof MyOctokit>;
 
@@ -909,5 +909,63 @@ export class GithubManager implements GitManager {
       },
       { ttl: 4 * 60 * 60 },
     );
+  }
+  async getUnsubmittedRepos(ctx: Context): Promise<UnSubmittedRepo[]> {
+    try {
+      const currentUser = await this.getCurrentUser();
+
+      return getCached(
+        createCacheKey('github', 'unsubmitted', currentUser.username),
+        async () => {
+          try {
+            const { data } = await this.octokit.rest.repos.listForAuthenticatedUser();
+            //already existing
+            const submittedRepos = await ctx.db.query.project.findMany({
+              where: (project, { eq }) =>
+                eq(
+                  project.ownerId,
+                  ctx.db
+                    .select({ user_id: account.userId })
+                    .from(account)
+                    .where(eq(account.accountId, currentUser.id)),
+                ),
+            });
+            const notSubmitted = data.filter((repo) => {
+              return !submittedRepos.some((submitted) => submitted.gitRepoUrl === repo.full_name);
+            });
+            return notSubmitted.map((repo) => {
+              return {
+                name: repo.name,
+                repoUrl: repo.full_name,
+                stars: repo.stargazers_count,
+                forks: repo.forks_count,
+                gitHost: 'github',
+                owner: {
+                  avatar_url: repo.owner.avatar_url,
+                },
+                created_at: repo.created_at!,
+                description: repo.description,
+                isPrivate: repo.private,
+              };
+            });
+          } catch (error) {
+            console.error('Error fetching GitHub unsubmitted repos:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve unsubmitted repositories from GitHub',
+            });
+          }
+        },
+        { ttl: 5 * 60 }, // cache for 5 minutes
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch unsubmitted repos: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 }

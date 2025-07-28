@@ -71,6 +71,19 @@ export interface ProjectWithRelations {
   }>;
 }
 
+export interface UnSubmittedRepo {
+  name: string;
+  repoUrl: string;
+  stars: number;
+  forks: number;
+  description?: string | null;
+  gitHost: 'github' | 'gitlab';
+  owner: {
+    avatar_url: string;
+  };
+  created_at: string;
+}
+
 export interface RepoData {
   id: string | number;
   name: string;
@@ -240,4 +253,5 @@ export interface GitManager {
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
   getContributions(username: string): Promise<ContributionData>;
   getUserDetails(username: string): Promise<UserData>;
+  getUnsubmittedRepos(ctx: any): Promise<UnSubmittedRepo[]>;
 }

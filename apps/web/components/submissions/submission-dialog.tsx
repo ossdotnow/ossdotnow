@@ -15,7 +15,16 @@ import SubmissionForm from './submission-form';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
-export default function SubmissionDialog() {
+type SubmissionDialogProps = {
+  quickSubmit?: {
+    repoUrl: string;
+    provider: 'github' | 'gitlab';
+    description?: string;
+    name: string;
+  };
+};
+
+export default function SubmissionDialog({ quickSubmit }: SubmissionDialogProps) {
   const [open, setOpen] = useState(false);
 
   const handleSuccess = () => {
@@ -42,7 +51,7 @@ export default function SubmissionDialog() {
           <DialogTitle>Submit Project</DialogTitle>
           <DialogDescription>Submit an open source project.</DialogDescription>
         </DialogHeader>
-        <SubmissionForm onSuccess={handleSuccess} />
+        <SubmissionForm quickSubmit={quickSubmit} onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );
