@@ -171,6 +171,9 @@ export async function GET(
               alt={`${repoData.owner.login} avatar`}
               width="160"
               height="160"
+              onError={(e) => {
+                e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(repoData.owner.login)}&size=160`;
+              }}
               style={{
                 position: 'absolute',
                 top: '80px',
@@ -296,6 +299,9 @@ export async function GET(
       {
         width: 1200,
         height: 630,
+        headers: {
+          'Cache-Control': 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400',
+        },
       },
     );
   } catch (error) {
