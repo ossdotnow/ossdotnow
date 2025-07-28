@@ -2,6 +2,7 @@ import { projectProviderEnum, project as projectSchema } from '@workspace/db/sch
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
@@ -14,8 +15,14 @@ const isValidProvider = (
   return provider === 'github' || provider === 'gitlab';
 };
 
-export default function ProjectCard({ project, isOwnProfile = false }: { project: Project, isOwnProfile?: boolean }) {
-  
+export default function ProjectCard({
+  project,
+  isOwnProfile = false,
+}: {
+  project: Project;
+  isOwnProfile?: boolean;
+}) {
+  const router = useRouter();
   const trpc = useTRPC();
   const { data: repo, isError } = useQuery({
     ...trpc.repository.getRepo.queryOptions({
@@ -41,20 +48,24 @@ export default function ProjectCard({ project, isOwnProfile = false }: { project
           {(repo && repo?.owner && repo?.owner?.avatar_url) ||
           (repo?.namespace && repo?.namespace?.avatar_url) ? (
             project.ownerId ? (
-              <Link
-                href={`/profile/${project.ownerId}`}
-                onClick={(e) => e.stopPropagation()}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/profile/${project.ownerId}`);
+                }}
                 className="z-10 shrink-0 rounded-none"
               >
                 <Image
-                  src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
+                  src={
+                    repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`
+                  }
                   alt={project.name ?? 'Project Logo'}
                   width={256}
                   height={256}
-                  className="h-[78px] w-[78px] rounded-none hover:opacity-80 transition-opacity"
+                  className="h-[78px] w-[78px] rounded-none transition-opacity hover:opacity-80"
                   loading="lazy"
                 />
-              </Link>
+              </button>
             ) : (
               <Image
                 src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
@@ -73,14 +84,16 @@ export default function ProjectCard({ project, isOwnProfile = false }: { project
               <h3 className="truncate text-sm font-semibold text-white md:text-base">
                 {project.name}
               </h3>
-              {(project.isLookingForContributors || project.hasBeenAcquired) && (
+              {(project.isLookingForContributors ||
+                project.hasBeenAcquired ||
+                (project.approvalStatus === 'pending' && isOwnProfile)) && (
                 <div className="flex flex-wrap gap-1 md:gap-1.5">
                   {project.isLookingForContributors && (
                     <span className="rounded-none border border-[#00BC7D]/10 bg-[#00BC7D]/10 px-1.5 py-0.5 text-xs font-medium text-[#00D492] md:px-2">
                       Open to contributors
                     </span>
                   )}
-                   {project.approvalStatus === "pending" && isOwnProfile && (
+                  {project.approvalStatus === 'pending' && isOwnProfile && (
                     <span className="rounded-none border border-[#FFDE21]/10 bg-[#FFDE21]/10 px-1.5 py-0.5 text-xs font-medium text-[#FFDE21] md:px-2">
                       Pending
                     </span>
