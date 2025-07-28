@@ -1,16 +1,13 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@workspace/ui/components/tooltip';
 import { ShieldCheck, Briefcase } from 'lucide-react';
-import type { project } from '@workspace/db/schema';
+import { ProjectWithRelations } from '@workspace/api';
 import { cn } from '@workspace/ui/lib/utils';
 
 const SPLIT_DISTANCE = 10;
 const OVERLAP = 10;
 const SIZE = 16;
 
-type Project = typeof project.$inferSelect;
-
-export default function ProjectTicks({ project }: { project: Project }) {
-  return null;
+export default function ProjectTicks({ project }: { project: ProjectWithRelations }) {
   const ticks = [
     {
       label: 'Verified',
