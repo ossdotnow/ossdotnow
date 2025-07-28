@@ -497,7 +497,6 @@ export const projectsRouter = createTRPCRouter({
           ownerId: ctx.session.userId,
           statusId,
           typeId,
-          approvalStatus:"pending",
         })
         .returning();
 

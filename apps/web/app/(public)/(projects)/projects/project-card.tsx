@@ -81,7 +81,7 @@ export default function ProjectCard({ project, isOwnProfile = false }: { project
                     </span>
                   )}
                    {project.approvalStatus === "pending" && isOwnProfile && (
-                    <span className="rounded-none border border-[#FF0000]/10 bg-[#FF0000]/10 px-1.5 py-0.5 text-xs font-medium text-[#BF0000] md:px-2">
+                    <span className="rounded-none border border-[#FFDE21]/10 bg-[#FFDE21]/10 px-1.5 py-0.5 text-xs font-medium text-[#FFDE21] md:px-2">
                       Pending
                     </span>
                   )}
