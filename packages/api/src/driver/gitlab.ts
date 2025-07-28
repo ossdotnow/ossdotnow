@@ -763,7 +763,7 @@ export class GitlabManager implements GitManager {
     return getCached(
       createCacheKey('gitlab', 'user_pull_requests', `${username}_${stateFilter}_${limit}`),
       async () => {
-        let stateParam: 'opened' | 'closed' | 'merged' | undefined;
+        let stateParam: 'opened' | 'closed' | 'merged' | undefined = undefined;
         if (stateFilter === 'open') stateParam = 'opened';
         else if (stateFilter === 'closed') stateParam = 'closed';
         else if (stateFilter === 'merged') stateParam = 'merged';
@@ -781,14 +781,20 @@ export class GitlabManager implements GitManager {
             });
           }
 
-          const mergeRequests = await this.gitlab.MergeRequests.all({
+          const mergeRequestsParams: any = {
             authorId: user.id,
             perPage: limit,
             maxPages: Math.ceil(limit / 100),
-            state: stateParam,
             orderBy: 'created_at',
             sort: 'desc',
-          });
+          };
+
+          // Only add state parameter if it's defined (not for 'all' filter)
+          if (stateParam !== undefined) {
+            mergeRequestsParams.state = stateParam;
+          }
+
+          const mergeRequests = await this.gitlab.MergeRequests.all(mergeRequestsParams);
 
           const formattedMRs = mergeRequests.map((mr: any) => {
         // Extract project path from web_url
@@ -826,15 +832,7 @@ export class GitlabManager implements GitManager {
           });
 
           // Apply filtering logic based on state
-          const filteredMRs = formattedMRs.filter((mr) => {
-            if (stateFilter === 'all') return true;
-            if (stateFilter === 'open') return mr.state === 'open' && !mr.mergedAt;
-            if (stateFilter === 'closed') return mr.state === 'closed' && !mr.mergedAt;
-            if (stateFilter === 'merged') return !!mr.mergedAt;
-            return true;
-          });
-
-          return filteredMRs;
+          return formattedMRs;
         } catch (error) {
           if (error instanceof TRPCError) {
             throw error;
