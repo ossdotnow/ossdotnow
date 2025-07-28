@@ -10,7 +10,7 @@ export const acquisitionTypeEnum = pgEnum('acquisition_type', ['ipo', 'acquisiti
 export const projectApprovalStatusEnum = pgEnum('project_approval_status', [
   'pending',
   'approved',
-  'rejected',
+  'rejected', 
 ]);
 
 export const project = pgTable(
