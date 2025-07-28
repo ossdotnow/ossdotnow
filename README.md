@@ -34,7 +34,6 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 - **Project Launches** - Announce major releases and updates to the community
 - **Early Submissions** - Submit your project early for increased visibility
 - **Contributor Matching** - Find contributors with the skills your project needs
-- **Analytics Dashboard** - Track your project's growth and engagement
 
 ## 🛠️ Tech Stack
 
@@ -44,7 +43,7 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 - **Database**: PostgreSQL (via Neon) + DrizzleORM
 - **Caching**: Redis (Upstash)
 - **Authentication**: Better-Auth with GitHub & GitLab OAuth
-- **Analytics**: Databuddy
+- **Analytics**: [Databuddy](https://databuddy.cc/) - [repo](https://github.com/databuddy-analytics/databuddy)
 - **Deployment**: Vercel
 
 ## Project Structure
@@ -257,8 +256,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - UI components from [shadcn/ui](https://ui.shadcn.com/)
 - Database provided and powered by [Neon](https://neon.tech/)
 - Hosting on [Vercel](https://vercel.com/)
-
----
+- ***
 
 <div align="center">
   Made with ❤️ by the oss.now team
