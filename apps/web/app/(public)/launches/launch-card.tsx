@@ -28,6 +28,8 @@ const getRankBadge = (index: number) => {
   return null;
 };
 
+// TODO: Fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function LaunchCard({ project, index }: { project: any; index?: number }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -149,7 +151,7 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
                 <Link
                   href={`/profile/${project.owner.id}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="hidden h-full items-center gap-2 pl-2 sm:flex hover:opacity-80 transition-opacity"
+                  className="hidden h-full items-center gap-2 pl-2 transition-opacity hover:opacity-80 sm:flex"
                 >
                   {project.owner.image ? (
                     <Image

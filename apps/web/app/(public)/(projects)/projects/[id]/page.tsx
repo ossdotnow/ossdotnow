@@ -31,18 +31,15 @@ export async function generateMetadata({
 
     if (proj.gitRepoUrl) {
       const provider = proj.gitHost === 'github' ? 'gh' : 'gl';
-      const owner = proj.ownerId;
-      const repo = proj.name;
 
       const params = new URLSearchParams();
-      if (proj.name !== repo) {
-        params.set('name', proj.name);
-      }
+
+      params.set('name', proj.name);
       if (proj.description) {
         params.set('description', proj.description);
       }
 
-      ogImageUrl = `${baseUrl}/api/og-image/${provider}/${owner}/${repo}${params.toString() ? `?${params.toString()}` : ''}`;
+      ogImageUrl = `${baseUrl}/api/og-image/${provider}/${proj.gitRepoUrl}${params.toString() ? `?${params.toString()}` : ''}`;
     }
 
     return {
@@ -71,6 +68,7 @@ export async function generateMetadata({
       },
     };
   } catch (error) {
+    console.error('[Project Metadata Error]: ', error);
     return {
       title: 'Project',
       description: 'Open source project details',

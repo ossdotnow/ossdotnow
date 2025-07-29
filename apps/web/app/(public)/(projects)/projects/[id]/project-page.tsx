@@ -101,53 +101,53 @@ interface RepoData {
   pullRequestsCount?: number;
 }
 
-interface Project {
-  id: string;
-  ownerId: string | null;
-  logoUrl: string | null;
-  gitRepoUrl: string | null;
-  gitHost: string | null;
-  name: string;
-  description: string | null;
-  socialLinks: {
-    twitter?: string;
-    discord?: string;
-    linkedin?: string;
-    website?: string;
-    [key: string]: string | undefined;
-  } | null;
-  approvalStatus: 'pending' | 'approved' | 'rejected';
-  isPinned: boolean;
-  hasBeenAcquired: boolean;
-  isLookingForContributors: boolean;
-  isLookingForInvestors: boolean;
-  isHiring: boolean;
-  isPublic: boolean;
-  isRepoPrivate: boolean;
-  acquiredBy: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  statusId: string;
-  typeId: string;
-  deletedAt: Date | null;
-  status?: {
-    id: string;
-    name: string;
-    displayName?: string;
-  };
-  type?: {
-    id: string;
-    name: string;
-    displayName?: string;
-  };
-  tagRelations?: Array<{
-    tag?: {
-      id?: string;
-      name: string;
-      displayName?: string;
-    };
-  }>;
-}
+// interface Project {
+//   id: string;
+//   ownerId: string | null;
+//   logoUrl: string | null;
+//   gitRepoUrl: string | null;
+//   gitHost: string | null;
+//   name: string;
+//   description: string | null;
+//   socialLinks: {
+//     twitter?: string;
+//     discord?: string;
+//     linkedin?: string;
+//     website?: string;
+//     [key: string]: string | undefined;
+//   } | null;
+//   approvalStatus: 'pending' | 'approved' | 'rejected';
+//   isPinned: boolean;
+//   hasBeenAcquired: boolean;
+//   isLookingForContributors: boolean;
+//   isLookingForInvestors: boolean;
+//   isHiring: boolean;
+//   isPublic: boolean;
+//   isRepoPrivate: boolean;
+//   acquiredBy: string | null;
+//   createdAt: Date;
+//   updatedAt: Date;
+//   statusId: string;
+//   typeId: string;
+//   deletedAt: Date | null;
+//   status?: {
+//     id: string;
+//     name: string;
+//     displayName?: string;
+//   };
+//   type?: {
+//     id: string;
+//     name: string;
+//     displayName?: string;
+//   };
+//   tagRelations?: Array<{
+//     tag?: {
+//       id?: string;
+//       name: string;
+//       displayName?: string;
+//     };
+//   }>;
+// }
 
 const isValidProvider = (
   provider: string | null | undefined,

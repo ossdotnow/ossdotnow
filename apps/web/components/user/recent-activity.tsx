@@ -29,10 +29,12 @@ type Activity = {
   claimSuccess?: boolean;
 };
 
+// TODO: Fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const throttle = <T extends (...args: any[]) => void>(func: T, delay: number): T => {
-    let timeoutId: NodeJS.Timeout;
-    let lastExecTime = 0;
-    return ((...args: Parameters<T>) => {
+  let timeoutId: NodeJS.Timeout;
+  let lastExecTime = 0;
+  return ((...args: Parameters<T>) => {
     const currentTime = Date.now();
     if (currentTime - lastExecTime > delay) {
       func(...args);
