@@ -22,8 +22,7 @@
     "@octokit/core": "^7.0.3",
     "@octokit/request": "^10.0.3",
     "@octokit/rest": "^22.0.0",
-    "minimatch": "^10.0.3",
-    "next": "^15.4.5"
+    "minimatch": "^10.0.3"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
