@@ -73,6 +73,10 @@ export interface DatabaseProject {
   isPinned: boolean;
   isRepoPrivate: boolean;
   acquiredBy: string | null;
+  starsCount: number;
+  starsUpdatedAt: Date | null;
+  forksCount: number;
+  forksUpdatedAt: Date | null;
   deletedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -172,6 +176,10 @@ export function isDatabaseProject(data: unknown): data is DatabaseProject {
     typeof project.hasBeenAcquired === 'boolean' &&
     typeof project.isPinned === 'boolean' &&
     typeof project.isRepoPrivate === 'boolean' &&
+    typeof project.starsCount === 'number' &&
+    (project.starsUpdatedAt === null || project.starsUpdatedAt instanceof Date) &&
+    typeof project.forksCount === 'number' &&
+    (project.forksUpdatedAt === null || project.forksUpdatedAt instanceof Date) &&
     project.createdAt instanceof Date &&
     project.updatedAt instanceof Date &&
     (project.status === null ||

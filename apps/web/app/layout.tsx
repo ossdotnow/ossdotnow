@@ -34,7 +34,9 @@ export const metadata: Metadata = {
     icon: '/icon.svg',
   },
   metadataBase: new URL(
-    env.VERCEL_URL === 'localhost' ? 'http://localhost:3000' : `https://${env.VERCEL_URL}`,
+    env.VERCEL_PROJECT_PRODUCTION_URL === 'localhost'
+      ? 'http://localhost:3000'
+      : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`,
   ),
 };
 
@@ -65,7 +67,6 @@ export default function RootLayout({
             enableBatching={true}
             trackErrors
             trackOutgoingLinks
-            disabled={env.VERCEL_ENV === 'development'}
           />
           <Toaster />
         </Providers>

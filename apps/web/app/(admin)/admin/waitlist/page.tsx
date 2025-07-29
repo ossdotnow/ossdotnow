@@ -63,7 +63,7 @@ export default function AdminWaitlistDashboard() {
       cell: ({ row }) => {
         return (
           <Badge variant="outline" className="text-orange-600">
-            Waiting
+            {row.getValue('status')}
           </Badge>
         );
       },

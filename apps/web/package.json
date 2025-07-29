@@ -23,6 +23,7 @@
     "@trpc/tanstack-react-query": "^11.4.2",
     "@uploadthing/react": "^7.3.1",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/og": "^0.8.5",
     "@workspace/api": "workspace:*",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",

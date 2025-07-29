@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { DialogFooter } from '@workspace/ui/components/dialog';
 import { track as vercelTrack } from '@vercel/analytics/react';
@@ -34,7 +34,6 @@ import { Input } from '@workspace/ui/components/input';
 import { FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';

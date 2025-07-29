@@ -45,7 +45,7 @@ export default function NavUser() {
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">
-          <Link href="/profile/me" className="rounded-none">
+          <Link href={`/profile/${user?.id}`} className="rounded-none">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm hover:bg-neutral-800">
               <Avatar className="h-8 w-8 rounded-none">
                 <AvatarImage src={user?.image || ''} alt={user?.name} />

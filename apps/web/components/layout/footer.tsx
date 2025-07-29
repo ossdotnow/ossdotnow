@@ -26,7 +26,7 @@ const legalLinks = [
 export default function Footer() {
   const pathname = usePathname();
   return pathname.includes('login') || pathname.includes('admin') ? null : (
-    <footer className="w-full border-t border-gray-800 bg-black text-gray-400">
+    <footer className="w-full border-t border-neutral-800 bg-neutral-900 text-neutral-400">
       <div className="mx-auto max-w-[1080px] px-4 py-8 sm:py-12">
         <div className="mb-8 grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
@@ -84,7 +84,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-gray-800 pt-8 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-neutral-800 pt-8 sm:flex-row">
           <div className="text-center text-sm sm:text-left">
             © {new Date().getFullYear()} oss.now. All rights reserved.
           </div>

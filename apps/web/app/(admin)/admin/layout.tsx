@@ -10,15 +10,10 @@ import { Button } from '@workspace/ui/components/button';
 import { notFound, redirect } from 'next/navigation';
 import Link from '@workspace/ui/components/link';
 import { auth } from '@workspace/auth/server';
-import { env } from '@workspace/env/server';
 import { headers } from 'next/headers';
 import { Home } from 'lucide-react';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-  if (env.VERCEL_ENV === 'production') {
-    notFound();
-  }
-
   const session = await auth.api.getSession({
     headers: await headers(),
   });
