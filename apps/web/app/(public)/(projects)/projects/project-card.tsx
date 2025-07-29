@@ -48,11 +48,9 @@ export default function ProjectCard({
           {(repo && repo?.owner && repo?.owner?.avatar_url) ||
           (repo?.namespace && repo?.namespace?.avatar_url) ? (
             project.ownerId ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/profile/${project.ownerId}`);
-                }}
+              <Link
+                href={`/profile/${project.ownerId}`}
+                onClick={(e) => e.stopPropagation()}
                 className="z-10 shrink-0 rounded-none"
               >
                 <Image
@@ -65,7 +63,7 @@ export default function ProjectCard({
                   className="h-[78px] w-[78px] rounded-none transition-opacity hover:opacity-80"
                   loading="lazy"
                 />
-              </button>
+              </Link>
             ) : (
               <Image
                 src={repo?.owner?.avatar_url || `https://gitlab.com${repo?.namespace?.avatar_url}`}
