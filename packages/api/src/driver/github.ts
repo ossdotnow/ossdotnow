@@ -114,15 +114,32 @@ export class GithubManager implements GitManager {
 
   async getIssuesCount(identifier: string): Promise<number> {
     const { owner, repo } = this.parseRepoIdentifier(identifier);
-
     return getCached(
       createCacheKey('github', 'open_issues_count', identifier),
       async () => {
         try {
-          const { data } = await this.octokit.rest.search.issuesAndPullRequests({
-            q: `repo:${owner}/${repo} is:issue is:open`,
-          });
-          return data.total_count;
+          const data: {
+            repository: {
+              issues: {
+                totalCount: number;
+              };
+            } | null;
+          } = await this.octokit.graphql(
+            `
+              query($owner: String!, $name: String!) {
+              repository(owner: $owner, name: $name) {
+                issues(states: [OPEN]) {
+                totalCount
+                }
+              }
+              }
+            `,
+            {
+              owner,
+              name: repo,
+            },
+          );
+          return data.repository?.issues.totalCount ?? 0;
         } catch (error) {
           console.error('Error fetching GitHub issues count:', error);
           throw new TRPCError({
@@ -142,10 +159,28 @@ export class GithubManager implements GitManager {
       createCacheKey('github', 'open_pull_requests_count', identifier),
       async () => {
         try {
-          const { data } = await this.octokit.rest.search.issuesAndPullRequests({
-            q: `repo:${owner}/${repo} is:pr is:open`,
-          });
-          return data.total_count;
+          const data: {
+            repository: {
+              pullRequests: {
+                totalCount: number;
+              };
+            } | null;
+          } = await this.octokit.graphql(
+            `
+            query ($owner: String!, $name: String!) {
+              repository(owner: $owner, name: $name) {
+                pullRequests(states: [OPEN]) {
+                  totalCount
+                  }
+                }
+              }
+            `,
+            {
+              owner,
+              name: repo,
+            },
+          );
+          return data.repository?.pullRequests.totalCount ?? 0;
         } catch (error) {
           console.error('Error fetching GitHub pull requests count:', error);
           throw new TRPCError({
