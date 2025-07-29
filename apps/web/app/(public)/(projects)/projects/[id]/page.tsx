@@ -23,9 +23,10 @@ export async function generateMetadata({
     }
 
     const proj = projectData[0]!;
-    const baseUrl = env.VERCEL_URL?.startsWith('http')
-      ? env.VERCEL_URL
-      : `https://${env.VERCEL_URL}`;
+    const baseUrl =
+      env.VERCEL_ENV === 'production'
+        ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : `http://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
     let ogImageUrl = null;
 

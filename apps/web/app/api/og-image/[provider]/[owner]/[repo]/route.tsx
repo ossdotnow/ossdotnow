@@ -1,3 +1,4 @@
+import { env } from '@workspace/env/server';
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
 
@@ -43,8 +44,8 @@ export async function GET(
         {
           headers: {
             'User-Agent': 'ossdotnow',
-            ...(process.env.GITLAB_TOKEN && {
-              Authorization: `Bearer ${process.env.GITLAB_TOKEN}`,
+            ...(env.GITLAB_TOKEN && {
+              Authorization: `Bearer ${env.GITLAB_TOKEN}`,
             }),
           },
         },
@@ -80,8 +81,8 @@ export async function GET(
           {
             headers: {
               'User-Agent': 'ossdotnow',
-              ...(process.env.GITLAB_TOKEN && {
-                Authorization: `Bearer ${process.env.GITLAB_TOKEN}`,
+              ...(env.GITLAB_TOKEN && {
+                Authorization: `Bearer ${env.GITLAB_TOKEN}`,
               }),
             },
           },
@@ -99,7 +100,7 @@ export async function GET(
         headers: {
           Accept: 'application/vnd.github+json',
           'User-Agent': 'ossdotnow',
-          ...(process.env.GITHUB_TOKEN && { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }),
+          ...(env.GITHUB_TOKEN && { Authorization: `Bearer ${env.GITHUB_TOKEN}` }),
         },
       });
 
@@ -115,8 +116,8 @@ export async function GET(
             headers: {
               Accept: 'application/vnd.github+json',
               'User-Agent': 'ossdotnow',
-              ...(process.env.GITHUB_TOKEN && {
-                Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+              ...(env.GITHUB_TOKEN && {
+                Authorization: `Bearer ${env.GITHUB_TOKEN}`,
               }),
             },
           },
@@ -150,7 +151,7 @@ export async function GET(
           style={{
             height: '100%',
             width: '100%',
-            backgroundImage: `url(${request.nextUrl.origin}/p-og-2.png)`,
+            backgroundImage: `url(${env.VERCEL_ENV === 'production' ? 'https://' : 'http://'}${env.VERCEL_PROJECT_PRODUCTION_URL}/p-og-2.png)`,
             backgroundSize: '100% 100%',
             backgroundPosition: 'center',
             fontFamily: 'Geist, system-ui, sans-serif',
