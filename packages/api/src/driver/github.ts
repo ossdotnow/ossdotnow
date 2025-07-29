@@ -128,7 +128,7 @@ export class GithubManager implements GitManager {
             `
               query($owner: String!, $name: String!) {
               repository(owner: $owner, name: $name) {
-                issues(states: [OPEN]) {
+                issues(states: OPEN) {
                 totalCount
                 }
               }
