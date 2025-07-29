@@ -58,7 +58,7 @@ export function ScheduledLaunchesModal() {
             scheduledLaunches.map((launch) => (
               <DropdownMenuItem key={launch.id} asChild className="p-0">
                 <Link
-                  href={`/projects/${launch.id}`}
+                  href={`/launches/${launch.id}`}
                   className="block rounded-none px-3 py-3 hover:bg-neutral-800"
                 >
                   <div className="space-y-1">

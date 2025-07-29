@@ -6,6 +6,9 @@ import { db } from '@workspace/db';
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
+    if (!process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
