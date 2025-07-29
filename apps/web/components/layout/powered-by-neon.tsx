@@ -7,9 +7,9 @@ export function PoweredByNeon() {
       target="_blank"
       event="powered_by_neon_clicked"
       rel="noopener"
-      className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg transition-all hover:bg-gray-800 hover:shadow-xl"
+      className="flex items-center gap-2 rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white shadow-lg transition-all hover:bg-neutral-800 hover:shadow-xl"
     >
-      <span className="text-gray-400">Powered by</span>
+      <span className="text-neutral-400">Powered by</span>
 
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 102 28" fill="none" className="h-4">
         <path

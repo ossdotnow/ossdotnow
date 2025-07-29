@@ -46,7 +46,7 @@ export default function RoadmapPage() {
                         ? 'bg-green-500'
                         : item.status === 'in progress'
                           ? 'bg-blue-500'
-                          : 'bg-gray-400'
+                          : 'bg-neutral-400'
                     }`}
                   ></div>
                   <div>

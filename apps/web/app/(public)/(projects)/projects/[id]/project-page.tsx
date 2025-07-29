@@ -593,7 +593,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                       {pr.draft ? (
-                                        <div className="flex items-center gap-1 text-gray-400">
+                                        <div className="flex items-center gap-1 text-neutral-400">
                                           <GitPullRequest className="h-4 w-4" />
                                           <span className="text-xs font-medium">Draft</span>
                                         </div>
@@ -790,7 +790,7 @@ export default function ProjectPage({ id }: { id: string }) {
                                   ? 'border-yellow-600/40 hover:border-yellow-500/60'
                                   : contributor.pullRequestsCount !== undefined &&
                                       contributor.pullRequestsCount >= 250
-                                    ? 'border-gray-400/35 hover:border-gray-300/55'
+                                    ? 'border-neutral-400/35 hover:border-neutral-300/55'
                                     : contributor.pullRequestsCount !== undefined &&
                                         contributor.pullRequestsCount >= 100
                                       ? 'border-amber-700/35 hover:border-amber-600/55'

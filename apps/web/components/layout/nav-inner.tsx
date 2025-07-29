@@ -23,7 +23,7 @@ export function NavInner({ session }: { session: any }) {
       })}
     >
       <header
-        className={cn('max-w-[1080px] border border-[#404040] bg-black md:mx-auto', {
+        className={cn('max-w-[1080px] border border-[#404040] bg-neutral-900 md:mx-auto', {
           'border-none': open,
         })}
       >

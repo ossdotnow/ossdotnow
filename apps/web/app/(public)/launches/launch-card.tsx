@@ -22,7 +22,7 @@ const getRankBadge = (index: number) => {
   if (index === 0)
     return { text: '1st Place', color: 'from-0% from-yellow-600/30 via-10%  to-transparent' };
   if (index === 1)
-    return { text: '2nd Place', color: 'from-0% from-gray-600/30 via-10%  to-transparent' };
+    return { text: '2nd Place', color: 'from-0% from-neutral-600/30 via-10%  to-transparent' };
   if (index === 2)
     return { text: '3rd Place', color: 'from-0% from-orange-600/30 via-10%  to-transparent' };
   return null;
