@@ -23,7 +23,7 @@
     "@octokit/core": "^7.0.3",
     "@octokit/plugin-rest-endpoint-methods": "catalog:",
     "@upstash/ratelimit": "^2.0.6",
-    "@upstash/redis": "^1.35.1",
+    "@upstash/redis": "^1.35.2",
     "@workspace/auth": "workspace:*",
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
