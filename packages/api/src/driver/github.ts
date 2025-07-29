@@ -123,12 +123,12 @@ export class GithubManager implements GitManager {
               issues: {
                 totalCount: number;
               };
-            };
+            } | null;
           } = await this.octokit.graphql(
             `
               query($owner: String!, $name: String!) {
               repository(owner: $owner, name: $name) {
-                issues(states: OPEN) {
+                issues(states: [OPEN]) {
                 totalCount
                 }
               }
@@ -139,7 +139,7 @@ export class GithubManager implements GitManager {
               name: repo,
             },
           );
-          return data.repository.issues.totalCount;
+          return data.repository?.issues.totalCount ?? 0;
         } catch (error) {
           console.error('Error fetching GitHub issues count:', error);
           throw new TRPCError({
@@ -164,12 +164,12 @@ export class GithubManager implements GitManager {
               pullRequests: {
                 totalCount: number;
               };
-            };
+            } | null;
           } = await this.octokit.graphql(
             `
             query ($owner: String!, $name: String!) {
               repository(owner: $owner, name: $name) {
-                pullRequests(states: OPEN) {
+                pullRequests(states: [OPEN]) {
                   totalCount
                   }
                 }
@@ -180,7 +180,7 @@ export class GithubManager implements GitManager {
               name: repo,
             },
           );
-          return data.repository.pullRequests.totalCount;
+          return data.repository?.pullRequests.totalCount ?? 0;
         } catch (error) {
           console.error('Error fetching GitHub pull requests count:', error);
           throw new TRPCError({
