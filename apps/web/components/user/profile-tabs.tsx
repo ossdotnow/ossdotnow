@@ -25,6 +25,7 @@ import { Badge } from '@workspace/ui/components/badge';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
+import { UnSubmittedRepo } from '@workspace/api';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
 import React, { useRef } from 'react';
@@ -56,21 +57,6 @@ interface PullRequestData {
   id: string | number;
 }
 
-export interface UnSubmittedRepo {
-  name: string;
-  repoUrl: string;
-  stars: number;
-  forks: number;
-  description?: string | null;
-  language?: string;
-  lastUpdated?: Date;
-  isPrivate?: boolean;
-  gitHost: 'github' | 'gitlab';
-  owner: {
-    avatar_url: string;
-  };
-  created_at: string;
-}
 
 interface ProfileTabsProps {
   profile: Profile | undefined;

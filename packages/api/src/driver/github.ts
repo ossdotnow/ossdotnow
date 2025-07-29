@@ -918,36 +918,57 @@ export class GithubManager implements GitManager {
         createCacheKey('github', 'unsubmitted', currentUser.username),
         async () => {
           try {
-            const { data } = await this.octokit.rest.repos.listForAuthenticatedUser();
-            //already existing
-            const submittedRepos = await ctx.db.query.project.findMany({
-              where: (project, { eq }) =>
-                eq(
-                  project.ownerId,
-                  ctx.db
-                    .select({ user_id: account.userId })
-                    .from(account)
-                    .where(eq(account.accountId, currentUser.id)),
-                ),
-            });
-            const notSubmitted = data.filter((repo) => {
-              return !submittedRepos.some((submitted) => submitted.gitRepoUrl === repo.full_name);
-            });
-            return notSubmitted.map((repo) => {
-              return {
-                name: repo.name,
-                repoUrl: repo.full_name,
-                stars: repo.stargazers_count,
-                forks: repo.forks_count,
-                gitHost: 'github',
-                owner: {
-                  avatar_url: repo.owner.avatar_url,
-                },
-                created_at: repo.created_at!,
-                description: repo.description,
-                isPrivate: repo.private,
-              };
-            });
+           const allRepos = [];
+           let page = 1;
+           let hasMore = true;
+
+           while (hasMore) {
+             const { data } = await this.octokit.rest.repos.listForAuthenticatedUser({
+               per_page: 100,
+               page: page,
+               sort: 'updated',
+               direction: 'desc',
+             });
+
+             if (data.length === 0) {
+               hasMore = false;
+             } else {
+               allRepos.push(...data);
+               page++;
+               // Limit to prevent excessive API calls
+               if (allRepos.length >= 500) {
+                 break;
+               }
+             }
+           }
+           //already existing
+           const submittedRepos = await ctx.db.query.project.findMany({
+             where: (project, { eq }) =>
+               eq(
+                 project.ownerId,
+                 ctx.db
+                   .select({ user_id: account.userId })
+                   .from(account)
+                   .where(eq(account.accountId, currentUser.id)),
+               ),
+           });
+           const notSubmitted = allRepos.filter((repo) => {
+             return !submittedRepos.some((submitted) => submitted.gitRepoUrl === repo.full_name);
+           });
+           return notSubmitted.map((repo) => {
+             return {
+               name: repo.name,
+               repoUrl: repo.full_name,
+               stars: repo.stargazers_count,
+               forks: repo.forks_count,
+               gitHost: 'github',
+               owner: {
+                 avatar_url: repo.owner?.avatar_url || '',
+               },
+               created_at: repo.created_at!,
+               description: repo.description,
+             };
+           });
           } catch (error) {
             console.error('Error fetching GitHub unsubmitted repos:', error);
             throw new TRPCError({

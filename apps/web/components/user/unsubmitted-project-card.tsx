@@ -1,6 +1,6 @@
 import SubmissionDialog from '../submissions/submission-dialog';
 import Icons from '@workspace/ui/components/icons';
-import { UnSubmittedRepo } from './profile-tabs';
+import { UnSubmittedRepo } from '@workspace/api';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
 export default function UnsubmittedRepoCard({

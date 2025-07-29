@@ -177,8 +177,8 @@ export const submissionRouter = createTRPCRouter({
           },
         });
       }
-      const username = input.gitRepoUrl.split('/')[0];
-      invalidateCache(`${input.gitHost as 'github' | 'gitlab'}:unsubmitted:${username}`);
+
+      invalidateCache(`${input.gitHost as 'github' | 'gitlab'}:unsubmitted:${ownerCheck.owner}`);
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,

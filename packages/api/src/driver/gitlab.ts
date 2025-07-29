@@ -944,16 +944,21 @@ export class GitlabManager implements GitManager {
         createCacheKey('gitlab', 'unsubmitted', currentUser.username),
         async () => {
           try {
-            const gitLabProjects = await this.gitlab.Projects.all();
+            const gitLabProjects = await this.gitlab.Projects.all({
+              perPage: 100,
+              membership: true,
+              owned: true,
+            });
+            const userAccount = await ctx.db.query.account.findFirst({
+              where: (account, { eq }) => eq(account.accountId, currentUser.id),
+            });
+
+            if (!userAccount) {
+              return [];
+            }
+
             const submittedRepos = await ctx.db.query.project.findMany({
-              where: (project, { eq }) =>
-                eq(
-                  project.ownerId,
-                  ctx.db
-                    .select({ user_id: account.userId })
-                    .from(account)
-                    .where(eq(account.accountId, currentUser.id)),
-                ),
+              where: (project, { eq }) => eq(project.ownerId, userAccount.userId),
             });
             const notSubmitted = gitLabProjects.filter((repo) => {
               return !submittedRepos.some(
@@ -970,7 +975,7 @@ export class GitlabManager implements GitManager {
                 description: repo.description,
                 created_at: repo.created_at! as string,
                 owner: {
-                  avatar_url: repo.avatar_url as string,
+                  avatar_url: (repo.avatar_url as string) || '',
                 },
               };
             });
