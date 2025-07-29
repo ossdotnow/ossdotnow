@@ -1,4 +1,5 @@
 import { project } from '@workspace/db/schema';
+import { env } from '@workspace/env/server';
 import ProjectPage from './project-page';
 import { db } from '@workspace/db';
 import { eq } from 'drizzle-orm';
@@ -21,39 +22,35 @@ export async function generateMetadata({
       };
     }
 
-    const proj = projectData[0]!; // We know this exists because we checked length above
-    const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL?.startsWith('http')
-      ? process.env.NEXT_PUBLIC_VERCEL_URL
-      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+    const proj = projectData[0]!;
+    const baseUrl = env.VERCEL_URL?.startsWith('http')
+      ? env.VERCEL_URL
+      : `https://${env.VERCEL_URL}`;
 
-    // Extract owner and repo from git URL for OG image
     let ogImageUrl = null;
+
     if (proj.gitRepoUrl) {
-      const urlMatch = proj.gitRepoUrl.match(
-        /(?:github\.com|gitlab\.com)\/([^/]+)\/([^/]+?)(?:\.git)?$/,
-      );
-      if (urlMatch) {
-        const [, owner, repo] = urlMatch;
-        const provider = proj.gitRepoUrl.includes('gitlab.com') ? 'gl' : 'gh';
+      const provider = proj.gitHost === 'github' ? 'gh' : 'gl';
+      const owner = proj.ownerId;
+      const repo = proj.name;
 
-        const params = new URLSearchParams();
-        if (proj.name !== repo) {
-          params.set('name', proj.name);
-        }
-        if (proj.description) {
-          params.set('description', proj.description);
-        }
-
-        ogImageUrl = `${baseUrl}/api/og-image/${provider}/${owner}/${repo}${params.toString() ? `?${params.toString()}` : ''}`;
+      const params = new URLSearchParams();
+      if (proj.name !== repo) {
+        params.set('name', proj.name);
       }
+      if (proj.description) {
+        params.set('description', proj.description);
+      }
+
+      ogImageUrl = `${baseUrl}/api/og-image/${provider}/${owner}/${repo}${params.toString() ? `?${params.toString()}` : ''}`;
     }
 
     return {
       title: proj.name,
-      description: proj.description || `Check out ${proj.name} on OSS.now`,
+      description: proj.description || `Check out ${proj.name} on oss.now`,
       openGraph: {
         title: proj.name,
-        description: proj.description || `Check out ${proj.name} on OSS.now`,
+        description: proj.description || `Check out ${proj.name} on oss.now`,
         images: ogImageUrl
           ? [
               {
@@ -69,7 +66,7 @@ export async function generateMetadata({
       twitter: {
         card: 'summary_large_image',
         title: proj.name,
-        description: proj.description || `Check out ${proj.name} on OSS.now`,
+        description: proj.description || `Check out ${proj.name} on oss.now`,
         images: ogImageUrl ? [ogImageUrl] : [],
       },
     };
