@@ -64,7 +64,6 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
           url,
         });
       } catch (error) {
-        console.error('Error sharing:', error);
       }
     } else {
       await navigator.clipboard.writeText(url);
@@ -115,9 +114,10 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
                 <AvatarFallback>{launch.owner?.name?.[0]}</AvatarFallback>
               </Avatar>
               <span className="text-sm text-neutral-400">
-                {launch.owner?.name || 'Unknown'} launched{' '}
-                {launch.launchDate ? formatDistanceToNow(new Date(launch.launchDate)) : 'recently'}{' '}
-                ago
+                {launch.owner?.name || 'Unknown'}{' '}
+                {launch.status === 'scheduled'
+                  ? `scheduled to launch ${launch.launchDate ? formatDistanceToNow(new Date(launch.launchDate), { addSuffix: true }) : 'soon'}`
+                  : `launched ${launch.launchDate ? formatDistanceToNow(new Date(launch.launchDate)) : 'recently'} ago`}
               </span>
             </div>
 

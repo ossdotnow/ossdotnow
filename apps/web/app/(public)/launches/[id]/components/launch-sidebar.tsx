@@ -1,6 +1,13 @@
 'use client';
 
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog';
+import {
   AlertCircle,
   ArrowUp,
   ExternalLink,
@@ -8,17 +15,20 @@ import {
   GitPullRequest,
   Star,
   Users,
+  Trash2,
 } from 'lucide-react';
-import { Separator } from '@workspace/ui/components/separator';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Separator } from '@workspace/ui/components/separator';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import { useRouter, usePathname } from 'next/navigation';
+import { Input } from '@workspace/ui/components/input';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -41,6 +51,8 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
 
   const router = useRouter();
   const currentPath = usePathname();
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [confirmationInput, setConfirmationInput] = useState('');
 
   // Validate gitRepoUrl and gitHost before using them in queries
   const isValidRepoUrl = Boolean(project?.gitRepoUrl && project.gitRepoUrl.trim() !== '');
@@ -87,14 +99,51 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
     },
   });
 
+  const removeLaunchMutation = useMutation({
+    ...trpc.launches.removeLaunch.mutationOptions(),
+    onSuccess: () => {
+      toast.success('Launch removed successfully!');
+      router.push('/launches');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to remove launch. Please try again.');
+    },
+  });
+
   const handleVote = async () => {
     if (!session?.user) {
-      await router.push(`/login?redirect=${currentPath}`);
+      router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }
     voteMutation.mutate({ projectId });
   };
+
+  const handleRemoveLaunch = () => {
+    setShowRemoveModal(true);
+  };
+
+  const handleConfirmRemoval = () => {
+    const projectName = getProjectName();
+    if (confirmationInput === projectName) {
+      removeLaunchMutation.mutate({ projectId });
+      setShowRemoveModal(false);
+      setConfirmationInput('');
+    } else {
+      toast.error(`Please type "${projectName}" to confirm removal`);
+    }
+  };
+
+  const handleCancelRemoval = () => {
+    setShowRemoveModal(false);
+    setConfirmationInput('');
+  };
+
+  const getProjectName = () => {
+    return launch?.name || project?.name || 'project-name';
+  };
+
+  const isOwner = session?.user?.id === launch.owner?.id;
 
   const repoData = repoQuery.data;
   const repoStats = repoDataQuery.data;
@@ -130,9 +179,13 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
           <div className="space-y-2 text-sm">
             {launch.launchDate && (
               <div className="flex items-center justify-between">
-                <span className="text-neutral-400">Launch Date</span>
+                <span className="text-neutral-400">
+                  {launch.status === 'scheduled' ? 'Scheduled For' : 'Launch Date'}
+                </span>
                 <span className="text-neutral-300">
-                  {formatDistanceToNow(new Date(launch.launchDate))} ago
+                  {launch.status === 'scheduled'
+                    ? formatDistanceToNow(new Date(launch.launchDate), { addSuffix: true })
+                    : `${formatDistanceToNow(new Date(launch.launchDate))} ago`}
                 </span>
               </div>
             )}
@@ -214,15 +267,75 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
           </>
         )}
 
-        <div>
+        <div className="space-y-3">
           <Button variant="outline" className="w-full gap-2 rounded-none" asChild>
             <Link href={`/projects/${projectId}`}>
               <ExternalLink className="h-4 w-4" />
               View Project
             </Link>
           </Button>
+          {isOwner && (
+            <Button
+              variant="destructive"
+              className="w-full gap-2 rounded-none"
+              onClick={handleRemoveLaunch}
+              disabled={removeLaunchMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+              {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
+            </Button>
+          )}
         </div>
       </div>
+      <Dialog open={showRemoveModal} onOpenChange={setShowRemoveModal}>
+        <DialogContent className="rounded-none sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 className="h-5 w-5" />
+              Remove Launch
+            </DialogTitle>
+            <DialogDescription className="text-neutral-400">
+              This will permanently remove the launch and this action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-sm text-neutral-300">
+                Type{' '}
+                <span className="font-mono font-semibold text-red-400">{getProjectName()}</span> to
+                confirm removal:
+              </p>
+              <Input
+                type="text"
+                value={confirmationInput}
+                onChange={(e) => setConfirmationInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && confirmationInput === getProjectName()) {
+                    handleConfirmRemoval();
+                  } else if (e.key === 'Escape') {
+                    handleCancelRemoval();
+                  }
+                }}
+                placeholder={getProjectName()}
+                className="rounded-none bg-red-500/10 text-white placeholder:text-red-400/60 focus:ring-offset-0 focus-visible:ring-0"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="destructive"
+                className="rounded-none"
+                onClick={handleConfirmRemoval}
+                disabled={confirmationInput !== getProjectName() || removeLaunchMutation.isPending}
+              >
+                {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
