@@ -1,16 +1,16 @@
 'use client';
 
 import ProjectFilters from '@/components/projects/project-filters';
+import { project as projectSchema } from '@workspace/db/schema';
 import LoadingSpinner from '@/components/loading-spinner';
 import { Button } from '@workspace/ui/components/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useInView } from 'react-intersection-observer';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useTRPC } from '@/hooks/use-trpc';
 import ProjectCard from './project-card';
-import { useInView } from 'react-intersection-observer';
-import { project as projectSchema } from '@workspace/db/schema';
 type Project = typeof projectSchema.$inferSelect;
 import React from 'react';
 
@@ -19,7 +19,10 @@ interface VirtualizedProjectCardProps {
   height?: number;
 }
 
-const VirtualizedProjectCard = React.memo(function VirtualizedProjectCard({ project, height = 160 }: VirtualizedProjectCardProps) {
+const VirtualizedProjectCard = React.memo(function VirtualizedProjectCard({
+  project,
+  height = 160,
+}: VirtualizedProjectCardProps) {
   const { ref, inView } = useInView({
     rootMargin: '400px 0px',
     triggerOnce: false,
@@ -78,7 +81,7 @@ export default function ProjectsPage() {
       sortBy: sortBy as 'recent' | 'name' | 'stars' | 'forks' | undefined,
       page: 1,
       pageSize: 4,
-    })
+    }),
   );
 
   const projects = data?.data || [];
@@ -90,11 +93,11 @@ export default function ProjectsPage() {
   return (
     <div className="relative mx-auto min-h-screen max-w-[1080px]">
       <div
-        className={`pointer-events-none fixed top-[calc(32px+65px+36px)] z-10 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+        className={`pointer-events-none fixed top-[calc(32px+65px+36px)] z-20 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
           showShadow ? 'opacity-100' : 'opacity-0'
         }`}
       />
-      <div className="fixed top-0 right-0 left-0 z-10 h-[32px] bg-[#101010]" />
+      <div className="fixed top-0 right-0 left-0 z-20 h-[32px] bg-[#101010]" />
       <div className="py-6">
         <ProjectFilters />
 
