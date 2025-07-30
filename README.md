@@ -12,14 +12,16 @@
 
 ---
 
-<div align="center">
 <br/>
+<div style="display:flex; align-items:center; justify-content:center;gap:14px;">
 <a href="https://vercel.com/oss">
   <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
 </a>
-<br/>
-<br/>
+<img alt="Catalyst Project" style="height:44px;" src="./resources/catalyst-logo.png" />
+
 </div>
+<br/>
+<br/>
 
 ---
 
