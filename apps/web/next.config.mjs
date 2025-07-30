@@ -1,11 +1,10 @@
 import { withSentryConfig } from '@sentry/nextjs';
-import { env } from '@workspace/env/server';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@workspace/ui'],
   compiler: {
-    removeConsole: env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === 'production',
   },
   images: {
     remotePatterns: [
