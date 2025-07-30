@@ -21,7 +21,7 @@ export const env = createEnv({
     GITLAB_ISSUER: z.string().min(1),
     GITLAB_TOKEN: z.string().min(1),
     // Sentry
-    SENTRY_DSN: z.string().min(1),
+    SENTRY_DSN: z.url(),
     // Databuddy
     DATABUDDY_CLIENT_ID: z.string().min(1),
   },

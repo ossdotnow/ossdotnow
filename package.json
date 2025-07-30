@@ -47,7 +47,9 @@
     "catalog": {
       "@hookform/resolvers": "5.1.1",
       "@octokit/plugin-rest-endpoint-methods": "16.0.0",
-      "@trpc/server": "11.4.2",
+      "@trpc/client": "11.4.3",
+      "@trpc/server": "11.4.3",
+      "@trpc/tanstack-react-query": "11.4.3",
       "@types/node": "24",
       "@types/react": "19.1.8",
       "@types/react-dom": "19.1.6",
