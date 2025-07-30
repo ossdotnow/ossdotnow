@@ -10,16 +10,17 @@ import { Heart, TrendingUp, GitFork, Clock, ExternalLink } from 'lucide-react';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
+import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { ContributionGraph } from './contribution-graph';
 import { ProjectWithGithubData } from '@/types/project';
 import { Badge } from '@workspace/ui/components/badge';
+import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
-import React, { useRef } from 'react';
 import { useQueryState } from 'nuqs';
 
 interface Profile {
@@ -67,6 +68,31 @@ export function ProfileTabs({
   projectsWithGithubData,
 }: ProfileTabsProps) {
   const featuredCarouselRef = useRef<HTMLDivElement>(null);
+
+  // TODO: Fix this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [session, setSession] = useState<any>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+
+  useEffect(() => {
+    authClient
+      .getSession()
+      .then((sessionData) => {
+        setSession(sessionData);
+      })
+      .catch((error) => {
+        console.error('Session fetch failed:', error);
+      })
+      .finally(() => {
+        setSessionLoading(false);
+      });
+  }, []);
+
+  const sessionUserId = session?.data?.user?.id;
+
+  const isOwnProfile =
+    !sessionLoading && sessionUserId && profile?.id ? sessionUserId === profile.id : false;
+
   return (
     <>
       {isProfileLoading && (
@@ -139,7 +165,7 @@ export function ProfileTabs({
               >
                 {featuredProjects.length > 0 ? (
                   featuredProjects?.map((project) => (
-                    <ProjectCard key={project.id} project={project} />
+                    <ProjectCard key={project.id} project={project} isOwnProfile={isOwnProfile} />
                   ))
                 ) : (
                   <div className="flex items-center justify-center">
@@ -153,7 +179,7 @@ export function ProfileTabs({
           <div>
             <div className="space-y-4">
               {projectsWithGithubData?.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard key={project.id} project={project} isOwnProfile={isOwnProfile} />
               ))}
             </div>
           </div>

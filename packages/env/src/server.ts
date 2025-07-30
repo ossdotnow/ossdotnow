@@ -3,7 +3,7 @@ import { z } from 'zod/v4';
 
 export const env = createEnv({
   server: {
-    VERCEL_URL: z.string().min(1),
+    VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1),
     // Environment
     VERCEL_ENV: z.enum(['development', 'production', 'preview']),
     // Database
@@ -20,10 +20,10 @@ export const env = createEnv({
     GITLAB_CLIENT_SECRET: z.string().min(1),
     GITLAB_ISSUER: z.string().min(1),
     GITLAB_TOKEN: z.string().min(1),
+    // Sentry
+    SENTRY_DSN: z.url(),
     // Databuddy
     DATABUDDY_CLIENT_ID: z.string().min(1),
-    // Sentry
-    SENTRY_DSN: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
   skipValidation: process.env.NODE_ENV !== 'production',

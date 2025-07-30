@@ -865,34 +865,43 @@ export class GitlabManager implements GitManager {
     const limit = options?.limit || 100;
     const stateFilter = options?.state || 'all';
 
-    let stateParam: 'opened' | 'closed' | 'merged' | undefined;
-    if (stateFilter === 'open') stateParam = 'opened';
-    else if (stateFilter === 'closed') stateParam = 'closed';
-    else if (stateFilter === 'merged') stateParam = 'merged';
+    return getCached(
+      createCacheKey('gitlab', 'user_pull_requests', `${username}_${stateFilter}_${limit}`),
+      async () => {
+        let stateParam: 'opened' | 'closed' | 'merged' | undefined = undefined;
+        if (stateFilter === 'open') stateParam = 'opened';
+        else if (stateFilter === 'closed') stateParam = 'closed';
+        else if (stateFilter === 'merged') stateParam = 'merged';
 
-    try {
-      const users = await this.gitlab.Users.all({ username });
-      const user = users.find(
-        (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
-      );
+        try {
+          const users = await this.gitlab.Users.all({ username });
+          const user = users.find(
+            (u: any) => u.username === username || u.username.toLowerCase() === username.toLowerCase(),
+          );
 
-      if (!user) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `GitLab user '${username}' not found`,
-        });
-      }
+          if (!user) {
+            throw new TRPCError({
+              code: 'NOT_FOUND',
+              message: `GitLab user '${username}' not found`,
+            });
+          }
 
-      const mergeRequests = await this.gitlab.MergeRequests.all({
-        authorId: user.id,
-        perPage: limit,
-        maxPages: Math.ceil(limit / 100),
-        state: stateParam,
-        orderBy: 'created_at',
-        sort: 'desc',
-      });
+          const mergeRequestsParams: any = {
+            authorId: user.id,
+            perPage: limit,
+            maxPages: Math.ceil(limit / 100),
+            orderBy: 'created_at',
+            sort: 'desc',
+          };
 
-      return mergeRequests.map((mr: any) => {
+          // Only add state parameter if it's defined (not for 'all' filter)
+          if (stateParam !== undefined) {
+            mergeRequestsParams.state = stateParam;
+          }
+
+          const mergeRequests = await this.gitlab.MergeRequests.all(mergeRequestsParams);
+
+          const formattedMRs = mergeRequests.map((mr: any) => {
         // Extract project path from web_url
         // GitLab URL format: https://gitlab.com/owner/repo/-/merge_requests/123
         const urlParts = mr.web_url.split('/-/merge_requests/');
@@ -903,37 +912,43 @@ export class GitlabManager implements GitManager {
         // Extract owner from project path (owner/repo format)
         const [ownerLogin] = projectPath.split('/');
 
-        return {
-          id: mr.id.toString(),
-          number: mr.iid,
-          title: mr.title,
-          state: mr.state === 'opened' ? 'open' : mr.state,
-          url: mr.web_url,
-          createdAt: mr.created_at,
-          updatedAt: mr.updated_at,
-          closedAt: mr.closed_at || undefined,
-          mergedAt: mr.merged_at || undefined,
-          isDraft: mr.draft || mr.work_in_progress || false,
-          headRefName: mr.source_branch,
-          baseRefName: mr.target_branch,
-          repository: {
-            nameWithOwner: projectPath || `${mr.author.username}/unknown`,
-            url: projectUrl,
-            isPrivate: undefined, // Cannot determine from MR data alone
-            owner: {
-              login: ownerLogin || mr.author.username,
-            },
-          },
-        };
-      });
-    } catch (error) {
-      if (error instanceof TRPCError) {
-        throw error;
-      }
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: `Failed to fetch GitLab merge requests: ${error instanceof Error ? error.message : String(error)}`,
-      });
-    }
+            return {
+              id: mr.id.toString(),
+              number: mr.iid,
+              title: mr.title,
+              state: mr.state === 'opened' ? 'open' : mr.state,
+              url: mr.web_url,
+              createdAt: mr.created_at,
+              updatedAt: mr.updated_at,
+              closedAt: mr.closed_at || undefined,
+              mergedAt: mr.merged_at || undefined,
+              isDraft: mr.draft || mr.work_in_progress || false,
+              headRefName: mr.source_branch,
+              baseRefName: mr.target_branch,
+              repository: {
+                nameWithOwner: projectPath || `${mr.author.username}/unknown`,
+                url: projectUrl,
+                isPrivate: undefined, // Cannot determine from MR data alone
+                owner: {
+                  login: ownerLogin || mr.author.username,
+                },
+              },
+            };
+          });
+
+          // Apply filtering logic based on state
+          return formattedMRs;
+        } catch (error) {
+          if (error instanceof TRPCError) {
+            throw error;
+          }
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to fetch GitLab merge requests: ${error instanceof Error ? error.message : String(error)}`,
+          });
+        }
+      },
+      { ttl: 5 * 60 },
+    );
   }
 }

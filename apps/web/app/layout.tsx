@@ -2,7 +2,6 @@ import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
 import { ourFileRouter } from '@/app/api/uploadthing/core';
 import { extractRouterConfig } from 'uploadthing/server';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
 import Footer from '@/components/layout/footer';
 import { env } from '@workspace/env/server';
@@ -34,7 +33,9 @@ export const metadata: Metadata = {
     icon: '/icon.svg',
   },
   metadataBase: new URL(
-    env.VERCEL_URL === 'localhost' ? 'http://localhost:3000' : `https://${env.VERCEL_URL}`,
+    env.VERCEL_PROJECT_PRODUCTION_URL === 'localhost'
+      ? 'http://localhost:3000'
+      : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`,
   ),
 };
 
@@ -59,13 +60,12 @@ export default function RootLayout({
         <Providers>
           {children}
           <Footer />
-          <Analytics />
+
           <Databuddy
             clientId={env.DATABUDDY_CLIENT_ID}
             enableBatching={true}
             trackErrors
             trackOutgoingLinks
-            disabled={env.VERCEL_ENV === 'development'}
           />
           <Toaster />
         </Providers>

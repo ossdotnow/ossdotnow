@@ -17,10 +17,9 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MultiSelect } from '@workspace/ui/components/multi-select';
 import { DialogFooter } from '@workspace/ui/components/dialog';
-import { track as vercelTrack } from '@vercel/analytics/react';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Progress } from '@workspace/ui/components/progress';
 import { Checkbox } from '@workspace/ui/components/checkbox';
@@ -28,14 +27,13 @@ import { Checkbox } from '@workspace/ui/components/checkbox';
 import { earlySubmissionForm, submisionForm } from '@/forms';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
-import { track as databuddyTrack } from '@databuddy/sdk';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@workspace/ui/components/input';
 import { FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useDebouncedCallback } from 'use-debounce';
-import { env } from '@workspace/env/client';
 import { useTRPC } from '@/hooks/use-trpc';
+import { track } from '@databuddy/sdk';
 import { toast } from 'sonner';
 import { z } from 'zod/v4';
 
@@ -59,8 +57,7 @@ function useEarlySubmission(onSuccess?: () => void) {
         if (isMounted) {
           localStorage.setItem('early-submission-success', 'true');
         }
-        vercelTrack('early_submission_success');
-        databuddyTrack('early_submission_success');
+        track('early_submission_success');
 
         // Call the callback if provided
         onSuccess?.();
@@ -69,8 +66,7 @@ function useEarlySubmission(onSuccess?: () => void) {
         const errorMessage = err.message || 'Something went wrong. Please try again.';
         setError(errorMessage);
         toast.error(errorMessage);
-        vercelTrack('early_submission_error', { error: errorMessage });
-        databuddyTrack('early_submission_error', { error: errorMessage });
+        track('early_submission_error', { error: errorMessage });
       },
     }),
   );
@@ -106,8 +102,7 @@ function useSubmission(onSuccess?: () => void) {
         if (isMounted) {
           localStorage.setItem('submission-success', 'true');
         }
-        vercelTrack('submission_success');
-        databuddyTrack('submission_success');
+        track('submission_success');
 
         // Call the callback if provided
         onSuccess?.();
@@ -116,8 +111,7 @@ function useSubmission(onSuccess?: () => void) {
         const errorMessage = err.message || 'Something went wrong. Please try again.';
         setError(errorMessage);
         toast.error(errorMessage);
-        vercelTrack('submission_error', { error: errorMessage });
-        databuddyTrack('submission_error', { error: errorMessage });
+        track('submission_error', { error: errorMessage });
       },
     }),
   );
@@ -303,7 +297,8 @@ export default function SubmissionForm({
               setRepoValidation({
                 isValidating: false,
                 isValid: true,
-                message: 'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
+                message:
+                  'Private repository detected. Your project will remain hidden from other users until you make your repository public and launch it.',
               });
             } else {
               setRepoValidation({
@@ -471,9 +466,8 @@ export default function SubmissionForm({
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-    const progress = ((currentStep + 1) / steps.length) * 100;
-  return success && env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-    // return success ? (
+  const progress = ((currentStep + 1) / steps.length) * 100;
+  return success ? (
     <div className="flex flex-col items-center justify-center space-y-4 py-8">
       <CheckCircle className="h-16 w-16 text-green-500" />
       <h3 className="text-xl font-semibold">Submission Successful!</h3>

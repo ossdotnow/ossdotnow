@@ -1,16 +1,14 @@
 'use client';
 
+import SubmissionDialog from '../submissions/submission-dialog';
+import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { cn } from '@workspace/ui/lib/utils';
-import { env } from '@workspace/env/client';
 import { navItems } from '@/lib/nav-items';
 import { MobileNav } from './mobile-nav';
 import PublicNav from './public-nav';
-import { TempNav } from './temp-nav';
-
-import SubmissionDialog from '../submissions/submission-dialog';
-import { Button } from '@workspace/ui/components/button';
+import { ScheduledLaunchesModal } from './scheduled-launches-dropdown';
 import UserNav from './user-nav';
 import { useState } from 'react';
 
@@ -26,7 +24,7 @@ export function NavInner({ session }: { session: any }) {
       })}
     >
       <header
-        className={cn('max-w-[1080px] border border-[#404040] bg-black md:mx-auto', {
+        className={cn('max-w-[1080px] border border-[#404040] bg-neutral-900 md:mx-auto', {
           'border-none': open,
         })}
       >
@@ -47,16 +45,15 @@ export function NavInner({ session }: { session: any }) {
           </div>
           <div className="flex items-center gap-2">
             <nav className="hidden items-center gap-2 md:flex">
-              {env.NEXT_PUBLIC_VERCEL_ENV === 'production' ? (
-                <TempNav />
-              ) : (
-                <PublicNav session={session} />
-              )}
+              <PublicNav session={session} />
             </nav>
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {session?.user.id ? (
-              <UserNav />
+              <>
+                <ScheduledLaunchesModal />
+                <UserNav />
+              </>
             ) : (
               <Button
                 className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"

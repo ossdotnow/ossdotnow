@@ -10,19 +10,19 @@
     "lint": "eslint ."
   },
   "peerDependencies": {
-    "better-auth": "^1.2.10",
-    "server-only": "^0.0.1"
+    "better-auth": "catalog:",
+    "server-only": "catalog:"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.44.2"
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^24",
+    "@types/node": "catalog:",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "eslint": "^9",
-    "typescript": "^5"
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

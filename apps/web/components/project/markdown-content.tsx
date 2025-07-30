@@ -103,6 +103,8 @@ const markdownComponents: Components = {
     />
   ),
   pre: ({ children }) => {
+    // TODO: Fix this
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const extractTextFromChildren = (children: any): string => {
       if (!children) return '';
       if (typeof children === 'string') return children;
@@ -163,6 +165,7 @@ export function MarkdownContent({ content, encoding }: MarkdownContentProps) {
 
   return (
     <div className="prose prose-invert prose-neutral markdown-content max-w-none">
+      {/* TODO: Fix this */}
       <style jsx global>{`
         .markdown-content ul ul,
         .markdown-content ol ol,

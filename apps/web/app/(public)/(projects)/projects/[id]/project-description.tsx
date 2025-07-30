@@ -4,8 +4,8 @@ import { ProjectData, ProjectWithRelations } from '@workspace/api';
 import ProjectTicks from '@/components/project/project-ticks';
 import { Button } from '@workspace/ui/components/button';
 import Icons from '@workspace/ui/components/icons';
+import { Globe, LinkedinIcon } from 'lucide-react';
 import Link from '@workspace/ui/components/link';
-import { Globe, Linkedin } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 
@@ -174,7 +174,7 @@ function SocialLinks({ project }: { project: ProjectWithRelations }) {
           eventObject={{ projectId: project.id }}
           className="flex items-center text-neutral-300 transition-colors hover:text-white"
         >
-          <Linkedin className="h-4 w-4 flex-shrink-0" />
+          <LinkedinIcon className="h-4 w-4 flex-shrink-0" />
         </Link>
       )}
     </div>
@@ -236,7 +236,7 @@ function ActionButtons({
 
   return (
     <div className={className}>
-      {isOwner && (
+      {isOwner && project.approvalStatus === 'approved' && (
         <LaunchProjectDialog
           projectId={project.id}
           projectName={project.name}
@@ -244,6 +244,28 @@ function ActionButtons({
           gitRepoUrl={project.gitRepoUrl || undefined}
           gitHost={project.gitHost || undefined}
         />
+      )}
+      {isOwner && project.approvalStatus === 'pending' && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-none border-yellow-600 bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20"
+          disabled
+          title="Your project is pending approval. You'll be able to launch once it's approved."
+        >
+          Pending Approval
+        </Button>
+      )}
+      {isOwner && project.approvalStatus === 'rejected' && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-none border-red-600 bg-red-500/10 text-red-400 hover:bg-red-500/20"
+          disabled
+          title="Your project was rejected and cannot be launched."
+        >
+          Rejected
+        </Button>
       )}
       {repoUrl && (
         <Link

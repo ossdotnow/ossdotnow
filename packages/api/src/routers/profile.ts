@@ -30,56 +30,43 @@ type ActivityItem = {
 };
 
 export const profileRouter = createTRPCRouter({
-  getProfile: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      let profileUser: typeof user.$inferSelect;
-      let targetId = input.id;
-      if (input.id === 'me') {
-        targetId = ctx.user.id;
-        profileUser = {
-          ...ctx.user,
-          role: ctx.user.role as 'user' | 'admin' | 'moderator',
-          banned: ctx.user.banned ?? null,
-          banReason: ctx.user.banReason ?? null,
-          banExpires: ctx.user.banExpires ?? null,
-        };
-      } else {
-        const dbUser = await ctx.db.query.user.findFirst({
-          where: eq(user.id, input.id),
-        });
-        if (!dbUser) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'User not found',
-          });
-        }
-        profileUser = dbUser;
-      }
+  getProfile: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
+    const targetId = input.id;
 
-      const userAccount = await ctx.db.query.account.findFirst({
-        where: eq(account.userId, targetId),
+    const profileUser = await ctx.db.query.user.findFirst({
+      where: eq(user.id, input.id),
+    });
+
+    if (!profileUser) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User not found',
       });
+    }
 
-      if (!userAccount || !userAccount.providerId) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'User account or provider not found',
-        });
-      }
+    const userAccount = await ctx.db.query.account.findFirst({
+      where: eq(account.userId, targetId),
+    });
 
-      const driver = await getActiveDriver(
-        userAccount.providerId as 'github' | 'gitlab',
-        ctx as Context,
-      );
-      const userDetails = await driver.getUserDetails(profileUser.username);
+    if (!userAccount || !userAccount.providerId) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'User account or provider not found',
+      });
+    }
 
-      return {
-        ...profileUser,
-        git: userDetails,
-        provider: userAccount.providerId,
-      };
-    }),
+    const driver = await getActiveDriver(
+      userAccount.providerId as 'github' | 'gitlab',
+      ctx as Context,
+    );
+    const userDetails = await driver.getUserDetails(profileUser.username);
+
+    return {
+      ...profileUser,
+      git: userDetails,
+      provider: userAccount.providerId,
+    };
+  }),
   gitDetails: publicProcedure
     .input(
       z.object({
