@@ -22,6 +22,12 @@ export const launchesRouter = createTRPCRouter({
   getLaunchByProjectId: publicProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
+      const now = new Date();
+      await ctx.db
+        .update(projectLaunch)
+        .set({ status: 'live' })
+        .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
       const launch = await ctx.db
         .select({
           id: project.id,
@@ -114,6 +120,12 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const now = new Date();
+      await ctx.db
+        .update(projectLaunch)
+        .set({ status: 'live' })
+        .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
       const today = new Date();
       const startOfToday = startOfDay(today);
       const endOfToday = endOfDay(today);
@@ -239,6 +251,12 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const now = new Date();
+      await ctx.db
+        .update(projectLaunch)
+        .set({ status: 'live' })
+        .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
       const yesterday = subDays(new Date(), 1);
       const startOfYesterday = startOfDay(yesterday);
       const endOfYesterday = endOfDay(yesterday);
@@ -364,6 +382,11 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const now = new Date();
+      await ctx.db
+        .update(projectLaunch)
+        .set({ status: 'live' })
+        .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
       const launches = await ctx.db
         .select({
           id: project.id,
@@ -702,6 +725,12 @@ export const launchesRouter = createTRPCRouter({
       });
     }
 
+    const now = new Date();
+    await ctx.db
+      .update(projectLaunch)
+      .set({ status: 'live' })
+      .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
     const launches = await ctx.db
       .select({
         id: project.id,
@@ -714,12 +743,7 @@ export const launchesRouter = createTRPCRouter({
       })
       .from(projectLaunch)
       .innerJoin(project, eq(projectLaunch.projectId, project.id))
-      .where(
-        and(
-          eq(project.ownerId, ctx.session.userId),
-          eq(projectLaunch.status, 'scheduled'),
-        ),
-      )
+      .where(and(eq(project.ownerId, ctx.session.userId), eq(projectLaunch.status, 'scheduled')))
       .orderBy(projectLaunch.launchDate);
 
     return launches;

@@ -1,13 +1,6 @@
 'use client';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@workspace/ui/components/dialog';
-import {
   AlertCircle,
   ArrowUp,
   ExternalLink,
@@ -16,13 +9,24 @@ import {
   Star,
   Users,
   Trash2,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Separator } from '@workspace/ui/components/separator';
+import { useLaunchUpdates } from '@/hooks/use-launch-updates';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { useRouter, usePathname } from 'next/navigation';
 import { Input } from '@workspace/ui/components/input';
+import { useCountdown } from '@/hooks/use-countdown';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { formatDistanceToNow } from 'date-fns';
@@ -53,6 +57,13 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   const currentPath = usePathname();
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [confirmationInput, setConfirmationInput] = useState('');
+
+  const { launch: realtimeLaunch } = useLaunchUpdates({ projectId });
+  const currentLaunch = realtimeLaunch || launch;
+
+  const { timeRemaining, isExpired } = useCountdown(
+    currentLaunch?.status === 'scheduled' ? currentLaunch.launchDate : null,
+  );
 
   // Validate gitRepoUrl and gitHost before using them in queries
   const isValidRepoUrl = Boolean(project?.gitRepoUrl && project.gitRepoUrl.trim() !== '');
@@ -92,6 +103,15 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
       // Refetch launch data to update vote count
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
       });
     },
     onError: () => {
@@ -140,10 +160,10 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   };
 
   const getProjectName = () => {
-    return launch?.name || project?.name || 'project-name';
+    return currentLaunch?.name || project?.name || 'project-name';
   };
 
-  const isOwner = session?.user?.id === launch.owner?.id;
+  const isOwner = session?.user?.id === currentLaunch.owner?.id;
 
   const repoData = repoQuery.data;
   const repoStats = repoDataQuery.data;
@@ -157,19 +177,30 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
       <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
         <h2 className="mb-4 text-lg font-semibold text-white">Launch Info</h2>
 
+        {/* Launch Status */}
+        {currentLaunch.status === 'scheduled' && !isExpired && (
+          <div className="mb-4 flex items-center gap-2 rounded-none border border-orange-500/20 bg-orange-500/10 px-3 py-2">
+            <Clock className="h-4 w-4 text-orange-400" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-orange-400">Launches in:</span>
+              <span className="text-sm font-bold text-orange-300">{timeRemaining}</span>
+            </div>
+          </div>
+        )}
+
         {/* Vote Button */}
         <div className="mb-6">
           <Button
-            variant={launch.hasVoted ? 'default' : 'outline'}
+            variant={currentLaunch.hasVoted ? 'default' : 'outline'}
             size="lg"
             className={`flex h-12 w-full items-center justify-center gap-3 rounded-none ${
-              launch.hasVoted ? 'bg-orange-500 hover:bg-orange-600' : ''
+              currentLaunch.hasVoted ? 'bg-orange-500 hover:bg-orange-600' : ''
             }`}
             onClick={handleVote}
             disabled={voteMutation.isPending}
           >
             <ArrowUp className="h-5 w-5" />
-            <span className="text-xl font-bold">{launch.voteCount}</span>
+            <span className="text-xl font-bold">{currentLaunch.voteCount}</span>
             <span className="text-sm">VOTES</span>
           </Button>
         </div>
@@ -177,27 +208,41 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-medium text-neutral-300">Details</h3>
           <div className="space-y-2 text-sm">
-            {launch.launchDate && (
+            {currentLaunch.launchDate && (
               <div className="flex items-center justify-between">
                 <span className="text-neutral-400">
-                  {launch.status === 'scheduled' ? 'Scheduled For' : 'Launch Date'}
+                  {currentLaunch.status === 'scheduled' && !isExpired
+                    ? 'Scheduled For'
+                    : 'Launch Date'}
                 </span>
                 <span className="text-neutral-300">
-                  {launch.status === 'scheduled'
-                    ? formatDistanceToNow(new Date(launch.launchDate), { addSuffix: true })
-                    : `${formatDistanceToNow(new Date(launch.launchDate))} ago`}
+                  {currentLaunch.status === 'scheduled' && !isExpired
+                    ? formatDistanceToNow(new Date(currentLaunch.launchDate), { addSuffix: true })
+                    : `${formatDistanceToNow(new Date(currentLaunch.launchDate))} ago`}
                 </span>
               </div>
             )}
-            {launch.owner?.name && (
+            {currentLaunch.owner?.name && (
               <div className="flex items-center justify-between">
                 <span className="text-neutral-400">Owner</span>
-                <span className="text-neutral-300">{launch.owner.name}</span>
+                <span className="text-neutral-300">{currentLaunch.owner.name}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Status</span>
-              <span className="text-neutral-300">Active Launch</span>
+              <div className="flex items-center gap-1">
+                {currentLaunch.status === 'scheduled' && !isExpired ? (
+                  <>
+                    <Clock className="h-3 w-3 text-orange-400" />
+                    <span className="text-orange-400">Scheduled</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-3 w-3 text-green-400" />
+                    <span className="text-green-400">Live</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -248,13 +293,13 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
         </div>
 
         {/* Tags */}
-        {launch.tags && launch.tags.length > 0 && (
+        {currentLaunch.tags && currentLaunch.tags.length > 0 && (
           <>
             <Separator className="my-6 bg-neutral-700/40" />
             <div className="mb-6">
               <h3 className="mb-3 text-sm font-medium text-neutral-300">Tags</h3>
               <div className="flex flex-wrap gap-1.5">
-                {launch.tags.map((tag: string) => (
+                {currentLaunch.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="rounded-none bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"

@@ -9,6 +9,7 @@ const platformLinks = [
   { name: 'Projects', href: '/projects' },
   { name: 'Launches', href: '/launches' },
   { name: 'About', href: '/about' },
+  { name: 'Contributors', href: '/contributors' },
   { name: 'Submit Project', href: '/submit' },
 ];
 
