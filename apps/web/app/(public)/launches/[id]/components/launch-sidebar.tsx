@@ -105,13 +105,16 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
         queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
+        queryKey: trpc.launches.getTodayLaunches.queryKey(),
+        exact: false,
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+        queryKey: trpc.launches.getYesterdayLaunches.queryKey(),
+        exact: false,
       });
       queryClient.invalidateQueries({
-        queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
+        queryKey: trpc.launches.getAllLaunches.queryKey(),
+        exact: false,
       });
     },
     onError: () => {

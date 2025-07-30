@@ -17,7 +17,6 @@ export function useLaunchUpdates({
 }: UseLaunchUpdatesOptions) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: launch, isLoading } = useQuery({
     ...trpc.launches.getLaunchByProjectId.queryOptions({ projectId }),
@@ -45,25 +44,20 @@ export function useLaunchUpdates({
           queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
+          queryKey: trpc.launches.getTodayLaunches.queryKey(),
+          exact: false,
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+          queryKey: trpc.launches.getYesterdayLaunches.queryKey(),
+          exact: false,
         });
         queryClient.invalidateQueries({
-          queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
+          queryKey: trpc.launches.getAllLaunches.queryKey(),
+          exact: false,
         });
       }
     }
   }, [launch, enabled, projectId, queryClient, trpc]);
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
   return {
     launch,
