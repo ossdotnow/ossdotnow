@@ -1,49 +1,80 @@
-import { appRouter, createContext } from '@workspace/api';
+'use client';
+
 import type { ContributorData } from '@workspace/api';
-import { GitPullRequest, Github } from 'lucide-react';
+import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
-import { headers } from 'next/headers';
+import { GitPullRequest } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-// ISR revalidation - 24 hours since contributors don't change frequently
-export const revalidate = 86400; // 24 hours in seconds
+export default function AboutPage({
+  contributors,
+  error,
+}: {
+  contributors: ContributorData[];
+  error: boolean;
+}) {
+  const [showShadow, setShowShadow] = useState(false);
 
-async function getContributors(): Promise<ContributorData[]> {
-  const ctx = await createContext({ headers: await headers() });
-  const caller = appRouter.createCaller(ctx);
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowShadow(window.scrollY > 10);
+    };
 
-  return caller.repository.getContributors({
-    url: 'ossdotnow/ossdotnow',
-    provider: 'github',
-  });
-}
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-export default async function ContributorsPage() {
   const userRoles = { ahmetskilinc: 'Owner', aysahoo: 'Maintainer' };
   const getRole = (username: string) => userRoles[username as keyof typeof userRoles];
 
-  let contributors: ContributorData[] = [];
-  let error = false;
-
-  try {
-    const allContributors = await getContributors();
-    contributors = allContributors.filter((c) => c.username !== 'Zaid-maker');
-  } catch (err) {
-    console.error('Failed to fetch contributors:', err);
-    error = true;
-  }
-
   return (
-    <div className="mx-auto mt-6 max-w-[1080px] px-6 py-8">
+    <div className="relative mx-auto mt-6 min-h-screen w-full max-w-[1080px] space-y-6 py-8">
+      <div
+        className={`pointer-events-none fixed top-[calc(32px+65px)] z-20 h-10 w-full bg-gradient-to-b from-[#101010] to-transparent transition-all duration-300 ${
+          showShadow ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
+      <div className="fixed top-0 right-0 left-0 z-20 h-[32px] bg-[#101010]" />
+
+      {/* <div className="space-y-6 border border-neutral-800 bg-neutral-900/30 p-6">help me</div> */}
+
+      <section className="space-y-6">
+        <div className="space-y-4">
+          <h1 className="text-5xl font-semibold tracking-tight text-white">
+            Where Great Projects
+            <span className="block max-w-fit border-cyan-400 bg-gradient-to-r from-cyan-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+              Come to Life
+            </span>
+          </h1>
+          <p className="max-w-4xl leading-relaxed text-neutral-400">
+            oss.now is the platform for discovering, launching, and celebrating open source
+            projects. We&apos;re building a community where developers can showcase their work,
+            connect with contributors, and accelerate the growth of amazing software.
+          </p>
+        </div>
+      </section>
+
+      <section className="space-y-6">
+        <div className="space-y-4">
+          <h2 className="text-3xl font-bold text-white">Our Mission</h2>
+          <p className="max-w-4xl leading-relaxed text-neutral-400">
+            We exist to democratize open source discovery. Too many incredible projects remain
+            hidden in the depths of GitHub and GitLab. We&apos;re changing that by creating a
+            vibrant marketplace of ideas where quality projects get the visibility they deserve.
+          </p>
+        </div>
+      </section>
+
       <div className="space-y-6 border border-neutral-800 bg-neutral-900/30 p-6">
         <div className="flex items-center justify-center space-x-3">
-          <h1 className="text-2xl font-normal text-white">Meet our contributors</h1>
+          <h1 className="text-2xl font-semibold text-white">Meet our contributors</h1>
           <Link
             href="https://github.com/ossdotnow/ossdotnow"
             target="_blank"
             rel="noopener noreferrer"
             className="text-neutral-400 transition-colors hover:text-cyan-400"
           >
-            <Github className="h-5 w-5" />
+            <Icons.github className="h-5 w-5" />
           </Link>
         </div>
 

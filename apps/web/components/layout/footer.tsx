@@ -9,14 +9,13 @@ const platformLinks = [
   { name: 'Projects', href: '/projects' },
   { name: 'Launches', href: '/launches' },
   { name: 'About', href: '/about' },
-  { name: 'Contributors', href: '/contributors' },
   { name: 'Submit Project', href: '/submit' },
 ];
 
 const communityLinks = [
-  { name: 'Discord', href: '#' },
-  { name: 'Twitter', href: '#' },
-  { name: 'GitHub', href: '#' },
+  { name: 'Discord', href: 'https://tryoss.link.discord' },
+  { name: 'Twitter', href: 'https://tryoss.link/x' },
+  { name: 'GitHub', href: 'https://tryoss.link/github' },
 ];
 
 const legalLinks = [
