@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowUp, MessageCircle, Clock } from 'lucide-react';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { useRouter, usePathname } from 'next/navigation';
-import { ArrowUp, MessageCircle } from 'lucide-react';
+import { useCountdown } from '@/hooks/use-countdown';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
@@ -47,6 +48,10 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
   const currentPath = usePathname();
 
   const rankBadge = getRankBadge(index ?? 0);
+
+  const { timeRemaining, isExpired } = useCountdown(
+    project?.status === 'scheduled' ? project.launchDate : null,
+  );
 
   const voteMutation = useMutation({
     ...trpc.launches.voteProject.mutationOptions(),
@@ -123,9 +128,26 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
             <p className="line-clamp-2 text-xs leading-relaxed text-neutral-400 sm:line-clamp-1 md:text-sm">
               {project.description}
             </p>
+
+            {/* Countdown for scheduled launches */}
+            {project.status === 'scheduled' && !isExpired && (
+              <div className="mt-2 flex items-center gap-1 text-xs text-orange-400">
+                <Clock className="h-3 w-3" />
+                <span>Launches in: {timeRemaining}</span>
+              </div>
+            )}
+
             <span className="mt-2 flex w-full flex-row gap-1 overflow-x-auto sm:gap-2">
-              <span className="rounded-none bg-[#171717] px-1.5 py-1 text-xs font-medium text-nowrap text-neutral-300 sm:px-2">
-                {project?.status || 'Unknown Status'}
+              <span
+                className={`rounded-none px-1.5 py-1 text-xs font-medium text-nowrap sm:px-2 ${
+                  project.status === 'scheduled' && !isExpired
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'bg-[#171717] text-neutral-300'
+                }`}
+              >
+                {project.status === 'scheduled' && !isExpired
+                  ? 'Scheduled'
+                  : project?.status || 'Unknown Status'}
               </span>
               <span className="rounded-none bg-[#171717] px-1.5 py-1 text-xs font-medium text-nowrap text-neutral-300 sm:px-2">
                 {project?.type || 'Unknown Type'}

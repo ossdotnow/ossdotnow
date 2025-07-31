@@ -18,10 +18,20 @@ import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
 
+async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
+  const now = new Date();
+  await db
+    .update(projectLaunch)
+    .set({ status: 'live' })
+    .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+}
+
 export const launchesRouter = createTRPCRouter({
   getLaunchByProjectId: publicProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const launch = await ctx.db
         .select({
           id: project.id,
@@ -114,6 +124,8 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const today = new Date();
       const startOfToday = startOfDay(today);
       const endOfToday = endOfDay(today);
@@ -239,6 +251,8 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const yesterday = subDays(new Date(), 1);
       const startOfYesterday = startOfDay(yesterday);
       const endOfYesterday = endOfDay(yesterday);
@@ -364,6 +378,7 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
       const launches = await ctx.db
         .select({
           id: project.id,
@@ -702,6 +717,8 @@ export const launchesRouter = createTRPCRouter({
       });
     }
 
+    await updateScheduledLaunchesToLive(ctx.db);
+
     const launches = await ctx.db
       .select({
         id: project.id,
@@ -714,12 +731,7 @@ export const launchesRouter = createTRPCRouter({
       })
       .from(projectLaunch)
       .innerJoin(project, eq(projectLaunch.projectId, project.id))
-      .where(
-        and(
-          eq(project.ownerId, ctx.session.userId),
-          eq(projectLaunch.status, 'scheduled'),
-        ),
-      )
+      .where(and(eq(project.ownerId, ctx.session.userId), eq(projectLaunch.status, 'scheduled')))
       .orderBy(projectLaunch.launchDate);
 
     return launches;

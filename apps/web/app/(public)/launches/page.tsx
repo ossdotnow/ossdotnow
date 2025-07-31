@@ -24,17 +24,23 @@ function LaunchesPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const { data: todayLaunches, isLoading: todayLoading } = useQuery(
-    trpc.launches.getTodayLaunches.queryOptions({ limit: 50 }),
-  );
+  const { data: todayLaunches, isLoading: todayLoading } = useQuery({
+    ...trpc.launches.getTodayLaunches.queryOptions({ limit: 50 }),
+    refetchInterval: 60000,
+    refetchIntervalInBackground: true,
+  });
 
-  const { data: yesterdayLaunches, isLoading: yesterdayLoading } = useQuery(
-    trpc.launches.getYesterdayLaunches.queryOptions({ limit: 50 }),
-  );
+  const { data: yesterdayLaunches, isLoading: yesterdayLoading } = useQuery({
+    ...trpc.launches.getYesterdayLaunches.queryOptions({ limit: 50 }),
+    refetchInterval: 60000,
+    refetchIntervalInBackground: true,
+  });
 
-  const { data: allLaunches, isLoading: allLoading } = useQuery(
-    trpc.launches.getAllLaunches.queryOptions({ limit: 50 }),
-  );
+  const { data: allLaunches, isLoading: allLoading } = useQuery({
+    ...trpc.launches.getAllLaunches.queryOptions({ limit: 50 }),
+    refetchInterval: 60000,
+    refetchIntervalInBackground: true,
+  });
 
   // const handleShare = async (project: any) => {
   //   const url = `${window.location.origin}/launches/${project.id}`;
