@@ -5,7 +5,7 @@ import { getRateLimiter } from '../utils/rate-limit';
 import { getActiveDriver } from '../driver/utils';
 import { createInsertSchema } from 'drizzle-zod';
 import { TRPCError } from '@trpc/server';
-import { count, eq } from 'drizzle-orm';
+import { count, eq, and, isNull } from 'drizzle-orm';
 import { getIp } from '../utils/ip';
 import { z } from 'zod/v4';
 
@@ -27,9 +27,21 @@ const createProjectInput = createInsertSchema(project)
 
 export const earlySubmissionRouter = createTRPCRouter({
   checkDuplicateRepo: publicProcedure
-    .input(z.object({ gitRepoUrl: z.string() }))
+    .input(z.object({ gitRepoUrl: z.string() , gitHost: z.string().optional(),}))
     .query(async ({ ctx, input }) => {
-      return await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
+      // return await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
+      let repoId: string | undefined;
+      if (input.gitHost) {
+        try {
+          const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
+          const repoData = await driver.getRepo(input.gitRepoUrl);
+          repoId = repoData.id?.toString();
+        } catch (error) {
+          console.warn('Could not fetch repo data for duplicate check:', error);
+        }
+      }
+      
+      return await checkProjectDuplicate(ctx.db, input.gitRepoUrl, repoId);
     }),
   addProject: publicProcedure.input(createProjectInput).mutation(async ({ ctx, input }) => {
     const limiter = getRateLimiter('early-access-waitlist');
@@ -48,11 +60,13 @@ export const earlySubmissionRouter = createTRPCRouter({
 
     // Validate repository and get privacy status
     let isRepoPrivate = false;
+    let repoId: string | null = null;
     if (input.gitHost && input.gitRepoUrl) {
       try {
         const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
         const repoData = await driver.getRepo(input.gitRepoUrl);
         isRepoPrivate = repoData.isPrivate || false;
+        repoId = repoData.id?.toString() || null;
       } catch (error) {
         // If there's an error fetching the repo, we'll continue with the flow
         // This allows for cases where the repo might be temporarily unavailable
@@ -73,6 +87,7 @@ export const earlySubmissionRouter = createTRPCRouter({
           gitRepoUrl: input.gitRepoUrl,
           gitHost: input.gitHost,
           name: input.name,
+          repoId: repoId!,
           description: input.description,
           socialLinks: input.socialLinks,
           isLookingForContributors: input.isLookingForContributors,
@@ -97,7 +112,11 @@ export const earlySubmissionRouter = createTRPCRouter({
             approvalStatus: project.approvalStatus,
           })
           .from(project)
-          .where(eq(project.gitRepoUrl, input.gitRepoUrl))
+          .where(and
+            (eq(project.gitRepoUrl, input.gitRepoUrl),
+            isNull(project.deletedAt),
+          )
+        )
           .limit(1);
 
         const statusMsg =

@@ -1,6 +1,6 @@
 import { categoryProjectTypes, categoryProjectStatuses, categoryTags } from '@workspace/db/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { project } from '@workspace/db/schema';
+import { eq, and, isNull, inArray } from 'drizzle-orm';
+import { project, projectLaunch } from '@workspace/db/schema';
 import { TRPCError } from '@trpc/server';
 import { type DB } from '@workspace/db';
 export const APPROVAL_STATUS = {
@@ -57,19 +57,28 @@ export async function resolveTagIds(db: DB, tagNames: string[]) {
 
   return tags.map((tag) => tag.id);
 }
-export async function checkProjectDuplicate(db: DB, gitRepoUrl: string) {
+export async function checkProjectDuplicate(db: DB, gitRepoUrl: string, repoId?: string) {
   const existingProject = await db.query.project.findFirst({
-    where: eq(project.gitRepoUrl, gitRepoUrl),
+    where:and(
+      eq(project.gitRepoUrl, gitRepoUrl),
+      eq(projectLaunch.status, 'scheduled'),
+      isNull(project.deletedAt),
+    ),
     columns: {
       id: true,
       name: true,
       approvalStatus: true,
+      repoId: true,
     },
   });
 
   if (!existingProject) {
     return { exists: false };
   }
+  if (repoId && existingProject.repoId && existingProject.repoId !== repoId) {
+    return { exists: false };
+  }
+
 
   const statusMessage =
     existingProject.approvalStatus === APPROVAL_STATUS.APPROVED
