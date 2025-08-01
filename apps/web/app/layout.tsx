@@ -2,7 +2,6 @@ import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
 import { ourFileRouter } from '@/app/api/uploadthing/core';
 import { extractRouterConfig } from 'uploadthing/server';
 import { Geist, Geist_Mono } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
 import { Providers } from '@/components/providers';
 import Footer from '@/components/layout/footer';
 import { env } from '@workspace/env/server';
@@ -61,7 +60,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <Footer />
-          <Analytics />
+
           <Databuddy
             clientId={env.DATABUDDY_CLIENT_ID}
             enableBatching={true}

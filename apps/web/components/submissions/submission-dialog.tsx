@@ -8,10 +8,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@workspace/ui/components/dialog';
-import { track as trackVercel } from '@vercel/analytics/react';
 import { Button } from '@workspace/ui/components/button';
-import { track as trackDatabuddy } from '@databuddy/sdk';
 import SubmissionForm from './submission-form';
+import { track } from '@databuddy/sdk';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -37,8 +36,7 @@ export default function SubmissionDialog({ quickSubmit }: SubmissionDialogProps)
       <DialogTrigger asChild>
         <Button
           onClick={() => {
-            trackDatabuddy('submit_project_nav_click');
-            trackVercel('submit_project_nav_click');
+            track('submit_project_nav_click');
           }}
           size="sm"
           className="ml-2 cursor-pointer rounded-none px-2 text-xs md:text-sm"

@@ -13,15 +13,25 @@ import {
   user,
 } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
-import { eq, desc, and, sql, gte, lt, inArray } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
+
+async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
+  const now = new Date();
+  await db
+    .update(projectLaunch)
+    .set({ status: 'live' })
+    .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+}
 
 export const launchesRouter = createTRPCRouter({
   getLaunchByProjectId: publicProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const launch = await ctx.db
         .select({
           id: project.id,
@@ -34,6 +44,7 @@ export const launchesRouter = createTRPCRouter({
           gitHost: project.gitHost,
           type: categoryProjectTypes.displayName,
           launchDate: projectLaunch.launchDate,
+          status: projectLaunch.status,
           featured: projectLaunch.featured,
           owner: {
             id: user.id,
@@ -57,6 +68,7 @@ export const launchesRouter = createTRPCRouter({
           projectLaunch.tagline,
           projectLaunch.detailedDescription,
           projectLaunch.launchDate,
+          projectLaunch.status,
           projectLaunch.featured,
           categoryProjectTypes.displayName,
           user.id,
@@ -112,6 +124,8 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const today = new Date();
       const startOfToday = startOfDay(today);
       const endOfToday = endOfDay(today);
@@ -149,6 +163,7 @@ export const launchesRouter = createTRPCRouter({
           and(
             eq(project.approvalStatus, 'approved'),
             eq(project.isRepoPrivate, false),
+            eq(projectLaunch.status, 'live'),
             gte(projectLaunch.launchDate, startOfToday),
             lt(projectLaunch.launchDate, endOfToday),
           ),
@@ -236,6 +251,8 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
+
       const yesterday = subDays(new Date(), 1);
       const startOfYesterday = startOfDay(yesterday);
       const endOfYesterday = endOfDay(yesterday);
@@ -273,8 +290,9 @@ export const launchesRouter = createTRPCRouter({
           and(
             eq(project.approvalStatus, 'approved'),
             eq(project.isRepoPrivate, false),
+            eq(projectLaunch.status, 'live'),
             gte(projectLaunch.launchDate, startOfYesterday),
-            lt(projectLaunch.launchDate, endOfYesterday),
+            lte(projectLaunch.launchDate, endOfYesterday),
           ),
         )
         .groupBy(
@@ -360,6 +378,7 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      await updateScheduledLaunchesToLive(ctx.db);
       const launches = await ctx.db
         .select({
           id: project.id,
@@ -393,7 +412,7 @@ export const launchesRouter = createTRPCRouter({
           and(
             eq(project.approvalStatus, 'approved'),
             eq(project.isRepoPrivate, false),
-            lt(projectLaunch.launchDate, new Date()),
+            eq(projectLaunch.status, 'live'),
           ),
         )
         .groupBy(
@@ -584,6 +603,7 @@ export const launchesRouter = createTRPCRouter({
         detailedDescription: z.string().optional(),
         launchDate: z.coerce.date(),
         launchTime: z.string().optional(),
+        isScheduled: z.boolean().default(false),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -631,7 +651,7 @@ export const launchesRouter = createTRPCRouter({
         input.launchDate = launchDate;
       }
 
-      if (input.launchDate.getTime() < Date.now()) {
+      if (input.isScheduled && input.launchDate.getTime() < Date.now()) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Launch date cannot be in the past',
@@ -664,16 +684,97 @@ export const launchesRouter = createTRPCRouter({
         });
       }
 
+      let status: 'live' | 'scheduled';
+      let finalLaunchDate = input.launchDate;
+
+      if (input.isScheduled) {
+        const now = new Date();
+        status = input.launchDate.getTime() <= now.getTime() ? 'live' : 'scheduled';
+      } else {
+        finalLaunchDate = new Date();
+        status = 'live';
+      }
+
       const [launch] = await ctx.db
         .insert(projectLaunch)
         .values({
           projectId: input.projectId,
           tagline: input.tagline,
           detailedDescription: input.detailedDescription,
-          launchDate: input.launchDate ?? undefined,
+          launchDate: finalLaunchDate,
+          status: status,
         })
         .returning();
 
       return launch;
+    }),
+
+  getUserScheduledLaunches: protectedProcedure.query(async ({ ctx }) => {
+    if (!ctx.session.userId) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'User not authenticated',
+      });
+    }
+
+    await updateScheduledLaunchesToLive(ctx.db);
+
+    const launches = await ctx.db
+      .select({
+        id: project.id,
+        name: project.name,
+        tagline: projectLaunch.tagline,
+        description: project.description,
+        logoUrl: project.logoUrl,
+        launchDate: projectLaunch.launchDate,
+        createdAt: projectLaunch.createdAt,
+      })
+      .from(projectLaunch)
+      .innerJoin(project, eq(projectLaunch.projectId, project.id))
+      .where(and(eq(project.ownerId, ctx.session.userId), eq(projectLaunch.status, 'scheduled')))
+      .orderBy(projectLaunch.launchDate);
+
+    return launches;
+  }),
+
+  removeLaunch: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (!ctx.session.userId) {
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'User not authenticated',
+        });
+      }
+      const foundProject = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+      });
+
+      if (!foundProject) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Project not found',
+        });
+      }
+
+      if (foundProject.ownerId !== ctx.session.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only remove launches for your own projects',
+        });
+      }
+      const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
+        where: eq(projectLaunch.projectId, input.projectId),
+      });
+
+      if (!existingLaunch) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Launch not found for this project',
+        });
+      }
+      await ctx.db.delete(projectLaunch).where(eq(projectLaunch.projectId, input.projectId));
+
+      return { success: true, message: 'Launch removed successfully' };
     }),
 });

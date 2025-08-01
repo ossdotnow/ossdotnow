@@ -63,9 +63,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
           text: launch?.tagline,
           url,
         });
-      } catch (error) {
-        console.error('Error sharing:', error);
-      }
+      } catch (error) {}
     } else {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard!');
@@ -108,19 +106,7 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
           <h1 className="mb-2 text-3xl font-bold">{launch.name}</h1>
           <p className="mb-2 text-lg text-neutral-400">{launch.tagline}</p>
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={launch.owner?.image || ''} />
-                <AvatarFallback>{launch.owner?.name?.[0]}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm text-neutral-400">
-                {launch.owner?.name || 'Unknown'} launched{' '}
-                {launch.launchDate ? formatDistanceToNow(new Date(launch.launchDate)) : 'recently'}{' '}
-                ago
-              </span>
-            </div>
-
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleShare} className="gap-2 rounded-none">
                 <Share2 className="h-4 w-4" />

@@ -15,20 +15,21 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun --conditions=react-server run src/seed/seed-db.ts",
     "db:make-all-admin": "bun --conditions=react-server run src/seed/make-all-admin.ts",
+    "db:update-launch-status": "bun --conditions=react-server run scripts/update-launch-status.ts",
     "format": "prettier --write \"**/*.{ts,tsx,css,,md}\""
   },
   "dependencies": {
     "@workspace/env": "workspace:*",
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "catalog:",
     "postgres": "^3.4.7",
-    "server-only": "^0.0.1"
+    "server-only": "catalog:"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
-    "@types/node": "^24",
-    "drizzle-kit": "^0.31.1",
-    "eslint": "^9",
-    "typescript": "^5"
+    "@types/node": "catalog:",
+    "drizzle-kit": "^0.31.4",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -8,6 +8,7 @@ import { cn } from '@workspace/ui/lib/utils';
 import { navItems } from '@/lib/nav-items';
 import { MobileNav } from './mobile-nav';
 import PublicNav from './public-nav';
+import { ScheduledLaunchesModal } from './scheduled-launches-dropdown';
 import UserNav from './user-nav';
 import { useState } from 'react';
 
@@ -49,7 +50,10 @@ export function NavInner({ session }: { session: any }) {
           </div>
           <div className="flex items-center gap-2 md:hidden">
             {session?.user.id ? (
-              <UserNav />
+              <>
+                <ScheduledLaunchesModal />
+                <UserNav />
+              </>
             ) : (
               <Button
                 className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"

@@ -1,5 +1,6 @@
 'use client';
 
+import { ScheduledLaunchesModal } from './scheduled-launches-dropdown';
 import SubmissionDialog from '../submissions/submission-dialog';
 import { Button } from '@workspace/ui/components/button';
 import Link from '@workspace/ui/components/link';
@@ -39,7 +40,10 @@ export default function PublicNav({ session }: { session: any }) {
         ))}
       </div>
       {session?.user.id ? (
-        <UserNav />
+        <>
+          <ScheduledLaunchesModal />
+          <UserNav />
+        </>
       ) : (
         <Button
           className="rounded-none border border-neutral-800 bg-transparent px-4 py-2 text-sm text-white hover:border-neutral-700 hover:bg-neutral-900"

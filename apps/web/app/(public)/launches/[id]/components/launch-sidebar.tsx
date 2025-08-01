@@ -8,17 +8,31 @@ import {
   GitPullRequest,
   Star,
   Users,
+  Trash2,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
-import { Separator } from '@workspace/ui/components/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@workspace/ui/components/dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Separator } from '@workspace/ui/components/separator';
+import { useLaunchUpdates } from '@/hooks/use-launch-updates';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
+import { useRouter, usePathname } from 'next/navigation';
+import { Input } from '@workspace/ui/components/input';
+import { useCountdown } from '@/hooks/use-countdown';
 import { authClient } from '@workspace/auth/client';
 import Link from '@workspace/ui/components/link';
 import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { useRouter, usePathname } from 'next/navigation';
 
 const isValidProvider = (
   provider: string | null | undefined,
@@ -41,6 +55,15 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
 
   const router = useRouter();
   const currentPath = usePathname();
+  const [showRemoveModal, setShowRemoveModal] = useState(false);
+  const [confirmationInput, setConfirmationInput] = useState('');
+
+  const { launch: realtimeLaunch } = useLaunchUpdates({ projectId });
+  const currentLaunch = realtimeLaunch || launch;
+
+  const { timeRemaining, isExpired } = useCountdown(
+    currentLaunch?.status === 'scheduled' ? currentLaunch.launchDate : null,
+  );
 
   // Validate gitRepoUrl and gitHost before using them in queries
   const isValidRepoUrl = Boolean(project?.gitRepoUrl && project.gitRepoUrl.trim() !== '');
@@ -81,20 +104,69 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
       });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getTodayLaunches.queryKey(),
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getYesterdayLaunches.queryKey(),
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getAllLaunches.queryKey(),
+        exact: false,
+      });
     },
     onError: () => {
       toast.error('Failed to vote. Please try again.');
     },
   });
 
+  const removeLaunchMutation = useMutation({
+    ...trpc.launches.removeLaunch.mutationOptions(),
+    onSuccess: () => {
+      toast.success('Launch removed successfully!');
+      router.push('/launches');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to remove launch. Please try again.');
+    },
+  });
+
   const handleVote = async () => {
     if (!session?.user) {
-      await router.push(`/login?redirect=${currentPath}`);
+      router.push(`/login?redirect=${currentPath}`);
       toast.error('Please login to vote');
       return;
     }
     voteMutation.mutate({ projectId });
   };
+
+  const handleRemoveLaunch = () => {
+    setShowRemoveModal(true);
+  };
+
+  const handleConfirmRemoval = () => {
+    const projectName = getProjectName();
+    if (confirmationInput === projectName) {
+      removeLaunchMutation.mutate({ projectId });
+      setShowRemoveModal(false);
+      setConfirmationInput('');
+    } else {
+      toast.error(`Please type "${projectName}" to confirm removal`);
+    }
+  };
+
+  const handleCancelRemoval = () => {
+    setShowRemoveModal(false);
+    setConfirmationInput('');
+  };
+
+  const getProjectName = () => {
+    return currentLaunch?.name || project?.name || 'project-name';
+  };
+
+  const isOwner = session?.user?.id === currentLaunch.owner?.id;
 
   const repoData = repoQuery.data;
   const repoStats = repoDataQuery.data;
@@ -108,19 +180,30 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
       <div className="border border-neutral-800 bg-neutral-900/50 p-4 md:p-6">
         <h2 className="mb-4 text-lg font-semibold text-white">Launch Info</h2>
 
+        {/* Launch Status */}
+        {currentLaunch.status === 'scheduled' && !isExpired && (
+          <div className="mb-4 flex items-center gap-2 rounded-none border border-orange-500/20 bg-orange-500/10 px-3 py-2">
+            <Clock className="h-4 w-4 text-orange-400" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-orange-400">Launches in:</span>
+              <span className="text-sm font-bold text-orange-300">{timeRemaining}</span>
+            </div>
+          </div>
+        )}
+
         {/* Vote Button */}
         <div className="mb-6">
           <Button
-            variant={launch.hasVoted ? 'default' : 'outline'}
+            variant={currentLaunch.hasVoted ? 'default' : 'outline'}
             size="lg"
             className={`flex h-12 w-full items-center justify-center gap-3 rounded-none ${
-              launch.hasVoted ? 'bg-orange-500 hover:bg-orange-600' : ''
+              currentLaunch.hasVoted ? 'bg-orange-500 hover:bg-orange-600' : ''
             }`}
             onClick={handleVote}
             disabled={voteMutation.isPending}
           >
             <ArrowUp className="h-5 w-5" />
-            <span className="text-xl font-bold">{launch.voteCount}</span>
+            <span className="text-xl font-bold">{currentLaunch.voteCount}</span>
             <span className="text-sm">VOTES</span>
           </Button>
         </div>
@@ -128,23 +211,41 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
         <div className="mb-6">
           <h3 className="mb-3 text-sm font-medium text-neutral-300">Details</h3>
           <div className="space-y-2 text-sm">
-            {launch.launchDate && (
+            {currentLaunch.launchDate && (
               <div className="flex items-center justify-between">
-                <span className="text-neutral-400">Launch Date</span>
+                <span className="text-neutral-400">
+                  {currentLaunch.status === 'scheduled' && !isExpired
+                    ? 'Scheduled For'
+                    : 'Launch Date'}
+                </span>
                 <span className="text-neutral-300">
-                  {formatDistanceToNow(new Date(launch.launchDate))} ago
+                  {currentLaunch.status === 'scheduled' && !isExpired
+                    ? formatDistanceToNow(new Date(currentLaunch.launchDate), { addSuffix: true })
+                    : `${formatDistanceToNow(new Date(currentLaunch.launchDate))} ago`}
                 </span>
               </div>
             )}
-            {launch.owner?.name && (
+            {currentLaunch.owner?.name && (
               <div className="flex items-center justify-between">
                 <span className="text-neutral-400">Owner</span>
-                <span className="text-neutral-300">{launch.owner.name}</span>
+                <span className="text-neutral-300">{currentLaunch.owner.name}</span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-neutral-400">Status</span>
-              <span className="text-neutral-300">Active Launch</span>
+              <div className="flex items-center gap-1">
+                {currentLaunch.status === 'scheduled' && !isExpired ? (
+                  <>
+                    <Clock className="h-3 w-3 text-orange-400" />
+                    <span className="text-orange-400">Scheduled</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-3 w-3 text-green-400" />
+                    <span className="text-green-400">Live</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -195,13 +296,13 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
         </div>
 
         {/* Tags */}
-        {launch.tags && launch.tags.length > 0 && (
+        {currentLaunch.tags && currentLaunch.tags.length > 0 && (
           <>
             <Separator className="my-6 bg-neutral-700/40" />
             <div className="mb-6">
               <h3 className="mb-3 text-sm font-medium text-neutral-300">Tags</h3>
               <div className="flex flex-wrap gap-1.5">
-                {launch.tags.map((tag: string) => (
+                {currentLaunch.tags.map((tag: string) => (
                   <span
                     key={tag}
                     className="rounded-none bg-neutral-800 px-2.5 py-1 text-xs text-neutral-300 transition-colors hover:bg-neutral-700"
@@ -214,15 +315,75 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
           </>
         )}
 
-        <div>
+        <div className="space-y-3">
           <Button variant="outline" className="w-full gap-2 rounded-none" asChild>
             <Link href={`/projects/${projectId}`}>
               <ExternalLink className="h-4 w-4" />
               View Project
             </Link>
           </Button>
+          {isOwner && (
+            <Button
+              variant="destructive"
+              className="w-full gap-2 rounded-none"
+              onClick={handleRemoveLaunch}
+              disabled={removeLaunchMutation.isPending}
+            >
+              <Trash2 className="h-4 w-4" />
+              {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
+            </Button>
+          )}
         </div>
       </div>
+      <Dialog open={showRemoveModal} onOpenChange={setShowRemoveModal}>
+        <DialogContent className="rounded-none sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-400">
+              <Trash2 className="h-5 w-5" />
+              Remove Launch
+            </DialogTitle>
+            <DialogDescription className="text-neutral-400">
+              This will permanently remove the launch and this action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-sm text-neutral-300">
+                Type{' '}
+                <span className="font-mono font-semibold text-red-400">{getProjectName()}</span> to
+                confirm removal:
+              </p>
+              <Input
+                type="text"
+                value={confirmationInput}
+                onChange={(e) => setConfirmationInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && confirmationInput === getProjectName()) {
+                    handleConfirmRemoval();
+                  } else if (e.key === 'Escape') {
+                    handleCancelRemoval();
+                  }
+                }}
+                placeholder={getProjectName()}
+                className="rounded-none bg-red-500/10 text-white placeholder:text-red-400/60 focus:ring-offset-0 focus-visible:ring-0"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="destructive"
+                className="rounded-none"
+                onClick={handleConfirmRemoval}
+                disabled={confirmationInput !== getProjectName() || removeLaunchMutation.isPending}
+              >
+                {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

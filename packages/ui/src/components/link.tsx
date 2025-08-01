@@ -1,10 +1,9 @@
 'use client';
 
-import { track as vercelTrack } from '@vercel/analytics/react';
 import { default as NextLink, LinkProps } from 'next/link';
-import { track as databuddyTrack } from '@databuddy/sdk';
 import { ComponentPropsWithoutRef } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
+import { track } from '@databuddy/sdk';
 
 type Props = ComponentPropsWithoutRef<'a'> &
   LinkProps & {
@@ -30,8 +29,7 @@ export default function Link({
       {...props}
       onClick={(e) => {
         if (event) {
-          vercelTrack(event, eventObject);
-          databuddyTrack(event, eventObject);
+          track(event, eventObject);
         }
         if (onClick) {
           onClick(e);
