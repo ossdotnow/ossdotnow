@@ -36,12 +36,13 @@ export default function ProjectCard({
   if (isError || !repo) return null;
 
   return (
-    <Link
-      href={`/projects/${project.id}`}
-      event="project_card_link_clicked"
-      eventObject={{ projectId: project.id }}
-      className="group/project relative flex h-full flex-col bg-[#171717] p-1"
-    >
+    <div className="group/project relative flex h-full flex-col bg-[#171717] p-1">
+      <Link
+        href={`/projects/${project.id}`}
+        event="project_card_link_clicked"
+        eventObject={{ projectId: project.id }}
+        className="absolute inset-0"
+      />
       <span className="sr-only">View {project.name}</span>
       <div className="flex flex-1 grow flex-col gap-2 border border-[#404040] bg-[#262626] p-4">
         <div className="mb-3 flex items-center gap-3">
@@ -131,6 +132,6 @@ export default function ProjectCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
