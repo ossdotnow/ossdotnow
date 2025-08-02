@@ -525,6 +525,15 @@ export const launchesRouter = createTRPCRouter({
         conditions.push(eq(projectLaunch.status, status));
       }
 
+      const countQuery = ctx.db
+        .select({ totalCount: sql<number>`count(distinct ${projectLaunch.id})` })
+        .from(projectLaunch)
+        .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .where(and(...conditions));
+
+      const [totalCountResult] = await countQuery;
+      const totalCount = totalCountResult?.totalCount ?? 0;
+
       const launches = await ctx.db
         .select({
           id: project.id,
@@ -606,7 +615,7 @@ export const launchesRouter = createTRPCRouter({
           return {
             data: [],
             dateRange: { startDate, endDate },
-            totalCount: 0,
+            totalCount,
           };
         }
 
@@ -631,7 +640,7 @@ export const launchesRouter = createTRPCRouter({
             hasVoted: userVotesSet.has(launch.id),
           })),
           dateRange: { startDate, endDate },
-          totalCount: launches.length,
+          totalCount: totalCount,
         };
       }
 
@@ -642,7 +651,7 @@ export const launchesRouter = createTRPCRouter({
           hasVoted: false,
         })),
         dateRange: { startDate, endDate },
-        totalCount: launches.length,
+        totalCount: totalCount,
       };
     }),
 

@@ -738,10 +738,84 @@ export const projectsRouter = createTRPCRouter({
           break;
       }
 
-      const projectResults = await query
+      let projectResults = await query
         .orderBy(...orderByClause)
         .limit(pageSize)
         .offset(offset);
+      const CACHE_THRESHOLD_MINUTES = 3;
+      const now = new Date();
+      let needsRequery = false;
+      const outdatedStars = projectResults.filter((r) => {
+        const updatedAt = r.project.starsUpdatedAt;
+        if (!updatedAt) return true;
+        const diff = (now.getTime() - new Date(updatedAt).getTime()) / 60000;
+        return diff > CACHE_THRESHOLD_MINUTES;
+      });
+      if (outdatedStars.length > 0) {
+        const results = await Promise.allSettled(
+          outdatedStars.map(async (r) => {
+            const stars = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'stars',
+              ctx,
+            );
+            if (typeof stars === 'number') {
+              await ctx.db
+                .update(project)
+                .set({ starsCount: stars, starsUpdatedAt: new Date() })
+                .where(eq(project.id, r.project.id));
+              needsRequery = true;
+            }
+          }),
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedStars[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update stars for project ${projectId}:`, result.reason);
+          }
+        });
+      }
+
+      const outdatedForks = projectResults.filter((r) => {
+        const updatedAt = r.project.forksUpdatedAt;
+        if (!updatedAt) return true;
+        const diff = (now.getTime() - new Date(updatedAt).getTime()) / 60000;
+        return diff > CACHE_THRESHOLD_MINUTES;
+      });
+      if (outdatedForks.length > 0) {
+        const results = await Promise.allSettled(
+          outdatedForks.map(async (r) => {
+            const forks = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'forks',
+              ctx,
+            );
+            if (typeof forks === 'number') {
+              await ctx.db
+                .update(project)
+                .set({ forksCount: forks, forksUpdatedAt: new Date() })
+                .where(eq(project.id, r.project.id));
+              needsRequery = true;
+            }
+          }),
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedForks[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update forks for project ${projectId}:`, result.reason);
+          }
+        });
+      }
+      if (needsRequery) {
+        projectResults = await query
+          .orderBy(...orderByClause)
+          .limit(pageSize)
+          .offset(offset);
+      }
 
       const projectIds = projectResults.map((r) => r.project.id);
       const tagRelations =
