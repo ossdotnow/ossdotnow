@@ -14,6 +14,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun --conditions=react-server run src/seed/seed-db.ts",
+    "db:seed-launches": "bun --conditions=react-server run src/seed/seed-launches.ts",
     "db:make-all-admin": "bun --conditions=react-server run src/seed/make-all-admin.ts",
     "db:update-launch-status": "bun --conditions=react-server run scripts/update-launch-status.ts",
     "format": "prettier --write \"**/*.{ts,tsx,css,,md}\""

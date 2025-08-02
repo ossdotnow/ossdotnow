@@ -108,10 +108,12 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={handleShare} className="gap-2 rounded-none">
-                <Share2 className="h-4 w-4" />
-                Share
-              </Button>
+              {launch.status === 'live' && (
+                <Button variant="outline" onClick={handleShare} className="gap-2 rounded-none">
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              )}
               <Button
                 title="Report"
                 variant="outline"

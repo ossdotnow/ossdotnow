@@ -23,9 +23,11 @@ export default function LaunchDetailPage({ params }: { params: Promise<{ id: str
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const { data: launch, isLoading: launchLoading } = useQuery(
-    trpc.launches.getLaunchByProjectId.queryOptions({ projectId }),
-  );
+  const { data: launch, isLoading: launchLoading } = useQuery({
+    ...trpc.launches.getLaunchByProjectId.queryOptions({ projectId }),
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
+  });
 
   const { data: project } = useQuery(trpc.projects.getProject.queryOptions({ id: projectId }));
 
