@@ -40,7 +40,7 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 15 (App Router) + React 19 + TypeScript
+- **Frontend**: Next.js 15 (App Router) + React 19 + TypeScript + Turbopack
 - **Styling**: Tailwind CSS + shadcn/ui components
 - **Backend**: tRPC + Node.js
 - **Database**: PostgreSQL (via Neon) + DrizzleORM
@@ -48,6 +48,7 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 - **Authentication**: Better-Auth with GitHub & GitLab OAuth
 - **Analytics**: [Databuddy](https://databuddy.cc/) - [repo](https://github.com/databuddy-analytics/databuddy)
 - **Deployment**: Vercel
+- **Monorepo**: Turborepo
 
 ## Project Structure
 
