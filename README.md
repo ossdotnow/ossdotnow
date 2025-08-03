@@ -42,6 +42,7 @@ oss.now is a modern platform designed to bridge the gap between open source proj
 
 - **Frontend**: Next.js 15 (App Router) + React 19 + TypeScript + Turbopack
 - **Styling**: Tailwind CSS + shadcn/ui components
+- **Linting & Formatting**: Prettier + ESLint
 - **Backend**: tRPC + Node.js
 - **Database**: PostgreSQL (via Neon) + DrizzleORM
 - **Caching**: Redis (Upstash)
