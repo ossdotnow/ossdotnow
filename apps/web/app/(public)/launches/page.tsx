@@ -406,7 +406,7 @@ function LaunchesPage() {
 
           <TabsContent value="all" className="space-y-4">
             {/* Week Selector */}
-            <div className="sticky top-[calc(32px+65px+48px)] z-10 bg-[#101010] pb-2">
+            <div className="sticky top-[calc(32px+65px+32px)] z-10 bg-[#101010] pb-2">
               <div className="mb-2">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-medium text-neutral-300 sm:text-base">Select Week</h3>
