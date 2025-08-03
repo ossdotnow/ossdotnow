@@ -1,4 +1,3 @@
-
 import {
   categoryProjectStatuses,
   categoryProjectTypes,
@@ -7,7 +6,7 @@ import {
 } from '@workspace/db/schema';
 import { adminProcedure, createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { account, project, projectClaim, projectTagRelations } from '@workspace/db/schema';
-import { and, asc, count, desc, eq, or, ilike, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, or, ilike, inArray, gte, lte } from 'drizzle-orm';
 import { APPROVAL_STATUS, resolveAllIds } from '../utils/project-helpers';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { PROVIDER_URL_PATTERNS } from '../utils/constants';
@@ -66,7 +65,7 @@ async function fetchRepoMetric(
   gitRepoUrl: string | null,
   gitHost: string | null,
   metric: 'stars' | 'forks',
-  ctx: any
+  ctx: any,
 ): Promise<number | null> {
   if (!gitRepoUrl || !gitHost) {
     return null;
@@ -264,14 +263,14 @@ export const projectsRouter = createTRPCRouter({
 
       return projects;
     }),
-// API procedure to get only featured (pinned) projects
+  // API procedure to get only featured (pinned) projects
   featuredProjects: publicProcedure
     .input(
       z.object({
         sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
         page: z.number().min(1).default(1),
         pageSize: z.number().min(1).max(100).default(4),
-      })
+      }),
     )
     .query(async ({ ctx, input }) => {
       const { sortBy, page, pageSize } = input;
@@ -491,14 +490,20 @@ export const projectsRouter = createTRPCRouter({
       if (outdatedStars.length > 0) {
         const results = await Promise.allSettled(
           outdatedStars.map(async (r) => {
-            const stars = await fetchRepoMetric(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, 'stars', ctx);
+            const stars = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'stars',
+              ctx,
+            );
             if (typeof stars === 'number') {
-              await ctx.db.update(project)
+              await ctx.db
+                .update(project)
                 .set({ starsCount: stars, starsUpdatedAt: new Date() })
                 .where(eq(project.id, r.project.id));
               needsRequery = true;
             }
-          })
+          }),
         );
         // Log any failures for monitoring
         results.forEach((result, index) => {
@@ -518,14 +523,20 @@ export const projectsRouter = createTRPCRouter({
       if (outdatedForks.length > 0) {
         const results = await Promise.allSettled(
           outdatedForks.map(async (r) => {
-            const forks = await fetchRepoMetric(r.project.gitRepoUrl ?? null, r.project.gitHost ?? null, 'forks', ctx);
+            const forks = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'forks',
+              ctx,
+            );
             if (typeof forks === 'number') {
-              await ctx.db.update(project)
+              await ctx.db
+                .update(project)
                 .set({ forksCount: forks, forksUpdatedAt: new Date() })
                 .where(eq(project.id, r.project.id));
               needsRequery = true;
             }
-          })
+          }),
         );
         // Log any failures for monitoring
         results.forEach((result, index) => {
@@ -588,6 +599,275 @@ export const projectsRouter = createTRPCRouter({
         },
       };
     }),
+  getProjectsByDateRange: publicProcedure
+    .input(
+      z.object({
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(20),
+        approvalStatus: z
+          .enum(['approved', 'rejected', 'pending', 'all'])
+          .optional()
+          .default('approved'),
+        searchQuery: z.string().optional(),
+        statusFilter: z.string().optional(),
+        typeFilter: z.string().optional(),
+        tagFilter: z.string().optional(),
+        providerFilter: z.string().optional(),
+        sortBy: z.enum(['recent', 'name', 'stars', 'forks']).optional().default('recent'),
+        dateField: z.enum(['createdAt', 'updatedAt']).optional().default('createdAt'),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const {
+        startDate,
+        endDate,
+        page,
+        pageSize,
+        approvalStatus,
+        searchQuery,
+        statusFilter,
+        typeFilter,
+        tagFilter,
+        providerFilter,
+        sortBy,
+        dateField,
+      } = input;
+
+      if (startDate > endDate) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Start date must be before or equal to end date',
+        });
+      }
+
+      const offset = (page - 1) * pageSize;
+      const conditions = [];
+
+      const dateColumn = dateField === 'updatedAt' ? project.updatedAt : project.createdAt;
+      conditions.push(gte(dateColumn, startDate));
+      conditions.push(lte(dateColumn, endDate));
+
+      if (approvalStatus && approvalStatus !== 'all') {
+        conditions.push(eq(project.approvalStatus, approvalStatus));
+      }
+
+      conditions.push(eq(project.isRepoPrivate, false));
+
+      if (searchQuery) {
+        conditions.push(
+          or(
+            ilike(project.name, `%${searchQuery}%`),
+            ilike(project.gitRepoUrl, `%${searchQuery}%`),
+          ),
+        );
+      }
+      if (providerFilter && providerFilter !== 'all') {
+        conditions.push(
+          eq(project.gitHost, providerFilter as (typeof projectProviderEnum.enumValues)[number]),
+        );
+      }
+
+      const query = ctx.db
+        .select({
+          project: project,
+          status: categoryProjectStatuses,
+          type: categoryProjectTypes,
+          tagCount: sql<number>`count(distinct ${projectTagRelations.tagId})`.as('tagCount'),
+        })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+        .groupBy(project.id, categoryProjectStatuses.id, categoryProjectTypes.id);
+
+      if (statusFilter && statusFilter !== 'all') {
+        conditions.push(eq(categoryProjectStatuses.name, statusFilter));
+      }
+
+      if (typeFilter && typeFilter !== 'all') {
+        conditions.push(eq(categoryProjectTypes.name, typeFilter));
+      }
+
+      if (tagFilter && tagFilter !== 'all') {
+        conditions.push(eq(categoryTags.name, tagFilter));
+      }
+
+      if (conditions.length > 0) {
+        query.where(and(...conditions));
+      }
+
+      const countQuery = ctx.db
+        .select({ totalCount: sql<number>`count(distinct ${project.id})` })
+        .from(project)
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(projectTagRelations, eq(project.id, projectTagRelations.projectId))
+        .leftJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id));
+
+      if (conditions.length > 0) {
+        countQuery.where(and(...conditions));
+      }
+
+      const [totalCountResult] = await countQuery;
+
+      const orderByClause = [];
+
+      if (searchQuery) {
+        orderByClause.push(desc(ilike(project.name, searchQuery)));
+        orderByClause.push(desc(ilike(project.name, `${searchQuery}%`)));
+        orderByClause.push(desc(ilike(project.name, `%${searchQuery}%`)));
+        orderByClause.push(desc(ilike(project.gitRepoUrl, `%${searchQuery}%`)));
+      }
+
+      switch (sortBy) {
+        case 'name':
+          orderByClause.push(asc(project.name));
+          break;
+        case 'stars':
+          orderByClause.push(desc(project.starsCount));
+          break;
+        case 'forks':
+          orderByClause.push(desc(project.forksCount));
+          break;
+        case 'recent':
+        default:
+          orderByClause.push(desc(dateColumn));
+          break;
+      }
+
+      let projectResults = await query
+        .orderBy(...orderByClause)
+        .limit(pageSize)
+        .offset(offset);
+      const CACHE_THRESHOLD_MINUTES = 3;
+      const now = new Date();
+      let needsRequery = false;
+      const outdatedStars = projectResults.filter((r) => {
+        const updatedAt = r.project.starsUpdatedAt;
+        if (!updatedAt) return true;
+        const diff = (now.getTime() - new Date(updatedAt).getTime()) / 60000;
+        return diff > CACHE_THRESHOLD_MINUTES;
+      });
+      if (outdatedStars.length > 0) {
+        const results = await Promise.allSettled(
+          outdatedStars.map(async (r) => {
+            const stars = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'stars',
+              ctx,
+            );
+            if (typeof stars === 'number') {
+              await ctx.db
+                .update(project)
+                .set({ starsCount: stars, starsUpdatedAt: new Date() })
+                .where(eq(project.id, r.project.id));
+              needsRequery = true;
+            }
+          }),
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedStars[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update stars for project ${projectId}:`, result.reason);
+          }
+        });
+      }
+
+      const outdatedForks = projectResults.filter((r) => {
+        const updatedAt = r.project.forksUpdatedAt;
+        if (!updatedAt) return true;
+        const diff = (now.getTime() - new Date(updatedAt).getTime()) / 60000;
+        return diff > CACHE_THRESHOLD_MINUTES;
+      });
+      if (outdatedForks.length > 0) {
+        const results = await Promise.allSettled(
+          outdatedForks.map(async (r) => {
+            const forks = await fetchRepoMetric(
+              r.project.gitRepoUrl ?? null,
+              r.project.gitHost ?? null,
+              'forks',
+              ctx,
+            );
+            if (typeof forks === 'number') {
+              await ctx.db
+                .update(project)
+                .set({ forksCount: forks, forksUpdatedAt: new Date() })
+                .where(eq(project.id, r.project.id));
+              needsRequery = true;
+            }
+          }),
+        );
+
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            const projectId = outdatedForks[index]?.project?.id ?? 'unknown';
+            console.error(`Failed to update forks for project ${projectId}:`, result.reason);
+          }
+        });
+      }
+      if (needsRequery) {
+        projectResults = await query
+          .orderBy(...orderByClause)
+          .limit(pageSize)
+          .offset(offset);
+      }
+
+      const projectIds = projectResults.map((r) => r.project.id);
+      const tagRelations =
+        projectIds.length > 0
+          ? await ctx.db.query.projectTagRelations.findMany({
+              where: inArray(projectTagRelations.projectId, projectIds),
+              with: {
+                tag: true,
+              },
+            })
+          : [];
+
+      const tagsByProject = tagRelations.reduce(
+        (acc, rel) => {
+          if (!acc[rel.projectId]) {
+            acc[rel.projectId] = [];
+          }
+          acc[rel.projectId]?.push(rel);
+          return acc;
+        },
+        {} as Record<string, typeof tagRelations>,
+      );
+
+      const projects = projectResults.map((r) => ({
+        ...r.project,
+        status: r.status,
+        type: r.type,
+        tagRelations: tagsByProject[r.project.id] || [],
+      }));
+
+      const totalCount = totalCountResult?.totalCount ?? 0;
+      const totalPages = Math.ceil(totalCount / pageSize);
+      const hasNextPage = page < totalPages;
+      const hasPreviousPage = page > 1;
+
+      return {
+        data: projects,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage,
+          hasPreviousPage,
+        },
+        dateRange: {
+          startDate,
+          endDate,
+          dateField,
+        },
+      };
+    }),
   getProjectsByUserId: publicProcedure
     .input(
       z.object({
@@ -600,10 +880,8 @@ export const projectsRouter = createTRPCRouter({
       const { page, pageSize, userId } = input;
       const offset = (page - 1) * pageSize;
 
-      // Build where conditions
       const conditions = [eq(project.ownerId, userId)];
 
-      // If viewing another user's projects, hide private repositories
       if (!ctx.session?.userId || ctx.session.userId !== userId) {
         conditions.push(eq(project.isRepoPrivate, false));
       }

@@ -126,6 +126,21 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
     ...trpc.launches.removeLaunch.mutationOptions(),
     onSuccess: () => {
       toast.success('Launch removed successfully!');
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getTodayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getYesterdayLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchesByDateRange.queryKey(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getUserScheduledLaunches.queryKey(),
+      });
       router.push('/launches');
     },
     onError: (error) => {

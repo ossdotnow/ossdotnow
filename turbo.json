@@ -43,6 +43,10 @@
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", ".env*"]
     },
+    "db:seed-launches": {
+      "cache": false,
+      "inputs": ["$TURBO_DEFAULT$", ".env*"]
+    },
     "db:make-all-admin": {
       "cache": false,
       "inputs": ["$TURBO_DEFAULT$", ".env*"]

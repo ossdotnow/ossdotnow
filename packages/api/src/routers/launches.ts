@@ -490,6 +490,171 @@ export const launchesRouter = createTRPCRouter({
       }));
     }),
 
+  getLaunchesByDateRange: publicProcedure
+    .input(
+      z.object({
+        startDate: z.coerce.date(),
+        endDate: z.coerce.date(),
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+        status: z.enum(['scheduled', 'live', 'ended', 'all']).optional().default('all'),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { startDate, endDate, limit, offset, status } = input;
+
+      // Validate date range
+      if (startDate > endDate) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Start date must be before or equal to end date',
+        });
+      }
+
+      await updateScheduledLaunchesToLive(ctx.db);
+
+      const conditions = [
+        eq(project.approvalStatus, 'approved'),
+        eq(project.isRepoPrivate, false),
+        gte(projectLaunch.launchDate, startDate),
+        lte(projectLaunch.launchDate, endDate),
+      ];
+
+      // Status filter
+      if (status && status !== 'all') {
+        conditions.push(eq(projectLaunch.status, status));
+      }
+
+      const countQuery = ctx.db
+        .select({ totalCount: sql<number>`count(distinct ${projectLaunch.id})` })
+        .from(projectLaunch)
+        .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .where(and(...conditions));
+
+      const [totalCountResult] = await countQuery;
+      const totalCount = totalCountResult?.totalCount ?? 0;
+
+      const launches = await ctx.db
+        .select({
+          id: project.id,
+          name: project.name,
+          tagline: projectLaunch.tagline,
+          description: project.description,
+          logoUrl: project.logoUrl,
+          gitRepoUrl: project.gitRepoUrl,
+          gitHost: project.gitHost,
+          type: categoryProjectTypes.displayName,
+          status: categoryProjectStatuses.displayName,
+          launchDate: projectLaunch.launchDate,
+          launchStatus: projectLaunch.status,
+          featured: projectLaunch.featured,
+          owner: {
+            id: user.id,
+            name: user.name,
+            username: user.username,
+            image: user.image,
+          },
+          voteCount: sql<number>`count(distinct ${projectVote.id})::int`.as('voteCount'),
+          commentCount: sql<number>`count(distinct ${projectComment.id})::int`.as('commentCount'),
+        })
+        .from(projectLaunch)
+        .innerJoin(project, eq(projectLaunch.projectId, project.id))
+        .leftJoin(categoryProjectStatuses, eq(project.statusId, categoryProjectStatuses.id))
+        .leftJoin(categoryProjectTypes, eq(project.typeId, categoryProjectTypes.id))
+        .leftJoin(user, eq(project.ownerId, user.id))
+        .leftJoin(projectVote, eq(projectVote.projectId, project.id))
+        .leftJoin(projectComment, eq(projectComment.projectId, project.id))
+        .where(and(...conditions))
+        .groupBy(
+          project.id,
+          projectLaunch.id,
+          projectLaunch.tagline,
+          projectLaunch.launchDate,
+          projectLaunch.status,
+          projectLaunch.featured,
+          categoryProjectStatuses.displayName,
+          categoryProjectTypes.displayName,
+          user.id,
+          user.name,
+          user.username,
+          user.image,
+        )
+        .orderBy(desc(projectLaunch.launchDate))
+        .limit(limit)
+        .offset(offset);
+
+      // Get tags for launches
+      const launchIds = launches.map((l) => l.id);
+      let tagsMap: Record<string, string[]> = {};
+
+      if (launchIds.length > 0) {
+        const allTags = await ctx.db
+          .select({
+            projectId: projectTagRelations.projectId,
+            tagName: categoryTags.displayName,
+            tagNameFallback: categoryTags.name,
+          })
+          .from(projectTagRelations)
+          .innerJoin(categoryTags, eq(projectTagRelations.tagId, categoryTags.id))
+          .where(inArray(projectTagRelations.projectId, launchIds));
+
+        tagsMap = allTags.reduce(
+          (acc, tag) => {
+            const projectId = tag.projectId;
+            if (!acc[projectId]) acc[projectId] = [];
+            acc[projectId].push(tag.tagName || tag.tagNameFallback);
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        );
+      }
+
+      // Handle user votes if authenticated
+      if (ctx.session?.userId) {
+        if (launches.length === 0) {
+          return {
+            data: [],
+            dateRange: { startDate, endDate },
+            totalCount,
+          };
+        }
+
+        const userVotes = await ctx.db
+          .select({
+            projectId: projectVote.projectId,
+          })
+          .from(projectVote)
+          .where(
+            and(
+              eq(projectVote.userId, ctx.session.userId),
+              inArray(projectVote.projectId, launchIds),
+            ),
+          );
+
+        const userVotesSet = new Set(userVotes.map((v) => v.projectId));
+
+        return {
+          data: launches.map((launch) => ({
+            ...launch,
+            tags: tagsMap[launch.id] || [],
+            hasVoted: userVotesSet.has(launch.id),
+          })),
+          dateRange: { startDate, endDate },
+          totalCount: totalCount,
+        };
+      }
+
+      return {
+        data: launches.map((launch) => ({
+          ...launch,
+          tags: tagsMap[launch.id] || [],
+          hasVoted: false,
+        })),
+        dateRange: { startDate, endDate },
+        totalCount: totalCount,
+      };
+    }),
+
   voteProject: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -773,7 +938,12 @@ export const launchesRouter = createTRPCRouter({
           message: 'Launch not found for this project',
         });
       }
-      await ctx.db.delete(projectLaunch).where(eq(projectLaunch.projectId, input.projectId));
+      await ctx.db.transaction(async (tx) => {
+        await tx.delete(projectVote).where(eq(projectVote.projectId, input.projectId));
+        await tx.delete(projectComment).where(eq(projectComment.projectId, input.projectId));
+        await tx.delete(projectReport).where(eq(projectReport.projectId, input.projectId));
+        await tx.delete(projectLaunch).where(eq(projectLaunch.projectId, input.projectId));
+      });
 
       return { success: true, message: 'Launch removed successfully' };
     }),

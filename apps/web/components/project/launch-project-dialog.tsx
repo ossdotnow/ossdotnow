@@ -192,6 +192,9 @@ export function LaunchProjectDialog({
         queryClient.invalidateQueries({
           queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
         });
+        queryClient.invalidateQueries({
+          queryKey: trpc.launches.getUserScheduledLaunches.queryKey(),
+        });
       },
       onError: (error) => {
         toast.error(error.message || 'Failed to launch project');
@@ -206,7 +209,6 @@ export function LaunchProjectDialog({
     if (data.scheduleEnabled && data.launchDate) {
       finalLaunchDate = new Date(data.launchDate);
       finalLaunchTime = data.launchTime;
-
 
       if (finalLaunchTime) {
         const timeParts = finalLaunchTime.split(':');

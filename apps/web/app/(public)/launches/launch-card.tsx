@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import ResponsiveNumber from '@/components/user/responsive-numbers';
 import { ArrowUp, MessageCircle, Clock } from 'lucide-react';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
@@ -66,6 +67,9 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
       });
       queryClient.invalidateQueries({
         queryKey: trpc.launches.getAllLaunches.queryKey({ limit: 50 }),
+      });
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchesByDateRange.queryKey(),
       });
     },
     onError: () => {
@@ -222,13 +226,14 @@ export default function LaunchCard({ project, index }: { project: any; index?: n
             <div className="flex flex-row items-center gap-2 sm:gap-4">
               <div className="flex items-center gap-1">
                 <Icons.star className="h-3 w-3 text-yellow-600 md:h-3.5 md:w-3.5" />
-                <span className="text-neutral-300">
-                  {repo?.stargazers_count || repo?.star_count || 0}
-                </span>
+                <ResponsiveNumber
+                  value={repo?.stargazers_count || repo?.star_count || 0}
+                  className="text-neutral-300"
+                />
               </div>
               <div className="flex items-center gap-1">
                 <Icons.fork className="h-3 w-3 text-purple-600 md:h-3.5 md:w-3.5" />
-                <span className="text-neutral-300">{repo?.forks_count || 0}</span>
+                <ResponsiveNumber value={repo?.forks_count || 0} className="text-neutral-300" />
               </div>
               <div className="flex items-center gap-1">
                 <Icons.clock className="h-3 w-3 text-neutral-500 md:h-3.5 md:w-3.5" />

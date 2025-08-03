@@ -16,6 +16,7 @@
     "db:push": "dotenv -- turbo run db:push",
     "db:studio": "dotenv -- turbo run db:studio",
     "db:seed": "dotenv -- turbo run db:seed",
+    "db:seed-launches": "dotenv -- turbo run db:seed-launches",
     "db:make-all-admin": "dotenv -- turbo run db:make-all-admin"
   },
   "dependencies": {
