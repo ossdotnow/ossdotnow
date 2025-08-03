@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { projectLaunch } from '@workspace/db/schema';
+import { env } from '@workspace/env/server';
 import { and, eq, lte } from 'drizzle-orm';
 import { db } from '@workspace/db';
 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization');
-    if (!process.env.CRON_SECRET) {
+    if (!env.CRON_SECRET) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

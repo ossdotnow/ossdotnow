@@ -2,7 +2,6 @@ import { projectProviderEnum, project as projectSchema } from '@workspace/db/sch
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
@@ -22,7 +21,6 @@ export default function ProjectCard({
   project: Project;
   isOwnProfile?: boolean;
 }) {
-  const router = useRouter();
   const trpc = useTRPC();
   const { data: repo, isError } = useQuery({
     ...trpc.repository.getRepo.queryOptions({

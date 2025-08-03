@@ -24,6 +24,8 @@ export const env = createEnv({
     SENTRY_DSN: z.url(),
     // Databuddy
     DATABUDDY_CLIENT_ID: z.string().min(1),
+    // Cron
+    CRON_SECRET: z.string().min(1),
   },
   experimental__runtimeEnv: process.env,
   skipValidation: process.env.NODE_ENV !== 'production',

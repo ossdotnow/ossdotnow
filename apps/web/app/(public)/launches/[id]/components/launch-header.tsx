@@ -1,11 +1,9 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { projectProviderEnum } from '@workspace/db/schema';
 import { Button } from '@workspace/ui/components/button';
 import { authClient } from '@workspace/auth/client';
-import { formatDistanceToNow } from 'date-fns';
 import { Flag, Share2 } from 'lucide-react';
 import { useTRPC } from '@/hooks/use-trpc';
 import { toast } from 'sonner';
@@ -63,7 +61,9 @@ export default function LaunchHeader({ launch, project, projectId }: LaunchHeade
           text: launch?.tagline,
           url,
         });
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     } else {
       await navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard!');

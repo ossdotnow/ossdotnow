@@ -282,7 +282,7 @@ function LaunchesPage() {
             ) : todayLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-neutral-600 border-t-neutral-300" />
-                <p className="mt-4 text-neutral-400">Loading today's launches...</p>
+                <p className="mt-4 text-neutral-400">Loading today&apos;s launches...</p>
               </div>
             ) : todayLaunches && todayLaunches.length > 0 ? (
               <div className="space-y-4">
@@ -325,7 +325,7 @@ function LaunchesPage() {
             ) : yesterdayLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-neutral-600 border-t-neutral-300" />
-                <p className="mt-4 text-neutral-400">Loading yesterday's launches...</p>
+                <p className="mt-4 text-neutral-400">Loading yesterday&apos;s launches...</p>
               </div>
             ) : yesterdayLaunches && yesterdayLaunches.length > 0 ? (
               <div className="space-y-4">
@@ -365,7 +365,7 @@ function LaunchesPage() {
             ) : thisWeekLoading ? (
               <div className="py-12 text-center">
                 <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-neutral-600 border-t-neutral-300" />
-                <p className="mt-4 text-neutral-400">Loading this week's launches...</p>
+                <p className="mt-4 text-neutral-400">Loading this week&apos;s launches...</p>
               </div>
             ) : thisWeekLaunches && thisWeekLaunches.length > 0 ? (
               <>

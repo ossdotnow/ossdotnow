@@ -11,13 +11,14 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Clock, ExternalLink } from 'lucide-react';
 import { Button } from '@workspace/ui/components/button';
-import { format, formatDistanceToNow } from 'date-fns';
 import { useCountdown } from '@/hooks/use-countdown';
 import Link from '@workspace/ui/components/link';
 import { useTRPC } from '@/hooks/use-trpc';
+import { format } from 'date-fns';
 import { useEffect } from 'react';
 
-
+// TODO: Fix this
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ScheduledLaunchItem({ launch }: { launch: any }) {
   const { timeRemaining, isExpired } = useCountdown(launch.launchDate);
   const queryClient = useQueryClient();
@@ -94,8 +95,7 @@ export function ScheduledLaunchesModal() {
         >
           <Clock className="h-4 w-4" />
           {activeLaunches.length > 0 && (
-            <div className="absolute top-1 right-1 flex h-1 w-1 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
-            </div>
+            <div className="absolute top-1 right-1 flex h-1 w-1 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white"></div>
           )}
         </Button>
       </DropdownMenuTrigger>

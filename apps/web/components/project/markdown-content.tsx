@@ -166,6 +166,7 @@ export function MarkdownContent({ content, encoding }: MarkdownContentProps) {
   return (
     <div className="prose prose-invert prose-neutral markdown-content max-w-none">
       {/* TODO: Fix this */}
+      {/* eslint-disable-next-line */}
       <style jsx global>{`
         .markdown-content ul ul,
         .markdown-content ol ol,

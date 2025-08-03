@@ -2,8 +2,6 @@ import { env } from '@workspace/env/server';
 import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
 
-export const runtime = 'edge';
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ provider: string; owner: string; repo: string }> },

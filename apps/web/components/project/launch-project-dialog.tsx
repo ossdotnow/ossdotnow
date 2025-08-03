@@ -266,7 +266,8 @@ export function LaunchProjectDialog({
           return `https://gitlab.com/${owner}/${repo}/-/settings/general`;
         }
       }
-    } catch (e) {
+    } catch (error) {
+      console.error(error);
       // Failed to parse repository URL
 
       // Fallback: try to extract owner/repo from the URL string
