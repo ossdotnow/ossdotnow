@@ -4,15 +4,13 @@ import type { ContributorData } from '@workspace/api';
 import { Suspense, useEffect, useState } from 'react';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
+import { useQuery } from '@tanstack/react-query';
 import { GitPullRequest } from 'lucide-react';
+import { env } from '@workspace/env/client';
+import { useTRPC } from '@/hooks/use-trpc';
 
-export default function AboutPage({
-  contributors,
-  error,
-}: {
-  contributors: ContributorData[];
-  error: boolean;
-}) {
+export default function AboutPage() {
+  const trpc = useTRPC();
   const [showShadow, setShowShadow] = useState(false);
 
   useEffect(() => {
@@ -23,6 +21,17 @@ export default function AboutPage({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const repoQuery = useQuery(
+    trpc.repository.getContributors.queryOptions({
+      url: 'ossdotnow/ossdotnow',
+      provider: 'github',
+    }),
+  );
+
+  const contributors = repoQuery.data?.filter(
+    (c) => !env.NEXT_PUBLIC_REMOVE_NAMES?.split(',').includes(c.username),
+  );
 
   const userRoles = { ahmetskilinc: 'Owner', aysahoo: 'Maintainer' };
   const getRole = (username: string) => userRoles[username as keyof typeof userRoles];
@@ -79,7 +88,24 @@ export default function AboutPage({
         </div>
 
         <Suspense>
-          {error ? (
+          {repoQuery.isLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+              {[...Array(15)].map((_, i) => (
+                <div
+                  key={i}
+                  className="animate-pulse border border-neutral-700 bg-neutral-800/20 p-3"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="h-8 w-8 rounded-full bg-neutral-700"></div>
+                    <div className="flex-1 space-y-1">
+                      <div className="h-3 w-20 bg-neutral-700"></div>
+                      <div className="h-2 w-12 bg-neutral-700"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : repoQuery.error ? (
             <div className="border border-neutral-700 bg-neutral-800/20 p-6 text-center">
               <p className="text-neutral-400">Failed to load contributors</p>
             </div>
