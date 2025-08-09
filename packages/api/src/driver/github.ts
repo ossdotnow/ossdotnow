@@ -11,6 +11,7 @@ import {
   PullRequestData,
   ReadmeData,
   RepoData,
+  UnSubmittedRepo,
   UserData,
   UserPullRequestData,
 } from './types';
@@ -18,7 +19,7 @@ import {
   restEndpointMethods,
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
-import { project, projectClaim } from '@workspace/db/schema';
+import { account, project, projectClaim } from '@workspace/db/schema';
 import { createCacheKey, getCached } from '../utils/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -945,5 +946,86 @@ export class GithubManager implements GitManager {
       },
       { ttl: 4 * 60 * 60 },
     );
+  }
+
+  async getUnsubmittedRepos(ctx: Context): Promise<UnSubmittedRepo[]> {
+    try {
+      const currentUser = await this.getCurrentUser();
+
+      return getCached(
+        createCacheKey('github', 'unsubmitted', currentUser.username),
+        async () => {
+          try {
+            const allRepos = [];
+            let page = 1;
+            let hasMore = true;
+
+            while (hasMore) {
+              const { data } = await this.octokit.rest.repos.listForAuthenticatedUser({
+                per_page: 100,
+                page: page,
+                sort: 'updated',
+                direction: 'desc',
+              });
+
+              if (data.length === 0) {
+                hasMore = false;
+              } else {
+                allRepos.push(...data);
+                page++;
+                // Limit to prevent excessive API calls
+                if (allRepos.length >= 500) {
+                  break;
+                }
+              }
+            }
+            //already existing
+            const submittedRepos = await ctx.db.query.project.findMany({
+              where: (project, { eq }) =>
+                eq(
+                  project.ownerId,
+                  ctx.db
+                    .select({ user_id: account.userId })
+                    .from(account)
+                    .where(eq(account.accountId, currentUser.id)),
+                ),
+            });
+            const notSubmitted = allRepos.filter((repo) => {
+              return !submittedRepos.some((submitted) => submitted.gitRepoUrl === repo.full_name);
+            });
+            return notSubmitted.map((repo) => {
+              return {
+                name: repo.name,
+                repoUrl: repo.full_name,
+                stars: repo.stargazers_count,
+                forks: repo.forks_count,
+                isOwner  : repo.owner.login === currentUser.username,
+                gitHost: 'github',
+                owner: {
+                  avatar_url: repo.owner?.avatar_url || '',
+                },
+                created_at: repo.created_at!,
+                description: repo.description,
+              };
+            });
+          } catch (error) {
+            console.error('Error fetching GitHub unsubmitted repos:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve unsubmitted repositories from GitHub',
+            });
+          }
+        },
+        { ttl: 5 * 60 },
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch unsubmitted repos: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 }
