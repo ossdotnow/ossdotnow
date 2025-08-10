@@ -61,6 +61,8 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   const [editOpen, setEditOpen] = useState(false);
   const [editValue, setEditValue] = useState<string>(launch?.detailedDescription ?? '');
   const [editTagline, setEditTagline] = useState<string>(launch?.tagline ?? '');
+  const [editDate, setEditDate] = useState<string>('');
+  const [editTime, setEditTime] = useState<string>('');
 
   const { launch: realtimeLaunch } = useLaunchUpdates({ projectId });
   const currentLaunch = realtimeLaunch || launch;
@@ -212,6 +214,27 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   const getProjectName = () => {
     return currentLaunch?.name || project?.name || 'project-name';
   };
+
+  function adjustMinutes(minutesToAdd: number) {
+    // Base from editDate/editTime if present, else from current scheduled date
+    let base =
+      currentLaunch?.status === 'scheduled' && currentLaunch.launchDate
+        ? new Date(currentLaunch.launchDate)
+        : new Date();
+    if (editDate) {
+      const candidate = new Date(`${editDate}T${editTime || '00:00'}:00`);
+      if (!isNaN(candidate.getTime())) base = candidate;
+    }
+    base.setMinutes(base.getMinutes() + minutesToAdd);
+
+    const yyyy = base.getFullYear();
+    const mm = String(base.getMonth() + 1).padStart(2, '0');
+    const dd = String(base.getDate()).padStart(2, '0');
+    const HH = String(base.getHours()).padStart(2, '0');
+    const MM = String(base.getMinutes()).padStart(2, '0');
+    setEditDate(`${yyyy}-${mm}-${dd}`);
+    setEditTime(`${HH}:${MM}`);
+  }
 
   const isOwner = session?.user?.id === currentLaunch.owner?.id;
 
@@ -377,6 +400,19 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
                 onClick={() => {
                   setEditValue(currentLaunch?.detailedDescription ?? '');
                   setEditTagline(currentLaunch?.tagline ?? '');
+                  if (currentLaunch?.status === 'scheduled' && currentLaunch.launchDate) {
+                    const d = new Date(currentLaunch.launchDate);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const HH = String(d.getHours()).padStart(2, '0');
+                    const MM = String(d.getMinutes()).padStart(2, '0');
+                    setEditDate(`${yyyy}-${mm}-${dd}`);
+                    setEditTime(`${HH}:${MM}`);
+                  } else {
+                    setEditDate('');
+                    setEditTime('');
+                  }
                   setEditOpen(true);
                 }}
               >
@@ -423,6 +459,67 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
             </div>
           )}
 
+          {currentLaunch.status === 'scheduled' && (
+            <div className="mb-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[260px]">
+                  <label className="mb-2 block text-sm font-medium text-neutral-300">Date</label>
+                  <Input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="rounded-none"
+                  />
+                </div>
+                <div className="min-w-[200px]">
+                  <label className="mb-2 block text-sm font-medium text-neutral-300">Time</label>
+                  <Input
+                    type="time"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    className="rounded-none"
+                  />
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-none"
+                    onClick={() => adjustMinutes(5)}
+                    type="button"
+                  >
+                    +5 min
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-none"
+                    onClick={() => adjustMinutes(10)}
+                    type="button"
+                  >
+                    +10 min
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-none"
+                    onClick={() => adjustMinutes(30)}
+                    type="button"
+                  >
+                    +30 min
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-none"
+                    onClick={() => adjustMinutes(60)}
+                    type="button"
+                  >
+                    +1 hour
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <MarkdownTextarea
             value={editValue}
             onChange={setEditValue}
@@ -445,10 +542,15 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
               }
               onClick={() => {
                 if (currentLaunch.status === 'scheduled') {
+                  const launchDate = editDate
+                    ? new Date(`${editDate}T${editTime || '00:00'}:00`)
+                    : undefined;
                   editScheduledMutation.mutate({
                     projectId,
                     tagline: editTagline,
                     detailedDescription: editValue ?? '',
+                    launchDate,
+                    launchTime: editTime || undefined,
                   });
                 } else {
                   editDescriptionMutation.mutate({
