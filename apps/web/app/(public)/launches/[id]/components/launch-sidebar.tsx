@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@workspace/ui/components/dialog';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { MarkdownTextarea } from '@/components/project/markdown-textarea';
 import { Separator } from '@workspace/ui/components/separator';
 import { useLaunchUpdates } from '@/hooks/use-launch-updates';
 import { projectProviderEnum } from '@workspace/db/schema';
@@ -57,6 +58,9 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
   const currentPath = usePathname();
   const [showRemoveModal, setShowRemoveModal] = useState(false);
   const [confirmationInput, setConfirmationInput] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
+  const [editValue, setEditValue] = useState<string>(launch?.detailedDescription ?? '');
+  const [editTagline, setEditTagline] = useState<string>(launch?.tagline ?? '');
 
   const { launch: realtimeLaunch } = useLaunchUpdates({ projectId });
   const currentLaunch = realtimeLaunch || launch;
@@ -145,6 +149,34 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to remove launch. Please try again.');
+    },
+  });
+
+  const editDescriptionMutation = useMutation({
+    ...trpc.launches.updateLaunchDescription.mutationOptions(),
+    onSuccess: () => {
+      toast.success('Launch description updated');
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
+      });
+      setEditOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update description. Please try again.');
+    },
+  });
+
+  const editScheduledMutation = useMutation({
+    ...trpc.launches.updateScheduledLaunchDetails.mutationOptions(),
+    onSuccess: () => {
+      toast.success('Launch updated');
+      queryClient.invalidateQueries({
+        queryKey: trpc.launches.getLaunchByProjectId.queryKey({ projectId }),
+      });
+      setEditOpen(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to update launch. Please try again.');
     },
   });
 
@@ -338,18 +370,105 @@ export default function LaunchSidebar({ launch, project, projectId }: LaunchSide
             </Link>
           </Button>
           {isOwner && (
-            <Button
-              variant="destructive"
-              className="w-full gap-2 rounded-none"
-              onClick={handleRemoveLaunch}
-              disabled={removeLaunchMutation.isPending}
-            >
-              <Trash2 className="h-4 w-4" />
-              {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="w-full gap-2 rounded-none"
+                onClick={() => {
+                  setEditValue(currentLaunch?.detailedDescription ?? '');
+                  setEditTagline(currentLaunch?.tagline ?? '');
+                  setEditOpen(true);
+                }}
+              >
+                {currentLaunch.status === 'scheduled' ? 'Edit Launch' : 'Edit Description'}
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full gap-2 rounded-none"
+                onClick={handleRemoveLaunch}
+                disabled={removeLaunchMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+                {removeLaunchMutation.isPending ? 'Removing...' : 'Remove Launch'}
+              </Button>
+            </>
           )}
         </div>
       </div>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="rounded-none sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {currentLaunch.status === 'scheduled'
+                ? 'Edit Scheduled Launch'
+                : 'Edit Launch Description'}
+            </DialogTitle>
+            <DialogDescription>
+              {currentLaunch.status === 'scheduled'
+                ? 'You can update the tagline and description before it goes live.'
+                : 'Only the description can be updated while live. Markdown is supported.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {currentLaunch.status === 'scheduled' && (
+            <div className="mb-4">
+              <label className="mb-2 block text-sm font-medium text-neutral-300">Tagline</label>
+              <Input
+                value={editTagline}
+                onChange={(e) => setEditTagline(e.target.value)}
+                placeholder="Concise one-line tagline"
+                className="rounded-none"
+              />
+              <p className="mt-1 text-xs text-neutral-400">10–100 characters.</p>
+            </div>
+          )}
+
+          <MarkdownTextarea
+            value={editValue}
+            onChange={setEditValue}
+            placeholder="Write your launch description..."
+            className="rounded-none"
+          />
+
+          <div className="flex justify-end gap-3">
+            <Button variant="ghost" className="rounded-none" onClick={() => setEditOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="rounded-none"
+              disabled={
+                (currentLaunch.status === 'scheduled'
+                  ? editScheduledMutation.isPending ||
+                    editTagline.length < 10 ||
+                    editTagline.length > 100
+                  : editDescriptionMutation.isPending) || (editValue?.length ?? 0) < 25
+              }
+              onClick={() => {
+                if (currentLaunch.status === 'scheduled') {
+                  editScheduledMutation.mutate({
+                    projectId,
+                    tagline: editTagline,
+                    detailedDescription: editValue ?? '',
+                  });
+                } else {
+                  editDescriptionMutation.mutate({
+                    projectId,
+                    detailedDescription: editValue ?? '',
+                  });
+                }
+              }}
+            >
+              {(
+                currentLaunch.status === 'scheduled'
+                  ? editScheduledMutation.isPending
+                  : editDescriptionMutation.isPending
+              )
+                ? 'Saving...'
+                : 'Save'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={showRemoveModal} onOpenChange={setShowRemoveModal}>
         <DialogContent className="rounded-none sm:max-w-md">
           <DialogHeader>
