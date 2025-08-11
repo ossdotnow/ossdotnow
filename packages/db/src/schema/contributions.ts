@@ -76,10 +76,3 @@ export const contribTotals = pgTable(
     index("contrib_totals_user_idx").on(t.userId),
   ],
 );
-
-/**
- * NOTE on FKs:
- * If your users table is exported in this package as `users`,
- * you may add `.references(() => users.id)` to the `userId` columns.
- * We keep it decoupled here to avoid cross-file import cycles in monorepos.
- */
