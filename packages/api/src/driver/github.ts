@@ -19,7 +19,7 @@ import {
   restEndpointMethods,
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
-import { account, project, projectClaim } from '@workspace/db/schema';
+import {project, projectClaim } from '@workspace/db/schema';
 import { createCacheKey, getCached } from '../utils/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -948,12 +948,10 @@ export class GithubManager implements GitManager {
     );
   }
 
-  async getUnsubmittedRepos(ctx: Context): Promise<UnSubmittedRepo[]> {
+  async getUnsubmittedRepos(ctx: Context , username : string , userId: string): Promise<UnSubmittedRepo[]> {
     try {
-      const currentUser = await this.getCurrentUser();
-
       return getCached(
-        createCacheKey('github', 'unsubmitted', currentUser.username),
+        createCacheKey('github', 'unsubmitted', username),
         async () => {
           try {
             const allRepos = [];
@@ -961,7 +959,8 @@ export class GithubManager implements GitManager {
             let hasMore = true;
 
             while (hasMore) {
-              const { data } = await this.octokit.rest.repos.listForAuthenticatedUser({
+              const { data } = await this.octokit.rest.repos.listForUser({
+                username,
                 per_page: 100,
                 page: page,
                 sort: 'updated',
@@ -981,14 +980,7 @@ export class GithubManager implements GitManager {
             }
             //already existing
             const submittedRepos = await ctx.db.query.project.findMany({
-              where: (project, { eq }) =>
-                eq(
-                  project.ownerId,
-                  ctx.db
-                    .select({ user_id: account.userId })
-                    .from(account)
-                    .where(eq(account.accountId, currentUser.id)),
-                ),
+              where: (project, { eq }) => eq(project.ownerId, userId),
             });
             const notSubmitted = allRepos.filter((repo) => {
               return !submittedRepos.some((submitted) => submitted.gitRepoUrl === repo.full_name);
@@ -997,9 +989,9 @@ export class GithubManager implements GitManager {
               return {
                 name: repo.name,
                 repoUrl: repo.full_name,
-                stars: repo.stargazers_count,
-                forks: repo.forks_count,
-                isOwner  : repo.owner.login === currentUser.username,
+                stars: repo.stargazers_count || 0,
+                forks: repo.forks_count || 0,
+                isOwner  : repo.owner.login === username,
                 gitHost: 'github',
                 owner: {
                   avatar_url: repo.owner?.avatar_url || '',

@@ -120,14 +120,14 @@ export function ProfileTabs({
           <TabsTrigger value="projects" className="rounded-none">
             Projects
           </TabsTrigger>
+           <TabsTrigger value="unsubmitted" className="rounded-none">
+            Unsubmitted
+          </TabsTrigger>
           <TabsTrigger value="contributions" className="rounded-none">
             Contributions
           </TabsTrigger>
           <TabsTrigger value="collections" className="rounded-none">
             Collections
-          </TabsTrigger>
-          <TabsTrigger value="unsubmitted" className="rounded-none">
-            QuickSubmit
           </TabsTrigger>
         </TabsList>
 
@@ -227,7 +227,7 @@ export function ProfileTabs({
                     </div>
                   </div>
                   <div className='space-y-4'>
-                  {filteredUnSubmitted.map((project, id)=> (<UnsubmittedRepoCard key={id} repo={project}/>))}
+                  {filteredUnSubmitted.map((project, id)=> (<UnsubmittedRepoCard isOwnProfile={isOwnProfile} key={id} repo={project}/>))}
                   </div>
                 </div>
               ) : null }

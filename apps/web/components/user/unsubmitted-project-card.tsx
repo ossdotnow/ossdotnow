@@ -6,10 +6,12 @@ import { UnSubmittedRepo } from '@workspace/api';
 import { Badge } from '@workspace/ui/components/badge';
 export default function UnsubmittedRepoCard({
   repo,
-  onSubmit
+  onSubmit,
+  isOwnProfile
 }: {
   repo: UnSubmittedRepo;
   onSubmit?: (repo: UnSubmittedRepo) => void;
+  isOwnProfile: boolean
 }) {
 
 
@@ -45,10 +47,10 @@ export default function UnsubmittedRepoCard({
                 {repo.name}
               </h3>
               <div className="flex  md:gap-1.5">
-                <Badge variant={"destructive"}>Not Submitted</Badge>
-                <div>
+                <Badge className='rounded-none text-blue-400 bg-blue-400/10 border border-blue-400/30' >Not Submitted</Badge>
+                {isOwnProfile && <div>
                   <SubmissionDialog quickSubmit={{ provider: repo.gitHost, repoUrl: repo.repoUrl, name: repo.name, description: repo.description || '' }} />
-                </div>
+                </div>}
               </div>
 
             </div>

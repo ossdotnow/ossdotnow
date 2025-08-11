@@ -254,5 +254,5 @@ export interface GitManager {
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
   getContributions(username: string): Promise<ContributionData>;
   getUserDetails(username: string): Promise<UserData>;
-  getUnsubmittedRepos(ctx: any): Promise<UnSubmittedRepo[]>;
+  getUnsubmittedRepos(ctx: any, username:string,userId : string): Promise<UnSubmittedRepo[]>;
 }
