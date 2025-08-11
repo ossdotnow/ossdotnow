@@ -27,6 +27,160 @@ async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').
 }
 
 export const launchesRouter = createTRPCRouter({
+  updateLaunchDescription: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        detailedDescription: z.string().min(25).max(1000),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const foundProject = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+      });
+
+      if (!foundProject) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' });
+      }
+
+      if (foundProject.ownerId !== ctx.session.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only edit your own launches',
+        });
+      }
+
+      const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
+        where: eq(projectLaunch.projectId, input.projectId),
+      });
+
+      if (!existingLaunch) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Launch not found for this project',
+        });
+      }
+
+      if (existingLaunch.status === 'ended') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Cannot edit an ended launch',
+        });
+      }
+
+      await ctx.db
+        .update(projectLaunch)
+        .set({ detailedDescription: input.detailedDescription })
+        .where(and(eq(projectLaunch.projectId, input.projectId), eq(projectLaunch.status, 'live')));
+
+      return { success: true };
+    }),
+
+  updateScheduledLaunchDetails: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        tagline: z.string().min(10).max(100),
+        detailedDescription: z.string().min(25).max(1000),
+        launchDate: z.coerce.date().optional(),
+        launchTime: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const foundProject = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+      });
+
+      if (!foundProject) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found' });
+      }
+
+      if (foundProject.ownerId !== ctx.session.userId) {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'You can only edit your own launches',
+        });
+      }
+
+      const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
+        where: eq(projectLaunch.projectId, input.projectId),
+      });
+
+      if (!existingLaunch) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Launch not found for this project',
+        });
+      }
+
+      if (existingLaunch.status !== 'scheduled') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only scheduled launches can edit tagline and description',
+        });
+      }
+
+      // Handle optional time update
+      let updatedLaunchDate: Date | undefined = input.launchDate
+        ? new Date(input.launchDate)
+        : undefined;
+
+      if (input.launchTime) {
+        const timeRegex = /^([0-9]{1,2}):([0-9]{2})$/;
+        const match = input.launchTime.match(timeRegex);
+        if (!match) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid time format. Please use HH:MM format (e.g., 14:30 or 9:05)',
+          });
+        }
+        const hours = parseInt(match[1]!, 10);
+        const minutes = parseInt(match[2]!, 10);
+        if (hours < 0 || hours > 23) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid hour value. Hours must be between 0 and 23',
+          });
+        }
+        if (minutes < 0 || minutes > 59) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid minute value. Minutes must be between 0 and 59',
+          });
+        }
+        if (!updatedLaunchDate) {
+          updatedLaunchDate = new Date(existingLaunch.launchDate);
+        }
+        updatedLaunchDate.setHours(hours, minutes, 0, 0);
+      }
+
+      if (updatedLaunchDate) {
+        const now = new Date();
+        if (updatedLaunchDate.getTime() <= now.getTime()) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Launch date cannot be in the past',
+          });
+        }
+      }
+
+      const updateData: Record<string, unknown> = {
+        tagline: input.tagline,
+        detailedDescription: input.detailedDescription,
+      };
+      if (updatedLaunchDate) {
+        updateData.launchDate = updatedLaunchDate;
+      }
+
+      await ctx.db
+        .update(projectLaunch)
+        .set(updateData)
+        .where(
+          and(eq(projectLaunch.projectId, input.projectId), eq(projectLaunch.status, 'scheduled')),
+        );
+
+      return { success: true };
+    }),
   getLaunchByProjectId: publicProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
