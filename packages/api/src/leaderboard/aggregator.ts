@@ -1,25 +1,15 @@
-// packages/api/src/leaderboard/aggregator.ts
-/**
- * Aggregator (optimized):
- * - Per-day provider fetches → upsert contrib_daily (idempotent)
- * - Recompute contrib_totals once at the end for each provider
- * - Optional concurrency for multi-day ranges
- */
-
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 import { getGithubContributionTotalsForDay } from "../providers/github";
 import { getGitlabContributionTotalsForDay } from "../providers/gitlab";
 
-// Ensure this path matches your db package export
 import {
   contribDaily,
   contribTotals,
   contribProvider,
 } from "@workspace/db/schema";
 
-/* ------------------------------ Types ------------------------------ */
 
 export type Provider = (typeof contribProvider.enumValues)[number];
 
@@ -33,7 +23,6 @@ export type RefreshUserDayArgs = {
   githubToken?: string;
   gitlabToken?: string;
   gitlabBaseUrl?: string;
-  /** When true, skip totals recompute (caller will recompute once at the end) */
   skipTotalsRecompute?: boolean;
 };
 
@@ -41,7 +30,6 @@ type GithubDayResult = { commits: number; prs: number; issues: number };
 type GitlabDayResult = { commits: number; mrs: number; issues: number };
 type RefreshResults = { github?: GithubDayResult; gitlab?: GitlabDayResult };
 
-/* ------------------------------ Date helpers ------------------------------ */
 
 function startOfUtcDay(d: Date | string): Date {
   const x = d instanceof Date ? new Date(d) : new Date(d);
@@ -59,7 +47,6 @@ function ymdUTC(d: Date): string {
   return `${y}-${m}-${dd}`;
 }
 
-/* ------------------------------ DB helpers ------------------------------ */
 
 async function upsertDaily(
   db: PostgresJsDatabase,
@@ -167,7 +154,6 @@ async function recomputeProviderTotals(
   return { allTime, last30d, last365d };
 }
 
-/* ------------------------------ Public API ------------------------------ */
 
 export async function refreshUserDay(
   deps: AggregatorDeps,
@@ -177,7 +163,6 @@ export async function refreshUserDay(
   const day = startOfUtcDay(args.dayUtc);
   const results: RefreshResults = {};
 
-  // GitHub
   if (args.githubLogin && args.githubLogin.trim() && args.githubToken) {
     const gh = await getGithubContributionTotalsForDay(args.githubLogin.trim(), day, args.githubToken);
     results.github = { commits: gh.commits, prs: gh.prs, issues: gh.issues };
@@ -185,7 +170,6 @@ export async function refreshUserDay(
     if (!args.skipTotalsRecompute) await recomputeProviderTotals(db, args.userId, "github", day);
   }
 
-  // GitLab
   if (args.gitlabUsername && args.gitlabUsername.trim()) {
     const base = args.gitlabBaseUrl?.trim() || "https://gitlab.com";
     const gl = await getGitlabContributionTotalsForDay(args.gitlabUsername.trim(), day, base, args.gitlabToken);
@@ -197,7 +181,6 @@ export async function refreshUserDay(
   return { day: ymdUTC(day), updatedProviders: Object.keys(results), results };
 }
 
-/** tiny concurrency limiter */
 async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const ret: R[] = [];
   let i = 0;
@@ -211,11 +194,6 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
   return ret;
 }
 
-/**
- * Refresh a range of UTC days (inclusive).
- * - Skips per-day recompute; recomputes once at the end for each provider.
- * - `concurrency` controls how many days are processed in parallel (default 4).
- */
 export async function refreshUserDayRange(
   deps: AggregatorDeps,
   args: Omit<RefreshUserDayArgs, "dayUtc" | "skipTotalsRecompute"> & {
@@ -231,18 +209,17 @@ export async function refreshUserDayRange(
 
   const daysStr: string[] = [];
 
-  const concurrency = Math.max(1, Math.min(args.concurrency ?? 4, 10)); // be gentle with rate limits
+  const concurrency = Math.max(1, Math.min(args.concurrency ?? 4, 10)); 
 
   await mapWithConcurrency(days, concurrency, async (d) => {
     const res = await refreshUserDay(deps, {
       ...args,
       dayUtc: d,
-      skipTotalsRecompute: true, // defer recompute to the end
+      skipTotalsRecompute: true,
     });
     daysStr.push(res.day);
   });
 
-  // Single recompute at the end (fast)
   if (args.githubLogin && args.githubToken) {
     await recomputeProviderTotals(deps.db, args.userId, "github", new Date());
   }
@@ -250,7 +227,6 @@ export async function refreshUserDayRange(
     await recomputeProviderTotals(deps.db, args.userId, "gitlab", new Date());
   }
 
-  // Sort for pretty output
   daysStr.sort();
   return { daysRefreshed: daysStr };
 }
