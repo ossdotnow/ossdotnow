@@ -3,6 +3,7 @@ import { project, projectTagRelations, projectClaim } from '@workspace/db/schema
 import { createTRPCRouter, publicProcedure } from '../trpc';
 import { getRateLimiter } from '../utils/rate-limit';
 import { getActiveDriver } from '../driver/utils';
+import { invalidateCache } from '../utils/cache';
 import { createInsertSchema } from 'drizzle-zod';
 import { type Context } from '../driver/utils';
 import { user } from '@workspace/db/schema';
@@ -178,6 +179,7 @@ export const submissionRouter = createTRPCRouter({
         });
       }
 
+      invalidateCache(`${input.gitHost as 'github' | 'gitlab'}:unsubmitted:${ownerCheck.owner}`);
       const [totalCount] = await tx.select({ count: count() }).from(project);
       return {
         count: totalCount?.count ?? 0,

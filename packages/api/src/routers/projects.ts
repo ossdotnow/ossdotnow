@@ -1561,4 +1561,13 @@ export const projectsRouter = createTRPCRouter({
 
       return contributors;
     }),
+
+  getUnSubmitted: publicProcedure
+    .input(z.object({ provider: z.enum(['github', 'gitlab']), username : z.string(), userId : z.string() }))
+    .query(async ({ input, ctx }) => {
+      const {provider , username , userId} = input
+      const driver = await getActiveDriver(provider, ctx as Context);
+      const unSubmitted = await driver.getUnsubmittedRepos(ctx as Context , username, userId);
+      return unSubmitted;
+    }),
 });

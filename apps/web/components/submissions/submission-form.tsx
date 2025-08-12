@@ -130,9 +130,16 @@ function useSubmission(onSuccess?: () => void) {
 export default function SubmissionForm({
   earlySubmission = false,
   onSuccess,
+  quickSubmit
 }: {
   earlySubmission?: boolean;
   onSuccess?: () => void;
+  quickSubmit?: {
+    repoUrl: string;
+    provider: 'github' | 'gitlab';
+    description?: string;
+    name: string;
+  };
 } = {}) {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState<number>(0);
@@ -170,11 +177,11 @@ export default function SubmissionForm({
     mode: 'onBlur',
     reValidateMode: 'onChange',
     defaultValues: {
-      name: '',
-      description: '',
+      name: `${quickSubmit ? quickSubmit.name : ''}`,
+      description: `${quickSubmit ? quickSubmit.description : ''}`,
       logoUrl: '',
-      gitRepoUrl: '',
-      gitHost: 'github',
+      gitRepoUrl: `${quickSubmit ? quickSubmit.repoUrl : ''}`,
+      gitHost: `${quickSubmit ? quickSubmit.provider : 'github'}`,
       status: '',
       type: '',
       socialLinks: {

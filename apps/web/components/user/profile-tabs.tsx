@@ -22,6 +22,8 @@ import { useQuery } from '@tanstack/react-query';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
+import { UnSubmittedRepo } from '@workspace/api';
+import UnsubmittedRepoCard from './unsubmitted-project-card';
 
 interface Profile {
   git?: {
@@ -57,6 +59,7 @@ interface ProfileTabsProps {
   setTab: (value: string) => void;
   featuredProjects: ProjectWithGithubData[];
   projectsWithGithubData: ProjectWithGithubData[];
+  unsubmittedProjects : UnSubmittedRepo[]
 }
 
 export function ProfileTabs({
@@ -66,6 +69,7 @@ export function ProfileTabs({
   setTab,
   featuredProjects,
   projectsWithGithubData,
+  unsubmittedProjects
 }: ProfileTabsProps) {
   const featuredCarouselRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +77,9 @@ export function ProfileTabs({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [session, setSession] = useState<any>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [filterState, setFilterState] = useQueryState('filterState', {
+    defaultValue: 'all',
+  });
 
   useEffect(() => {
     authClient
@@ -88,6 +95,7 @@ export function ProfileTabs({
       });
   }, []);
 
+  const filteredUnSubmitted = filterState === "owned" ? unsubmittedProjects.filter((proj)=> proj.isOwner) : unsubmittedProjects
   const sessionUserId = session?.data?.user?.id;
 
   const isOwnProfile =
@@ -108,9 +116,12 @@ export function ProfileTabs({
         <ContributionGraph username={profile.git.login} provider={profile.git.provider} />
       )}
       <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 rounded-none border-neutral-800 bg-neutral-900/50">
+        <TabsList className="grid w-full grid-cols-4 rounded-none border-neutral-800 bg-neutral-900/50">
           <TabsTrigger value="projects" className="rounded-none">
             Projects
+          </TabsTrigger>
+           <TabsTrigger value="unsubmitted" className="rounded-none">
+            Unsubmitted
           </TabsTrigger>
           <TabsTrigger value="contributions" className="rounded-none">
             Contributions
@@ -196,6 +207,30 @@ export function ProfileTabs({
               <p>Project collections coming soon...</p>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value='unsubmitted'>
+              {unsubmittedProjects.length>0 ? (
+                <div className='mt-2'>
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 className="text-xl font-semibold">Quicksubmit Projects</h2>
+                    <div className="xs:flex-row xs:gap-2 flex w-full gap-2 sm:w-auto">
+                      <Select value={filterState} onValueChange={(value:string)=> setFilterState(value)}>
+                        <SelectTrigger className="xs:w-[140px] w-full rounded-none">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="left-0 rounded-none">
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="owned">Owned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className='space-y-4'>
+                  {filteredUnSubmitted.map((project, id)=> (<UnsubmittedRepoCard isOwnProfile={isOwnProfile} key={id} repo={project}/>))}
+                  </div>
+                </div>
+              ) : null }
         </TabsContent>
       </Tabs>
     </>

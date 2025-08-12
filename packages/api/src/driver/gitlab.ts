@@ -12,8 +12,9 @@ import {
   RepoData,
   UserData,
   UserPullRequestData,
+  UnSubmittedRepo,
 } from './types';
-import { project, projectClaim } from '@workspace/db/schema';
+import { account, project, projectClaim } from '@workspace/db/schema';
 import { getCached, createCacheKey } from '../utils/cache';
 import { eq, and, isNull } from 'drizzle-orm';
 import { Gitlab } from '@gitbeaker/rest';
@@ -950,5 +951,68 @@ export class GitlabManager implements GitManager {
       },
       { ttl: 5 * 60 },
     );
+  }
+
+  async getUnsubmittedRepos(ctx: Context): Promise<UnSubmittedRepo[]> {
+    try {
+      const currentUser = await this.getCurrentUser();
+
+      return getCached(
+        createCacheKey('gitlab', 'unsubmitted', currentUser.username),
+        async () => {
+          try {
+            const gitLabProjects = await this.gitlab.Projects.all({
+              perPage: 100,
+              membership: true,
+            });
+            const userAccount = await ctx.db.query.account.findFirst({
+              where: (account, { eq }) => eq(account.accountId, currentUser.id),
+            });
+
+            if (!userAccount) {
+              return [];
+            }
+            const submittedRepos = await ctx.db.query.project.findMany({
+              where: (project, { eq }) => eq(project.ownerId, userAccount.userId),
+            });
+            const notSubmitted = gitLabProjects.filter((repo) => {
+              return !submittedRepos.some(
+                (submitted) => submitted.gitRepoUrl === repo.path_with_namespace,
+              );
+            });
+            return notSubmitted.map((repo) => {
+              return {
+                name: repo.name,
+                repoUrl: repo.path_with_namespace as string,
+                stars: repo.star_count as number,
+                forks: repo.forks_count as number,
+                isOwner: repo.owner.name === currentUser.username,
+                gitHost: 'gitlab',
+                description: repo.description,
+                created_at: repo.created_at! as string,
+                owner: {
+                  avatar_url: (repo.avatar_url as string) || '',
+                },
+              };
+            });
+          } catch (error) {
+            console.error('Error fetching GitLab unsubmitted repos:', error);
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'Failed to retrieve unsubmitted repositories from GitLab',
+            });
+          }
+        },
+        { ttl: 5 * 60 },
+      );
+    } catch (error) {
+      if (error instanceof TRPCError) {
+        throw error;
+      }
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: `Failed to fetch unsubmitted repos: ${error instanceof Error ? error.message : String(error)}`,
+      });
+    }
   }
 }

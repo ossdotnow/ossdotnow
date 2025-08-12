@@ -35,6 +35,16 @@ export default function ProfilePage({ id }: { id: string }) {
     trpc.profile.getProfile.queryOptions({ id }),
   );
 
+  const { data: unSubmittedProjects, isLoading: isUnSubmittedLoading } = useQuery(
+    trpc.projects.getUnSubmitted.queryOptions({
+      provider: profile?.git.provider as 'github' | 'gitlab',
+      username: profile?.username!,
+      userId: profile?.id!
+    }, {
+      enabled: !!profile?.git.provider && !!profile?.username && !!profile?.id
+    })
+  )
+
   const { data: projects } = useQuery(
     trpc.projects.getProjectsByUserId.queryOptions(
       {
@@ -246,6 +256,7 @@ export default function ProfilePage({ id }: { id: string }) {
                 setTab={setTab}
                 featuredProjects={featuredProjects}
                 projectsWithGithubData={projectsWithGithubData ?? []}
+                unsubmittedProjects={ unSubmittedProjects ?? []}
               />
             </div>
             {profile?.id && (
