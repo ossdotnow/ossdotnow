@@ -5,7 +5,10 @@
   "exports": {
     ".": "./src/root.ts",
     "./trpc": "./src/trpc.ts",
-    "./providers/types": "./src/providers/types.ts"
+    "./providers/types": "./src/providers/types.ts",
+    "./aggregator": "./src/leaderboard/aggregator.ts",
+    "./redis": "./src/leaderboard/redis.ts",
+    "./locks": "./src/redis/lock.ts"
   },
   "scripts": {
     "lint": "eslint ."

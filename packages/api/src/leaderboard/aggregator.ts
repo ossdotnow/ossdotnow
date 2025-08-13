@@ -1,5 +1,5 @@
 import { and, eq, gte, lt, sql } from "drizzle-orm";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type { DB } from "@workspace/db";
 
 import { getGithubContributionTotalsForDay } from "../providers/github";
 import { getGitlabContributionTotalsForDay } from "../providers/gitlab";
@@ -13,7 +13,7 @@ import {
 
 export type Provider = (typeof contribProvider.enumValues)[number];
 
-export type AggregatorDeps = { db: PostgresJsDatabase };
+export type AggregatorDeps = { db: DB };
 
 export type RefreshUserDayArgs = {
   userId: string;
@@ -49,7 +49,7 @@ function ymdUTC(d: Date): string {
 
 
 async function upsertDaily(
-  db: PostgresJsDatabase,
+  db: DB,
   args: { userId: string; provider: Provider; day: Date; commits: number; prs: number; issues: number },
 ): Promise<void> {
   const dayStr = ymdUTC(args.day);
@@ -76,7 +76,7 @@ async function upsertDaily(
 }
 
 async function sumWindow(
-  db: PostgresJsDatabase,
+  db: DB,
   userId: string,
   provider: Provider,
   fromInclusive: Date,
@@ -98,7 +98,7 @@ async function sumWindow(
   return (row?.total ?? 0) as number;
 }
 
-async function sumAllTime(db: PostgresJsDatabase, userId: string, provider: Provider): Promise<number> {
+async function sumAllTime(db: DB, userId: string, provider: Provider): Promise<number> {
   const [row] = await db
     .select({
       total: sql<number>`coalesce(sum(${contribDaily.commits} + ${contribDaily.prs} + ${contribDaily.issues}), 0)`,
@@ -109,7 +109,7 @@ async function sumAllTime(db: PostgresJsDatabase, userId: string, provider: Prov
 }
 
 async function upsertTotals(
-  db: PostgresJsDatabase,
+  db: DB,
   args: { userId: string; provider: Provider; allTime: number; last30d: number; last365d: number },
 ): Promise<void> {
   await db
@@ -134,7 +134,7 @@ async function upsertTotals(
 }
 
 async function recomputeProviderTotals(
-  db: PostgresJsDatabase,
+  db: DB,
   userId: string,
   provider: Provider,
   now: Date = new Date(),
@@ -209,7 +209,7 @@ export async function refreshUserDayRange(
 
   const daysStr: string[] = [];
 
-  const concurrency = Math.max(1, Math.min(args.concurrency ?? 4, 10)); 
+  const concurrency = Math.max(1, Math.min(args.concurrency ?? 4, 10));
 
   await mapWithConcurrency(days, concurrency, async (d) => {
     const res = await refreshUserDay(deps, {

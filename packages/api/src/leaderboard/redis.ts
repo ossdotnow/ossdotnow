@@ -1,7 +1,7 @@
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import { contribTotals } from "@workspace/db/schema";
 import { redis } from "../redis/client";
+import type { DB } from "@workspace/db";
 
 type ProviderKey = "github" | "gitlab";
 type WindowKey = "all" | "30d" | "365d";
@@ -25,7 +25,7 @@ const PROVIDER_KEYS: Record<ProviderKey, Record<WindowKey, string>> = {
   },
 } as const;
 
-export async function syncUserLeaderboards(db: PostgresJsDatabase, userId: string): Promise<void> {
+export async function syncUserLeaderboards(db: DB, userId: string): Promise<void> {
   const rows = await db
     .select({
       provider: contribTotals.provider,
