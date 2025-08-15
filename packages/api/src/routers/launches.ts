@@ -1,3 +1,4 @@
+
 import {
   categoryProjectTypes,
   categoryProjectStatuses,
@@ -13,6 +14,7 @@ import {
   projectReport,
   user,
 } from '@workspace/db/schema';
+import { createNotification } from '@workspace/db/services';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
 import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
@@ -22,10 +24,42 @@ import { moderateComment } from '../utils/content-moderation';
 
 async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
   const now = new Date();
+
+  // First, get the launches that are going live
+  const launchesGoingLive = await db
+    .select({
+      id: projectLaunch.id,
+      projectId: projectLaunch.projectId,
+      project: {
+        name: project.name,
+        ownerId: project.ownerId,
+      },
+    })
+    .from(projectLaunch)
+    .leftJoin(project, eq(projectLaunch.projectId, project.id))
+    .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
+  // Update their status to live
   await db
     .update(projectLaunch)
     .set({ status: 'live' })
     .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
+  // Create notifications for each launch that went live
+  for (const launch of launchesGoingLive) {
+    if (launch.project?.ownerId) {
+      await createNotification({
+        userId: launch.project.ownerId,
+        type: 'launch_live',
+        title: `"${launch.project.name}" is now live!`,
+        message: `Your scheduled launch has gone live. Check out your launch page!`,
+        data: {
+          projectId: launch.projectId,
+          launchId: launch.id,
+        },
+      });
+    }
+  }
 }
 
 export const launchesRouter = createTRPCRouter({
@@ -889,6 +923,11 @@ export const launchesRouter = createTRPCRouter({
           message: 'Inappropriate content detected. Please review your comment and try again.',
         });
       }
+      // Get project details for notification
+      const projectData = await ctx.db.query.project.findFirst({
+        where: eq(project.id, input.projectId),
+        columns: { ownerId: true, name: true },
+      });
 
       const [comment] = await ctx.db
         .insert(projectComment)
@@ -899,6 +938,34 @@ export const launchesRouter = createTRPCRouter({
           parentId: input.parentId,
         })
         .returning();
+
+      if (!comment) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create comment',
+        });
+      }
+
+      // Create notification for project owner
+      if (projectData?.ownerId) {
+        try {
+          await createNotification({
+            userId: projectData.ownerId,
+            type: 'comment_received',
+            title: `New comment on "${projectData.name}"`,
+            message: input.content.length > 100 ? input.content.substring(0, 100) + '...' : input.content,
+            data: {
+              projectId: input.projectId,
+              commentId: comment.id
+            },
+          });
+
+
+        } catch (error) {
+          console.error('Failed to create comment notification:', error);
+          // Don't throw error to avoid breaking comment creation
+        }
+      }
 
       return comment;
     }),
@@ -1111,6 +1178,38 @@ export const launchesRouter = createTRPCRouter({
           status: status,
         })
         .returning();
+
+      if (!launch) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to create launch',
+        });
+      }
+
+      // Create notifications based on launch status
+      if (status === 'scheduled') {
+        await createNotification({
+          userId: foundProject.ownerId!,
+          type: 'launch_scheduled',
+          title: `"${foundProject.name}" launch scheduled`,
+          message: `Your project launch is scheduled for ${finalLaunchDate.toLocaleDateString()} at ${finalLaunchDate.toLocaleTimeString()}`,
+          data: {
+            projectId: input.projectId,
+            launchId: launch.id
+          },
+        });
+      } else if (status === 'live') {
+        await createNotification({
+          userId: foundProject.ownerId!,
+          type: 'launch_live',
+          title: `"${foundProject.name}" is now live!`,
+          message: `Your project has been launched successfully. Check out your launch page!`,
+          data: {
+            projectId: input.projectId,
+            launchId: launch.id
+          },
+        });
+      }
 
       return launch;
     }),
