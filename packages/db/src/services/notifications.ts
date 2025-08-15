@@ -1,8 +1,8 @@
+import { notification, type notificationTypeEnum } from '../schema/notifications';
 import { eq, and, desc, count, lt } from 'drizzle-orm';
 import { db } from '../index';
-import { notification, type notificationTypeEnum } from '../schema/notifications';
 
-export type NotificationType = typeof notificationTypeEnum.enumValues[number];
+export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
 
 export interface CreateNotificationInput {
   userId: string;
@@ -51,7 +51,7 @@ export async function createNotification(input: CreateNotificationInput) {
  */
 export async function getNotificationsForUser(
   userId: string,
-  options: GetNotificationsOptions = {}
+  options: GetNotificationsOptions = {},
 ) {
   const { limit = 50, offset = 0, unreadOnly = false } = options;
 
@@ -75,14 +75,9 @@ export async function markNotificationAsRead(notificationId: string, userId: str
     .update(notification)
     .set({
       read: true,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
-    .where(
-      and(
-        eq(notification.id, notificationId),
-        eq(notification.userId, userId)
-      )
-    )
+    .where(and(eq(notification.id, notificationId), eq(notification.userId, userId)))
     .returning();
 
   return updatedNotification;
@@ -96,7 +91,7 @@ export async function markAllNotificationsAsRead(userId: string) {
     .update(notification)
     .set({
       read: true,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     })
     .where(eq(notification.userId, userId))
     .returning();
@@ -111,12 +106,7 @@ export async function getUnreadNotificationCount(userId: string) {
   const [result] = await db
     .select({ count: count() })
     .from(notification)
-    .where(
-      and(
-        eq(notification.userId, userId),
-        eq(notification.read, false)
-      )
-    );
+    .where(and(eq(notification.userId, userId), eq(notification.read, false)));
 
   return result?.count ?? 0;
 }
@@ -134,8 +124,10 @@ export async function cleanupOldNotifications(daysToKeep: number = 30) {
     .where(
       and(
         eq(notification.read, true),
-        lt(notification.createdAt, cutoffDate)
-      )
+        lt(notification.createdAt, cutoffDate),
+        // Note: You might want to add a createdAt < cutoffDate condition here
+        // but Drizzle's date comparison syntax might vary
+      ),
     )
     .returning();
 
