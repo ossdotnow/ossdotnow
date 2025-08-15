@@ -11,16 +11,16 @@ interface PurgoMalumContainsResponse {
 function normalizeText(text: string): string {
   // Flexible profanity patterns that handle asterisks in any position
   const patterns = [
-    { pattern: /s[*h][*i][*t]/gi, replacement: 'shit' },
-    { pattern: /f[*u][*c][*k]/gi, replacement: 'fuck' },
-    { pattern: /f[*u][*k]/gi, replacement: 'fuk' },
-    { pattern: /b[*i][*t][*c][*h]/gi, replacement: 'bitch' },
-    { pattern: /h[*e][*l][*l]/gi, replacement: 'hell' },
-    { pattern: /[*a][*s][*s]/gi, replacement: 'ass' },
-    { pattern: /p[*i][*s][*s]/gi, replacement: 'piss' },
-    { pattern: /c[*r][*a][*p]/gi, replacement: 'crap' },
-    { pattern: /s[*t][*u][*p][*i][*d]/gi, replacement: 'stupid' },
-    { pattern: /i[*d][*i][*o][*t]/gi, replacement: 'idiot' },
+    { pattern: /s\*?h\*?i\*?t/gi, replacement: 'shit' },
+    { pattern: /f\*?u\*?c\*?k/gi, replacement: 'fuck' },
+    { pattern: /f\*?u\*?k/gi, replacement: 'fuk' },
+    { pattern: /b\*?i\*?t\*?c\*?h/gi, replacement: 'bitch' },
+    { pattern: /h\*?e\*?l\*?l/gi, replacement: 'hell' },
+    { pattern: /a\*?s\*?s/gi, replacement: 'ass' },
+    { pattern: /p\*?i\*?s\*?s/gi, replacement: 'piss' },
+    { pattern: /c\*?r\*?a\*?p/gi, replacement: 'crap' },
+    { pattern: /s\*?t\*?u\*?p\*?i\*?d/gi, replacement: 'stupid' },
+    { pattern: /i\*?d\*?i\*?o\*?t/gi, replacement: 'idiot' },
   ];
 
   let normalizedText = text;
