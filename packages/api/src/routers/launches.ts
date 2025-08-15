@@ -17,6 +17,7 @@ import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
+import { moderateComment } from '../utils/content-moderation';
 
 async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
   const now = new Date();
@@ -877,6 +878,17 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Moderate the comment content using PurgoMalum API
+      const { isClean } = await moderateComment(input.content);
+
+      // If inappropriate content is found, throw an error to show toast
+      if (!isClean) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Inappropriate content detected. Please review your comment and try again.',
+        });
+      }
+
       const [comment] = await ctx.db
         .insert(projectComment)
         .values({

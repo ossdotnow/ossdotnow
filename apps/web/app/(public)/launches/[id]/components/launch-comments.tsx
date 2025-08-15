@@ -54,8 +54,10 @@ export default function LaunchComments({
           queryKey: trpc.launches.getComments.queryKey({ projectId }),
         });
       },
-      onError: () => {
-        toast.error('Failed to add comment. Please try again.');
+      onError: (error) => {
+        // Show specific error message from API (e.g., content moderation)
+        const errorMessage = error.message || 'Failed to add comment. Please try again.';
+        toast.error(errorMessage);
       },
     }),
   );
