@@ -1,10 +1,3 @@
-
-import {
-  categoryProjectTypes,
-  categoryProjectStatuses,
-  categoryTags,
-  projectTagRelations,
-} from '@workspace/db/schema';
 import {
   project,
   projectLaunch,
@@ -14,53 +7,56 @@ import {
   projectReport,
   user,
 } from '@workspace/db/schema';
-import { createNotification } from '@workspace/db/services';
+import {
+  categoryProjectTypes,
+  categoryProjectStatuses,
+  categoryTags,
+  projectTagRelations,
+} from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
 import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
+import { moderateComment } from '../utils/content-moderation';
+import { createNotification } from '@workspace/db/services';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
-import { moderateComment } from '../utils/content-moderation';
 
 async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
   const now = new Date();
 
-  const updatedLaunches = await db
+  // First, get the launches that are going live
+  const launchesGoingLive = await db
+    .select({
+      id: projectLaunch.id,
+      projectId: projectLaunch.projectId,
+      project: {
+        name: project.name,
+        ownerId: project.ownerId,
+      },
+    })
+    .from(projectLaunch)
+    .leftJoin(project, eq(projectLaunch.projectId, project.id))
+    .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
+
+  // Update their status to live
+  await db
     .update(projectLaunch)
     .set({ status: 'live' })
-    .from(project)
-    .where(
-      and(
-        eq(projectLaunch.status, 'scheduled'),
-        lte(projectLaunch.launchDate, now),
-        eq(projectLaunch.projectId, project.id)
-      )
-    )
-    .returning({
-      launchId: projectLaunch.id,
-      projectId: projectLaunch.projectId,
-      projectName: project.name,
-      projectOwnerId: project.ownerId,
-    });
+    .where(and(eq(projectLaunch.status, 'scheduled'), lte(projectLaunch.launchDate, now)));
 
-  // Send notifications for each updated launch
-  for (const launch of updatedLaunches) {
-    if (launch.projectOwnerId) {
-      try {
-        await createNotification({
-          userId: launch.projectOwnerId,
-          type: 'launch_live',
-          title: `"${launch.projectName}" is now live!`,
-          message: `Your scheduled launch has gone live. Check out your launch page!`,
-          data: {
-            projectId: launch.projectId,
-            launchId: launch.launchId,
-          },
-        });
-      } catch (error) {
-        // Log error
-        console.error(`Failed to send notification for launch ${launch.launchId}:`, error);
-      }
+  // Create notifications for each launch that went live
+  for (const launch of launchesGoingLive) {
+    if (launch.project?.ownerId) {
+      await createNotification({
+        userId: launch.project.ownerId,
+        type: 'launch_live',
+        title: `"${launch.project.name}" is now live!`,
+        message: `Your scheduled launch has gone live. Check out your launch page!`,
+        data: {
+          projectId: launch.projectId,
+          launchId: launch.id,
+        },
+      });
     }
   }
 }
@@ -926,6 +922,7 @@ export const launchesRouter = createTRPCRouter({
           message: 'Inappropriate content detected. Please review your comment and try again.',
         });
       }
+
       // Get project details for notification
       const projectData = await ctx.db.query.project.findFirst({
         where: eq(project.id, input.projectId),
@@ -956,14 +953,13 @@ export const launchesRouter = createTRPCRouter({
             userId: projectData.ownerId,
             type: 'comment_received',
             title: `New comment on "${projectData.name}"`,
-            message: input.content.length > 100 ? input.content.substring(0, 100) + '...' : input.content,
+            message:
+              input.content.length > 100 ? input.content.substring(0, 100) + '...' : input.content,
             data: {
               projectId: input.projectId,
-              commentId: comment.id
+              commentId: comment.id,
             },
           });
-
-
         } catch (error) {
           console.error('Failed to create comment notification:', error);
           // Don't throw error to avoid breaking comment creation
@@ -995,33 +991,39 @@ export const launchesRouter = createTRPCRouter({
         .orderBy(desc(projectComment.createdAt));
 
       // Get like counts for all comments
-      const commentIds = comments.map(c => c.id);
-      const likeCounts = commentIds.length > 0 ? await ctx.db
-        .select({
-          commentId: projectCommentLike.commentId,
-          likeCount: sql<number>`count(*)::int`.as('likeCount'),
-        })
-        .from(projectCommentLike)
-        .where(inArray(projectCommentLike.commentId, commentIds))
-        .groupBy(projectCommentLike.commentId) : [];
+      const commentIds = comments.map((c) => c.id);
+      const likeCounts =
+        commentIds.length > 0
+          ? await ctx.db
+              .select({
+                commentId: projectCommentLike.commentId,
+                likeCount: sql<number>`count(*)::int`.as('likeCount'),
+              })
+              .from(projectCommentLike)
+              .where(inArray(projectCommentLike.commentId, commentIds))
+              .groupBy(projectCommentLike.commentId)
+          : [];
 
       // Get user's likes if authenticated
-      const userLikes = ctx.session?.userId && commentIds.length > 0 ? await ctx.db
-        .select({
-          commentId: projectCommentLike.commentId,
-        })
-        .from(projectCommentLike)
-        .where(
-          and(
-            eq(projectCommentLike.userId, ctx.session.userId),
-            inArray(projectCommentLike.commentId, commentIds)
-          )
-        ) : [];
+      const userLikes =
+        ctx.session?.userId && commentIds.length > 0
+          ? await ctx.db
+              .select({
+                commentId: projectCommentLike.commentId,
+              })
+              .from(projectCommentLike)
+              .where(
+                and(
+                  eq(projectCommentLike.userId, ctx.session.userId),
+                  inArray(projectCommentLike.commentId, commentIds),
+                ),
+              )
+          : [];
 
       // Combine comments with like data
-      const commentsWithLikes = comments.map(comment => {
-        const likeData = likeCounts.find(lc => lc.commentId === comment.id);
-        const isLiked = userLikes.some(ul => ul.commentId === comment.id);
+      const commentsWithLikes = comments.map((comment) => {
+        const likeData = likeCounts.find((lc) => lc.commentId === comment.id);
+        const isLiked = userLikes.some((ul) => ul.commentId === comment.id);
 
         return {
           ...comment,
@@ -1190,37 +1192,27 @@ export const launchesRouter = createTRPCRouter({
       }
 
       // Create notifications based on launch status
-      try {
-        if (status === 'scheduled') {
-          await createNotification({
-            userId: foundProject.ownerId!,
-            type: 'launch_scheduled',
-            title: `"${foundProject.name}" launch scheduled`,
-            message: `Your project launch is scheduled for ${finalLaunchDate.toLocaleDateString()} at ${finalLaunchDate.toLocaleTimeString()}`,
-            data: {
-              projectId: input.projectId,
-              launchId: launch.id
-            },
-          });
-        } else if (status === 'live') {
-          await createNotification({
-            userId: foundProject.ownerId!,
-            type: 'launch_live',
-            title: `"${foundProject.name}" is now live!`,
-            message: `Your project has been launched successfully. Check out your launch page!`,
-            data: {
-              projectId: input.projectId,
-              launchId: launch.id
-            },
-          });
-        }
-      } catch (error) {
-        // Log error but don't let notification failure affect the successful launch creation
-        console.error(`Failed to send ${status} notification for launch:`, {
-          projectId: input.projectId,
-          launchId: launch.id,
-          notificationType: status === 'scheduled' ? 'launch_scheduled' : 'launch_live',
-          error
+      if (status === 'scheduled') {
+        await createNotification({
+          userId: foundProject.ownerId!,
+          type: 'launch_scheduled',
+          title: `"${foundProject.name}" launch scheduled`,
+          message: `Your project launch is scheduled for ${finalLaunchDate.toLocaleDateString()} at ${finalLaunchDate.toLocaleTimeString()}`,
+          data: {
+            projectId: input.projectId,
+            launchId: launch.id,
+          },
+        });
+      } else if (status === 'live') {
+        await createNotification({
+          userId: foundProject.ownerId!,
+          type: 'launch_live',
+          title: `"${foundProject.name}" is now live!`,
+          message: `Your project has been launched successfully. Check out your launch page!`,
+          data: {
+            projectId: input.projectId,
+            launchId: launch.id,
+          },
         });
       }
 
