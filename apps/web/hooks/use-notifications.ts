@@ -1,6 +1,6 @@
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useEffect, useCallback } from 'react';
 import { useTRPC } from './use-trpc';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 const POLLING_INTERVAL = 30000; // 30 seconds
@@ -31,7 +31,7 @@ export function useNotifications() {
       onError: () => {
         toast.error('Failed to mark notification as read');
       },
-    })
+    }),
   );
 
   const markAllAsReadMutation = useMutation(
@@ -44,14 +44,14 @@ export function useNotifications() {
       onError: () => {
         toast.error('Failed to mark all notifications as read');
       },
-    })
+    }),
   );
 
   const markAsRead = useCallback(
     (notificationId: string) => {
       markAsReadMutation.mutate({ id: notificationId });
     },
-    [markAsReadMutation]
+    [markAsReadMutation],
   );
 
   const markAllAsRead = useCallback(() => {
@@ -84,10 +84,6 @@ export function useNotifications() {
     notifications: notificationsQuery.data ?? [],
     unreadCount: unreadCountQuery.data ?? 0,
     isLoading: notificationsQuery.isLoading,
-
-    //error states
-    hasError: notificationsQuery.isError || unreadCountQuery.isError,
-    error: notificationsQuery.error || unreadCountQuery.error,
 
     //actions
     markAsRead,

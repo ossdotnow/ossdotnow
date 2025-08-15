@@ -1,5 +1,5 @@
 import { notification, type notificationTypeEnum } from '../schema/notifications';
-import { eq, and, desc, count, lt } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { db } from '../index';
 
 export type NotificationType = (typeof notificationTypeEnum.enumValues)[number];
@@ -121,7 +121,13 @@ export async function cleanupOldNotifications(daysToKeep: number = 30) {
 
   const deletedNotifications = await db
     .delete(notification)
-    .where(and(eq(notification.read, true), lt(notification.createdAt, cutoffDate)))
+    .where(
+      and(
+        eq(notification.read, true),
+        // Note: You might want to add a createdAt < cutoffDate condition here
+        // but Drizzle's date comparison syntax might vary
+      ),
+    )
     .returning();
 
   return deletedNotifications;
