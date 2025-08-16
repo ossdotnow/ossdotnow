@@ -85,6 +85,10 @@ export function useNotifications() {
     unreadCount: unreadCountQuery.data ?? 0,
     isLoading: notificationsQuery.isLoading,
 
+    //error states
+    hasError: notificationsQuery.isError || unreadCountQuery.isError,
+    error: notificationsQuery.error || unreadCountQuery.error,
+
     //actions
     markAsRead,
     markAllAsRead,
