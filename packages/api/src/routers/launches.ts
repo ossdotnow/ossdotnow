@@ -9,6 +9,7 @@ import {
   projectLaunch,
   projectVote,
   projectComment,
+  projectCommentLike,
   projectReport,
   user,
 } from '@workspace/db/schema';
@@ -923,7 +924,88 @@ export const launchesRouter = createTRPCRouter({
         .where(eq(projectComment.projectId, input.projectId))
         .orderBy(desc(projectComment.createdAt));
 
-      return comments;
+      // Get like counts for all comments
+      const commentIds = comments.map(c => c.id);
+      const likeCounts = commentIds.length > 0 ? await ctx.db
+        .select({
+          commentId: projectCommentLike.commentId,
+          likeCount: sql<number>`count(*)::int`.as('likeCount'),
+        })
+        .from(projectCommentLike)
+        .where(inArray(projectCommentLike.commentId, commentIds))
+        .groupBy(projectCommentLike.commentId) : [];
+
+      // Get user's likes if authenticated
+      const userLikes = ctx.session?.userId && commentIds.length > 0 ? await ctx.db
+        .select({
+          commentId: projectCommentLike.commentId,
+        })
+        .from(projectCommentLike)
+        .where(
+          and(
+            eq(projectCommentLike.userId, ctx.session.userId),
+            inArray(projectCommentLike.commentId, commentIds)
+          )
+        ) : [];
+
+      // Combine comments with like data
+      const commentsWithLikes = comments.map(comment => {
+        const likeData = likeCounts.find(lc => lc.commentId === comment.id);
+        const isLiked = userLikes.some(ul => ul.commentId === comment.id);
+
+        return {
+          ...comment,
+          likeCount: likeData?.likeCount || 0,
+          isLiked: isLiked,
+        };
+      });
+
+      return commentsWithLikes;
+    }),
+
+  toggleCommentLike: protectedProcedure
+    .input(z.object({ commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Check if like already exists
+      const existingLike = await ctx.db.query.projectCommentLike.findFirst({
+        where: and(
+          eq(projectCommentLike.commentId, input.commentId),
+          eq(projectCommentLike.userId, ctx.session.userId!)
+        ),
+      });
+
+      if (existingLike) {
+        // Unlike - remove the like
+        await ctx.db
+          .delete(projectCommentLike)
+          .where(
+            and(
+              eq(projectCommentLike.commentId, input.commentId),
+              eq(projectCommentLike.userId, ctx.session.userId!)
+            )
+          );
+      } else {
+        // Like - add the like
+        await ctx.db
+          .insert(projectCommentLike)
+          .values({
+            commentId: input.commentId,
+            userId: ctx.session.userId!,
+          });
+      }
+
+      // Get updated like count
+      const [likeCountResult] = await ctx.db
+        .select({
+          likeCount: sql<number>`count(*)::int`.as('likeCount'),
+        })
+        .from(projectCommentLike)
+        .where(eq(projectCommentLike.commentId, input.commentId));
+
+      return {
+        likeCount: likeCountResult?.likeCount || 0,
+        isLiked: !existingLike, // Toggle the state
+      };
     }),
 
   launchProject: protectedProcedure
