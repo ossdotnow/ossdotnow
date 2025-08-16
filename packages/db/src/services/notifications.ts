@@ -1,4 +1,4 @@
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, lt } from 'drizzle-orm';
 import { db } from '../index';
 import { notification, type notificationTypeEnum } from '../schema/notifications';
 
@@ -134,8 +134,7 @@ export async function cleanupOldNotifications(daysToKeep: number = 30) {
     .where(
       and(
         eq(notification.read, true),
-        // Note: You might want to add a createdAt < cutoffDate condition here
-        // but Drizzle's date comparison syntax might vary
+        lt(notification.createdAt, cutoffDate)
       )
     )
     .returning();
