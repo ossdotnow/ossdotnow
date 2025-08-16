@@ -121,14 +121,7 @@ export async function cleanupOldNotifications(daysToKeep: number = 30) {
 
   const deletedNotifications = await db
     .delete(notification)
-    .where(
-      and(
-        eq(notification.read, true),
-        lt(notification.createdAt, cutoffDate),
-        // Note: You might want to add a createdAt < cutoffDate condition here
-        // but Drizzle's date comparison syntax might vary
-      ),
-    )
+    .where(and(eq(notification.read, true), lt(notification.createdAt, cutoffDate)))
     .returning();
 
   return deletedNotifications;
