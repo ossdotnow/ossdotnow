@@ -966,34 +966,28 @@ export const launchesRouter = createTRPCRouter({
   toggleCommentLike: protectedProcedure
     .input(z.object({ commentId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // Check if like already exists
-      const existingLike = await ctx.db.query.projectCommentLike.findFirst({
-        where: and(
-          eq(projectCommentLike.commentId, input.commentId),
-          eq(projectCommentLike.userId, ctx.session.userId!)
-        ),
-      });
-
-      if (existingLike) {
-        // Unlike - remove the like
+      // Try to like first; if the row already exists, do nothing (idempotent)
+      const inserted = await ctx.db
+        .insert(projectCommentLike)
+        .values({
+          commentId: input.commentId,
+          userId: ctx.session.userId!,
+        })
+        .onConflictDoNothing({
+          target: [projectCommentLike.commentId, projectCommentLike.userId],
+        })
+        .returning();
+      // If nothing was inserted, the like already existed; toggle off by deleting it
+      if (inserted.length === 0) {
         await ctx.db
           .delete(projectCommentLike)
           .where(
             and(
               eq(projectCommentLike.commentId, input.commentId),
-              eq(projectCommentLike.userId, ctx.session.userId!)
-            )
+              eq(projectCommentLike.userId, ctx.session.userId!),
+            ),
           );
-      } else {
-        // Like - add the like
-        await ctx.db
-          .insert(projectCommentLike)
-          .values({
-            commentId: input.commentId,
-            userId: ctx.session.userId!,
-          });
       }
-
       // Get updated like count
       const [likeCountResult] = await ctx.db
         .select({
@@ -1001,10 +995,9 @@ export const launchesRouter = createTRPCRouter({
         })
         .from(projectCommentLike)
         .where(eq(projectCommentLike.commentId, input.commentId));
-
       return {
         likeCount: likeCountResult?.likeCount || 0,
-        isLiked: !existingLike, // Toggle the state
+        isLiked: inserted.length > 0,
       };
     }),
 

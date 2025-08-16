@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, uuid, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { projectComment } from './project-comments';
 import { user } from './auth';
@@ -19,7 +19,7 @@ export const projectCommentLike = pgTable(
         index('project_comment_like_comment_id_idx').on(t.commentId),
         index('project_comment_like_user_id_idx').on(t.userId),
         // Unique constraint to prevent duplicate likes
-        index('project_comment_like_unique_idx').on(t.commentId, t.userId),
+        uniqueIndex('project_comment_like_unique_idx').on(t.commentId, t.userId),
     ],
 );
 

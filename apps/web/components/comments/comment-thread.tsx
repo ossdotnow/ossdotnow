@@ -222,7 +222,7 @@ function CommentItem({ comment, projectId, depth = 0, maxDepth = MAX_DEPTH }: Co
 
             {/* Nested Replies */}
             {hasReplies && (
-                <Collapsible open={!isCollapsed} onOpenChange={setIsCollapsed}>
+                <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
                     <CollapsibleContent>
                         <motion.div
                             initial={{ opacity: 1, height: 'auto' }}
