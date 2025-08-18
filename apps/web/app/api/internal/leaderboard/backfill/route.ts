@@ -1,4 +1,3 @@
-// apps/web/app/api/internal/leaderboard/backfill/route.ts
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -16,11 +15,13 @@ import { backfillLockKey, withLock, acquireLock, releaseLock } from "@workspace/
 function startOfUtcDay(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
+
 function addDaysUTC(d: Date, days: number) {
   const x = new Date(d);
   x.setUTCDate(x.getUTCDate() + days);
   return x;
 }
+
 function ymd(d: Date) {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");

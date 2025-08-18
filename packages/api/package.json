@@ -8,7 +8,8 @@
     "./providers/types": "./src/providers/types.ts",
     "./aggregator": "./src/leaderboard/aggregator.ts",
     "./redis": "./src/leaderboard/redis.ts",
-    "./locks": "./src/redis/lock.ts"
+    "./locks": "./src/redis/lock.ts",
+    "./read": "./src/leaderboard/read.ts"
   },
   "scripts": {
     "lint": "eslint ."

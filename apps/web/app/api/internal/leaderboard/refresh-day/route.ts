@@ -15,6 +15,7 @@ import { withLock, acquireLock, releaseLock } from "@workspace/api/locks";
 function startOfUtcDay(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
 }
+
 function ymd(d: Date) {
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, "0");
