@@ -34,12 +34,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useState } from 'react';
 import { toast } from 'sonner';
-
-const isValidProvider = (
-  provider: string | null | undefined,
-): provider is (typeof projectProviderEnum.enumValues)[number] => {
-  return provider === 'github' || provider === 'gitlab';
-};
+import {isValidProvider} from '@/lib/constants'
 
 interface LaunchSidebarProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

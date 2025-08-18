@@ -5,14 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useTRPC } from '@/hooks/use-trpc';
 import { formatDate } from '@/lib/utils';
 import Image from 'next/image';
+import {isValidProvider} from '@/lib/constants'
 
 type Project = typeof projectSchema.$inferSelect;
-
-const isValidProvider = (
-  provider: string | null,
-): provider is (typeof projectProviderEnum.enumValues)[number] => {
-  return provider === 'github' || provider === 'gitlab';
-};
 
 export default function ProjectCard({
   project,
