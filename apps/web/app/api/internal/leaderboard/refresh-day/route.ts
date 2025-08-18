@@ -9,6 +9,7 @@ import { isCronAuthorized } from "@workspace/env/verify-cron";
 
 import { db } from "@workspace/db";
 import { refreshUserDayRange } from "@workspace/api/aggregator";
+import { setUserMetaFromProviders } from "@workspace/api/meta";
 import { syncUserLeaderboards } from "@workspace/api/redis";
 import { withLock, acquireLock, releaseLock } from "@workspace/api/locks";
 
@@ -88,6 +89,7 @@ export async function POST(req: NextRequest) {
       },
     );
     await syncUserLeaderboards(db, body.userId);
+    await setUserMetaFromProviders(body.userId, body.githubLogin, body.gitlabUsername);
     return res;
   }
 

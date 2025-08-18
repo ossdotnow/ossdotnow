@@ -9,7 +9,8 @@
     "./aggregator": "./src/leaderboard/aggregator.ts",
     "./redis": "./src/leaderboard/redis.ts",
     "./locks": "./src/redis/lock.ts",
-    "./read": "./src/leaderboard/read.ts"
+    "./read": "./src/leaderboard/read.ts",
+    "./meta": "./src/leaderboard/useMeta.ts"
   },
   "scripts": {
     "lint": "eslint ."
