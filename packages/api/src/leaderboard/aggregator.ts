@@ -1,15 +1,10 @@
-import { and, eq, gte, lt, sql } from "drizzle-orm";
-import type { DB } from "@workspace/db";
+import { and, eq, gte, lt, sql } from 'drizzle-orm';
+import type { DB } from '@workspace/db';
 
-import { getGithubContributionTotalsForDay } from "../providers/github";
-import { getGitlabContributionTotalsForDay } from "../providers/gitlab";
+import { getGitlabContributionTotalsForDay } from '../providers/gitlab';
+import { getGithubContributionTotalsForDay } from '../providers/github';
 
-import {
-  contribDaily,
-  contribTotals,
-  contribProvider,
-} from "@workspace/db/schema";
-
+import { contribDaily, contribTotals, contribProvider } from '@workspace/db/schema';
 
 export type Provider = (typeof contribProvider.enumValues)[number];
 
@@ -30,7 +25,6 @@ type GithubDayResult = { commits: number; prs: number; issues: number };
 type GitlabDayResult = { commits: number; mrs: number; issues: number };
 type RefreshResults = { github?: GithubDayResult; gitlab?: GitlabDayResult };
 
-
 function startOfUtcDay(d: Date | string): Date {
   const x = d instanceof Date ? new Date(d) : new Date(d);
   return new Date(Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate(), 0, 0, 0, 0));
@@ -42,15 +36,21 @@ function addDaysUTC(d: Date, days: number): Date {
 }
 function ymdUTC(d: Date): string {
   const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
 
-
 async function upsertDaily(
   db: DB,
-  args: { userId: string; provider: Provider; day: Date; commits: number; prs: number; issues: number },
+  args: {
+    userId: string;
+    provider: Provider;
+    day: Date;
+    commits: number;
+    prs: number;
+    issues: number;
+  },
 ): Promise<void> {
   const dayStr = ymdUTC(args.day);
   await db
@@ -154,7 +154,6 @@ async function recomputeProviderTotals(
   return { allTime, last30d, last365d };
 }
 
-
 export async function refreshUserDay(
   deps: AggregatorDeps,
   args: RefreshUserDayArgs,
@@ -164,39 +163,74 @@ export async function refreshUserDay(
   const results: RefreshResults = {};
 
   if (args.githubLogin && args.githubLogin.trim() && args.githubToken) {
-    const gh = await getGithubContributionTotalsForDay(args.githubLogin.trim(), day, args.githubToken);
+    const gh = await getGithubContributionTotalsForDay(
+      args.githubLogin.trim(),
+      day,
+      args.githubToken,
+    );
     results.github = { commits: gh.commits, prs: gh.prs, issues: gh.issues };
-    await upsertDaily(db, { userId: args.userId, provider: "github", day, commits: gh.commits, prs: gh.prs, issues: gh.issues });
-    if (!args.skipTotalsRecompute) await recomputeProviderTotals(db, args.userId, "github", day);
+    await upsertDaily(db, {
+      userId: args.userId,
+      provider: 'github',
+      day,
+      commits: gh.commits,
+      prs: gh.prs,
+      issues: gh.issues,
+    });
+    if (!args.skipTotalsRecompute) await recomputeProviderTotals(db, args.userId, 'github', day);
   }
 
   if (args.gitlabUsername && args.gitlabUsername.trim()) {
-    const base = args.gitlabBaseUrl?.trim() || "https://gitlab.com";
-    const gl = await getGitlabContributionTotalsForDay(args.gitlabUsername.trim(), day, base, args.gitlabToken);
+    const base = args.gitlabBaseUrl?.trim() || 'https://gitlab.com';
+    const gl = await getGitlabContributionTotalsForDay(
+      args.gitlabUsername.trim(),
+      day,
+      base,
+      args.gitlabToken,
+    );
     results.gitlab = { commits: gl.commits, mrs: gl.mrs, issues: gl.issues };
-    await upsertDaily(db, { userId: args.userId, provider: "gitlab", day, commits: gl.commits, prs: gl.mrs, issues: gl.issues });
-    if (!args.skipTotalsRecompute) await recomputeProviderTotals(db, args.userId, "gitlab", day);
+    await upsertDaily(db, {
+      userId: args.userId,
+      provider: 'gitlab',
+      day,
+      commits: gl.commits,
+      prs: gl.mrs,
+      issues: gl.issues,
+    });
+    if (!args.skipTotalsRecompute) await recomputeProviderTotals(db, args.userId, 'gitlab', day);
   }
 
   return { day: ymdUTC(day), updatedProviders: Object.keys(results), results };
 }
 
-async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const ret: R[] = [];
-  let i = 0;
-  const workers = Array.from({ length: Math.max(1, limit) }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      ret[idx] = await fn(items[idx]!);
+async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const n = items.length;
+  const results = new Array<R>(n);
+  const batchSize = Math.max(1, limit | 0);
+
+  for (let start = 0; start < n; start += batchSize) {
+    const end = Math.min(start + batchSize, n);
+    const pending: Promise<void>[] = [];
+    for (let i = start; i < end; i++) {
+      pending.push(
+        fn(items[i]!, i).then((r) => {
+          results[i] = r;
+        }),
+      );
     }
-  });
-  await Promise.all(workers);
-  return ret;
+    await Promise.all(pending);
+  }
+
+  return results;
 }
 
 export async function refreshUserDayRange(
   deps: AggregatorDeps,
-  args: Omit<RefreshUserDayArgs, "dayUtc" | "skipTotalsRecompute"> & {
+  args: Omit<RefreshUserDayArgs, 'dayUtc' | 'skipTotalsRecompute'> & {
     fromDayUtc: Date | string;
     toDayUtc: Date | string;
     concurrency?: number;
@@ -204,29 +238,33 @@ export async function refreshUserDayRange(
 ): Promise<{ daysRefreshed: string[] }> {
   const from = startOfUtcDay(args.fromDayUtc);
   const toInclusive = startOfUtcDay(args.toDayUtc);
-  const days: Date[] = [];
-  for (let d = new Date(from); d.getTime() <= toInclusive.getTime(); d = addDaysUTC(d, 1)) days.push(new Date(d));
+  if (from.getTime() > toInclusive.getTime()) {
+    throw new Error('fromDayUtc must be <= toDayUtc');
+  }
 
-  const daysStr: string[] = [];
+  // Build list of UTC days
+  const daysList: Date[] = [];
+  for (let d = new Date(from); d.getTime() <= toInclusive.getTime(); d = addDaysUTC(d, 1)) {
+    daysList.push(new Date(d));
+  }
 
-  const concurrency = Math.max(1, Math.min(args.concurrency ?? 4, 10));
+  // Run once per day with totals recompute skipped (we'll recompute once at the end)
+  const concurrency = Math.max(1, args.concurrency ?? 4);
+  const results = await mapWithConcurrency(daysList, concurrency, (day) =>
+    refreshUserDay(deps, { ...args, dayUtc: day, skipTotalsRecompute: true }),
+  );
 
-  await mapWithConcurrency(days, concurrency, async (d) => {
-    const res = await refreshUserDay(deps, {
-      ...args,
-      dayUtc: d,
-      skipTotalsRecompute: true,
-    });
-    daysStr.push(res.day);
-  });
+  const days = results.map((r) => r.day);
+  days.sort(); // canonical order YYYY-MM-DD
 
+  // Recompute provider totals once (current window)
   if (args.githubLogin && args.githubToken) {
-    await recomputeProviderTotals(deps.db, args.userId, "github", new Date());
+    await recomputeProviderTotals(deps.db, args.userId, 'github', new Date());
   }
   if (args.gitlabUsername) {
-    await recomputeProviderTotals(deps.db, args.userId, "gitlab", new Date());
+    await recomputeProviderTotals(deps.db, args.userId, 'gitlab', new Date());
   }
 
-  daysStr.sort();
-  return { daysRefreshed: daysStr };
+  return { daysRefreshed: days };
 }
+
