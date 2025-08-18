@@ -104,40 +104,44 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
     return data.entries;
   }
 
-  const doFetch = React.useCallback(async (w: WindowKey, lim: number, cur: number) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const top = await fetchTop(w, provider, lim, cur);
-      const ids = top.entries.map((e) => e.userId);
+  const doFetch = React.useCallback(
+    async (w: WindowKey, lim: number, cur: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const top = await fetchTop(w, provider, lim, cur);
+        const ids = top.entries.map((e) => e.userId);
 
-      const [details, profiles] = await Promise.all([fetchDetails(w, ids), fetchProfiles(ids)]);
+        const [details, profiles] = await Promise.all([fetchDetails(w, ids), fetchProfiles(ids)]);
 
-      const detailMap = new Map(details.entries.map((d) => [d.userId, d]));
-      const profileMap = new Map(profiles.map((p) => [p.userId, p]));
+        const detailMap = new Map(details.entries.map((d) => [d.userId, d]));
+        const profileMap = new Map(profiles.map((p) => [p.userId, p]));
 
-      const merged: LeaderRow[] = top.entries.map((e) => {
-        const d = detailMap.get(e.userId);
-        const p = profileMap.get(e.userId);
-        return {
-          userId: e.userId,
-          total: d?.total ?? e.score ?? 0,
-          github: d?.github ?? 0,
-          gitlab: d?.gitlab ?? 0,
-          _profile: p,
-        };
-      });
+        const merged: LeaderRow[] = top.entries.map((e) => {
+          const d = detailMap.get(e.userId);
+          const p = profileMap.get(e.userId);
+          return {
+            userId: e.userId,
+            total: d?.total ?? e.score ?? 0,
+            github: d?.github ?? 0,
+            gitlab: d?.gitlab ?? 0,
+            _profile: p,
+          };
+        });
 
-      setRows(merged);
-      setNextCursor(top.nextCursor);
-    } catch (err: any) {
-      setError(String(err?.message || err));
-      setRows([]);
-      setNextCursor(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+        setRows(merged);
+        setNextCursor(top.nextCursor);
+      } catch (err: any) {
+        setError(String(err?.message || err));
+        setRows([]);
+        setNextCursor(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [provider],
+  );
 
   React.useEffect(() => {
     doFetch(window, limit, cursor);
@@ -198,7 +202,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <Card>
+      <Card className="rounded-none">
         <CardContent className="py-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
@@ -210,13 +214,19 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
                   setWindow(v);
                 }}
               >
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-[160px] rounded-none">
                   <SelectValue placeholder="Time window" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30d">Last 30 days</SelectItem>
-                  <SelectItem value="365d">Last year</SelectItem>
-                  <SelectItem value="all">All time</SelectItem>
+                <SelectContent className="rounded-none">
+                  <SelectItem className="rounded-none" value="30d">
+                    Last 30 days
+                  </SelectItem>
+                  <SelectItem className="rounded-none" value="365d">
+                    Last year
+                  </SelectItem>
+                  <SelectItem className="rounded-none" value="all">
+                    All time
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -224,7 +234,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium">Page size</label>
               <Input
-                className="w-[88px]"
+                className="w-[88px] rounded-none"
                 type="number"
                 min={5}
                 max={100}
@@ -239,6 +249,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
                 variant="secondary"
                 onClick={() => doFetch(window, limit, 0)}
                 disabled={loading}
+                className='rounded-none'
               >
                 Refresh
               </Button>
@@ -248,7 +259,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
       </Card>
 
       {/* Table */}
-      <Card>
+      <Card className='rounded-none'>
         <CardContent className="p-4">
           <div className="overflow-x-auto">
             <Table>
@@ -349,6 +360,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
       <div className="flex items-center justify-between">
         <Button
           variant="outline"
+          className='rounded-none'
           disabled={loading || cursor === 0}
           onClick={() => setCursor(Math.max(0, cursor - limit))}
         >
@@ -359,6 +371,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
         </div>
         <Button
           disabled={loading || nextCursor == null}
+          className='rounded-none'
           onClick={() => {
             if (nextCursor != null) setCursor(nextCursor);
           }}
@@ -376,19 +389,19 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
             setProvider(v);
           }}
         >
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-[160px] rounded-none">
             <SelectValue placeholder="Provider" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="combined">Combined</SelectItem>
-            <SelectItem value="github">GitHub</SelectItem>
-            <SelectItem value="gitlab">GitLab</SelectItem>
+            <SelectItem className='rounded-none' value="combined">Combined</SelectItem>
+            <SelectItem className='rounded-none' value="github">GitHub</SelectItem>
+            <SelectItem className='rounded-none' value="gitlab">GitLab</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <a
-        className="hover:bg-muted ml-2 inline-flex items-center rounded-md border px-3 py-2 text-sm"
+        className="hover:bg-muted ml-2 inline-flex items-center border px-3 py-2 text-sm"
         href={`/api/leaderboard/export?window=${window}&provider=${provider}&limit=${limit}&cursor=${cursor}`}
         target="_blank"
         rel="noopener noreferrer"

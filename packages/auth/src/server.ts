@@ -6,6 +6,10 @@ import { betterAuth } from 'better-auth';
 import { db } from '@workspace/db';
 import 'server-only';
 
+import { syncUserLeaderboards } from '@workspace/api/leaderboard/redis';
+import { createAuthMiddleware } from 'better-auth/api';
+import { setUserMeta } from '@workspace/api/meta';
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: 'pg',
@@ -16,6 +20,41 @@ export const auth = betterAuth({
       adminRoles: ['admin', 'moderator'],
     }),
   ],
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      const session = ctx.context.newSession;
+      if (!session) return;
+
+      const userId = session.user.id;
+      const path = ctx.path || '';
+      const username = session.user?.username as string | undefined;
+
+      let githubLogin: string | undefined;
+      let gitlabUsername: string | undefined;
+
+      if (path.includes('/oauth/github') || path.includes('/sign-up/github')) {
+        githubLogin = username;
+      } else if (path.includes('/oauth/gitlab') || path.includes('/sign-up/gitlab')) {
+        gitlabUsername = username;
+      }
+
+      try {
+        await setUserMeta(
+          userId,
+          { githubLogin, gitlabUsername },
+          { seedLeaderboards: false },
+        );
+      } catch (e) {
+        console.error('setUserMeta failed:', e);
+      }
+
+      try {
+        await syncUserLeaderboards(db, userId);
+      } catch (e) {
+        console.error('syncUserLeaderboards failed:', e);
+      }
+    }),
+  },
 
   socialProviders: {
     github: {

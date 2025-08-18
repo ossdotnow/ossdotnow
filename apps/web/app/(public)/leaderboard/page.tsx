@@ -19,7 +19,7 @@ export default async function LeaderboardPage({
   const window = getWindow(searchParams);
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
-      <div className="mb-6">
+      <div className="mb-6 mt-12">
         <h1 className="text-3xl font-bold tracking-tight">Global Leaderboard</h1>
         <p className="text-muted-foreground">
           Top contributors across GitHub and GitLab.

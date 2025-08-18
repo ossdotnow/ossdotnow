@@ -7,10 +7,12 @@
     "./trpc": "./src/trpc.ts",
     "./providers/types": "./src/providers/types.ts",
     "./aggregator": "./src/leaderboard/aggregator.ts",
-    "./redis": "./src/leaderboard/redis.ts",
+    "./leaderboard/redis": "./src/leaderboard/redis.ts",
+    "./redis": "./src/redis/client.ts",
     "./locks": "./src/redis/lock.ts",
     "./read": "./src/leaderboard/read.ts",
-    "./meta": "./src/leaderboard/useMeta.ts"
+    "./use-meta": "./src/leaderboard/useMeta.ts",
+    "./meta": "./src/leaderboard/meta.ts"
   },
   "scripts": {
     "lint": "eslint ."

@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 import { getLeaderboardPage, type ProviderSel, type WindowKey } from '@workspace/api/read'; // or '@workspace/api/leaderboard/read'
+import { getUserMetas } from '@workspace/api/use-meta'; // or '@workspace/api/leaderboard/userMeta'
 import { contribTotals } from '@workspace/db/schema';
-import { getUserMetas } from '@workspace/api/meta'; // or '@workspace/api/leaderboard/userMeta'
 import { NextRequest } from 'next/server';
 import { inArray } from 'drizzle-orm';
 import { db } from '@workspace/db';
@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
     : [];
 
   // Ensure we always have an object for each userId before assignment
-  const byUser: Record<string, { github: number; gitlab: number; total: number }> = Object.create(null);
+  const byUser: Record<string, { github: number; gitlab: number; total: number }> =
+    Object.create(null);
   for (const id of userIds) byUser[id] = { github: 0, gitlab: 0, total: 0 };
 
   for (const r of rows) {

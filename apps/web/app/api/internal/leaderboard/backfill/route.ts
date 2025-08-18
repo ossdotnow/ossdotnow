@@ -9,8 +9,8 @@ import { env } from '@workspace/env/server';
 
 import { backfillLockKey, withLock, acquireLock, releaseLock } from '@workspace/api/locks';
 import { refreshUserDayRange } from '@workspace/api/aggregator';
-import { setUserMetaFromProviders } from '@workspace/api/meta';
-import { syncUserLeaderboards } from '@workspace/api/redis';
+import { setUserMetaFromProviders } from '@workspace/api/use-meta';
+import { syncUserLeaderboards } from '@workspace/api/leaderboard/redis';
 import { db } from '@workspace/db';
 
 function startOfUtcDay(d = new Date()) {

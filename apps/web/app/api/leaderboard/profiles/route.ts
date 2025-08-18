@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { getUserMetas } from '@workspace/api/meta';
+import { getUserMetas } from '@workspace/api/use-meta';
 import { NextRequest } from 'next/server';
 import { z } from 'zod/v4';
 

@@ -1,17 +1,17 @@
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-import { NextRequest } from "next/server";
-import { z } from "zod/v4";
+import { NextRequest } from 'next/server';
+import { z } from 'zod/v4';
 
-import { env } from "@workspace/env/server";
-import { isCronAuthorized } from "@workspace/env/verify-cron";
+import { isCronAuthorized } from '@workspace/env/verify-cron';
+import { env } from '@workspace/env/server';
 
-import { db } from "@workspace/db";
-import { refreshUserDayRange } from "@workspace/api/aggregator";
-import { setUserMetaFromProviders } from "@workspace/api/meta";
-import { syncUserLeaderboards } from "@workspace/api/redis";
-import { withLock, acquireLock, releaseLock } from "@workspace/api/locks";
+import { withLock, acquireLock, releaseLock } from '@workspace/api/locks';
+import { syncUserLeaderboards } from '@workspace/api/leaderboard/redis';
+import { setUserMetaFromProviders } from '@workspace/api/use-meta';
+import { refreshUserDayRange } from '@workspace/api/aggregator';
+import { db } from '@workspace/db';
 
 function startOfUtcDay(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0));
@@ -19,8 +19,8 @@ function startOfUtcDay(d = new Date()) {
 
 function ymd(d: Date) {
   const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
 }
 
@@ -29,17 +29,23 @@ const Body = z
     userId: z.string().min(1),
     githubLogin: z.string().min(1).optional(),
     gitlabUsername: z.string().min(1).optional(),
-    fromDayUtc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-    toDayUtc: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    fromDayUtc: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    toDayUtc: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
     concurrency: z.number().int().min(1).max(8).optional(),
   })
   .refine((b) => !!b.githubLogin || !!b.gitlabUsername, {
-    message: "At least one of githubLogin or gitlabUsername is required.",
+    message: 'At least one of githubLogin or gitlabUsername is required.',
   });
 
 export async function POST(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!isCronAuthorized(auth)) return new Response("Unauthorized", { status: 401 });
+  const auth = req.headers.get('authorization');
+  if (!isCronAuthorized(auth)) return new Response('Unauthorized', { status: 401 });
 
   const json = await req.json().catch(() => ({}));
   const parsed = Body.safeParse(json);
@@ -53,24 +59,26 @@ export async function POST(req: NextRequest) {
   const fromDay = body.fromDayUtc ? new Date(`${body.fromDayUtc}T00:00:00Z`) : yesterday;
   const toDay = body.toDayUtc ? new Date(`${body.toDayUtc}T00:00:00Z`) : today;
   if (fromDay.getTime() > toDay.getTime()) {
-    return new Response("Bad Request: fromDayUtc must be <= toDayUtc", { status: 400 });
+    return new Response('Bad Request: fromDayUtc must be <= toDayUtc', { status: 400 });
   }
 
-  const providers = ([
-    ...(body.githubLogin ? (["github"] as const) : []),
-    ...(body.gitlabUsername ? (["gitlab"] as const) : []),
-  ] as Array<"github" | "gitlab">).sort();
+  const providers = (
+    [
+      ...(body.githubLogin ? (['github'] as const) : []),
+      ...(body.gitlabUsername ? (['gitlab'] as const) : []),
+    ] as Array<'github' | 'gitlab'>
+  ).sort();
 
   const ttlSec = 3 * 60;
 
   const autoConcurrency = 6;
   const concurrency = Math.min(Math.max(body.concurrency ?? autoConcurrency, 1), 8);
 
-  const githubToken =  env.GITHUB_TOKEN;
+  const githubToken = env.GITHUB_TOKEN;
   const gitlabToken = env.GITLAB_TOKEN;
-  const gitlabBaseUrl = env.GITLAB_ISSUER || "https://gitlab.com";
+  const gitlabBaseUrl = env.GITLAB_ISSUER || 'https://gitlab.com';
 
-  const lockKey = (p: "github" | "gitlab") =>
+  const lockKey = (p: 'github' | 'gitlab') =>
     `lock:refresh:${p}:${body.userId}:${ymd(fromDay)}:${ymd(toDay)}`;
 
   async function run() {
@@ -130,8 +138,8 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     const msg = String(err instanceof Error ? err.message : err);
-    if (msg.startsWith("LOCK_CONFLICT")) {
-      const p = msg.split(":")[1] || "unknown";
+    if (msg.startsWith('LOCK_CONFLICT')) {
+      const p = msg.split(':')[1] || 'unknown';
       return new Response(`Conflict: refresh already running for ${p}`, { status: 409 });
     }
     return new Response(`Internal Error: ${msg}`, { status: 500 });
