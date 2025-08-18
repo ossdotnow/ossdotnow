@@ -27,6 +27,7 @@ type WindowKey = 'all' | '30d' | '365d';
 
 type TopEntry = { userId: string; score: number };
 type DetailsEntry = { userId: string; github: number; gitlab: number; total: number };
+type ProviderSel = 'combined' | 'github' | 'gitlab';
 
 type LeaderRow = {
   _profile: any;
@@ -39,8 +40,8 @@ type LeaderRow = {
 type SortKey = 'rank' | 'userId' | 'total' | 'github' | 'gitlab';
 type SortDir = 'asc' | 'desc';
 
-async function fetchTop(window: WindowKey, limit: number, cursor = 0) {
-  const url = `/api/leaderboard?window=${window}&provider=combined&limit=${limit}&cursor=${cursor}`;
+async function fetchTop(window: WindowKey, provider: ProviderSel, limit: number, cursor = 0) {
+  const url = `/api/leaderboard?window=${window}&provider=${provider}&limit=${limit}&cursor=${cursor}`;
   const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) throw new Error(`Failed to fetch leaderboard: ${await res.text()}`);
   return (await res.json()) as {
@@ -74,6 +75,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
   const [limit, setLimit] = React.useState<number>(25);
   const [cursor, setCursor] = React.useState<number>(0);
   const [nextCursor, setNextCursor] = React.useState<number | null>(null);
+  const [provider, setProvider] = React.useState<ProviderSel>('combined');
 
   const [sortKey, setSortKey] = React.useState<SortKey>('rank');
   const [sortDir, setSortDir] = React.useState<SortDir>('asc');
@@ -106,7 +108,7 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
     setLoading(true);
     setError(null);
     try {
-      const top = await fetchTop(w, lim, cur);
+      const top = await fetchTop(w, provider, lim, cur);
       const ids = top.entries.map((e) => e.userId);
 
       const [details, profiles] = await Promise.all([fetchDetails(w, ids), fetchProfiles(ids)]);
@@ -141,12 +143,12 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
     doFetch(window, limit, cursor);
   }, [window, limit, cursor, doFetch]);
 
-  // keep URL in sync with window
   React.useEffect(() => {
     const params = new URLSearchParams(search?.toString?.() || '');
     params.set('window', window);
+    params.set('provider', provider);
     router.replace(`/leaderboard?${params.toString()}`);
-  }, [window]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [window, provider]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleSort(k: SortKey) {
     if (sortKey === k) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
@@ -364,6 +366,35 @@ export default function LeaderboardClient({ initialWindow }: { initialWindow: Wi
           Next
         </Button>
       </div>
+
+      <div className="flex items-center gap-3">
+        <label className="text-sm font-medium">Provider</label>
+        <Select
+          value={provider}
+          onValueChange={(v: ProviderSel) => {
+            setCursor(0);
+            setProvider(v);
+          }}
+        >
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Provider" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="combined">Combined</SelectItem>
+            <SelectItem value="github">GitHub</SelectItem>
+            <SelectItem value="gitlab">GitLab</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <a
+        className="hover:bg-muted ml-2 inline-flex items-center rounded-md border px-3 py-2 text-sm"
+        href={`/api/leaderboard/export?window=${window}&provider=${provider}&limit=${limit}&cursor=${cursor}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Export CSV
+      </a>
     </div>
   );
 }
