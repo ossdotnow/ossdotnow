@@ -6,7 +6,7 @@ import {
   SelectValue,
 } from '@workspace/ui/components/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
-import { Heart, TrendingUp, GitFork, Clock, ExternalLink } from 'lucide-react';
+import { Heart, TrendingUp, GitFork, Clock, ExternalLink, FileText } from 'lucide-react';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
@@ -24,6 +24,7 @@ import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
 import { UnSubmittedRepo } from '@workspace/api';
 import UnsubmittedRepoCard from './unsubmitted-project-card';
+import { MarkdownContent } from '@/components/project/markdown-content';
 
 interface Profile {
   git?: {
@@ -53,6 +54,7 @@ interface PullRequestData {
 }
 
 interface ProfileTabsProps {
+  profileReadme:any;
   profile: Profile | undefined;
   isProfileLoading: boolean;
   tab: string;
@@ -63,6 +65,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({
+  profileReadme,
   profile,
   isProfileLoading,
   tab,
@@ -116,7 +119,10 @@ export function ProfileTabs({
         <ContributionGraph username={profile.git.login} provider={profile.git.provider} />
       )}
       <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 rounded-none border-neutral-800 bg-neutral-900/50">
+        <TabsList className="grid w-full grid-cols-5 rounded-none border-neutral-800 bg-neutral-900/50">
+          <TabsTrigger value="about" className="rounded-none">
+            About
+          </TabsTrigger>
           <TabsTrigger value="projects" className="rounded-none">
             Projects
           </TabsTrigger>
@@ -130,6 +136,37 @@ export function ProfileTabs({
             Collections
           </TabsTrigger>
         </TabsList>
+        <TabsContent value="about" className="mt-2">
+          {profileReadme ? (
+            <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+              <MarkdownContent
+                content={profileReadme.content}
+                encoding={
+                  profileReadme.encoding === 'base64' || profileReadme.encoding === 'utf8'
+                    ? profileReadme.encoding
+                    : 'base64'
+                }
+              />
+            </div>
+          ) : (
+            <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
+              <div className="py-8 text-center">
+                <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
+                <h3 className="mb-2 text-lg font-medium text-neutral-300">
+                  No README found
+                </h3>
+                <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
+                  A README file typically contains information about the project, how to
+                  install and use it, and other important details for users and
+                  contributors.
+                </p>
+                <p className="text-xs text-neutral-500">
+                  Common filenames: README.md, README.rst, README.txt
+                </p>
+              </div>
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="projects" className="mt-2">
           {featuredProjects.length > 0 ? (
