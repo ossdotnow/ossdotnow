@@ -490,6 +490,7 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                         <Link
                           href={pr.url}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="hover:text-primary text-base font-medium"
                         >
                           {pr.title}
@@ -527,6 +528,7 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                           <Link
                             href={pr.repository.url}
                             target="_blank"
+                            rel="noopener noreferrer"
                             className="hover:text-neutral-200"
                           >
                             {pr.repository.nameWithOwner}
@@ -546,18 +548,28 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                         </div>
                       </div>
                       {pr.headRefName && (
-                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-neutral-500">
-                          <div className="flex items-center gap-2">
-                            <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
+                        <div className="mt-2 flex flex-col gap-2 text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                            <code className="min-w-0 rounded-none bg-neutral-800 px-1.5 py-0.5 break-words hyphens-auto">
                               {pr.headRefName}
                             </code>
-                            <span>→</span>
-                            <code className="rounded-none bg-neutral-800 px-1.5 py-0.5">
-                              {pr.baseRefName}
-                            </code>
+                            {pr.baseRefName && (
+                              <>
+                                <span className="shrink-0">→</span>
+                                <code className="min-w-0 rounded-none bg-neutral-800 px-1.5 py-0.5 break-words hyphens-auto">
+                                  {pr.baseRefName}
+                                </code>
+                              </>
+                            )}
                           </div>
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={pr.url} target="_blank">
+                            <Link
+                              href={pr.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open pull request in a new tab"
+                              title="Open pull request in a new tab"
+                            >
                               <ExternalLink className="h-4 w-4" />
                             </Link>
                           </Button>
@@ -566,7 +578,13 @@ function UserPullRequests({ profile }: { profile: Profile }) {
                       {!pr.headRefName && (
                         <div className="mt-2 flex justify-end">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={pr.url} target="_blank">
+                            <Link
+                              href={pr.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open pull request in a new tab"
+                              title="Open pull request in a new tab"
+                            >
                               <ExternalLink className="h-4 w-4" />
                             </Link>
                           </Button>
