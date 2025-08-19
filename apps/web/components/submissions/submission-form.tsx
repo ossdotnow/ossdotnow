@@ -284,9 +284,11 @@ export default function SubmissionForm({
               earlySubmission
                 ? trpc.earlySubmission.checkDuplicateRepo.queryOptions({
                     gitRepoUrl: repoUrl,
+                    gitHost: gitHost,
                   })
                 : trpc.submission.checkDuplicateRepo.queryOptions({
                     gitRepoUrl: repoUrl,
+                    gitHost: gitHost,
                   }),
             );
 
@@ -297,6 +299,12 @@ export default function SubmissionForm({
                 message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}.`,
               });
               return;
+            } else {
+              setRepoValidation({
+                isValidating: false,
+                isValid: true,
+                message: 'Repository found and available!',
+              });
             }
 
             // Check if repository is private
@@ -507,6 +515,8 @@ export default function SubmissionForm({
             if (isValid) {
               form.handleSubmit(handleProjectSubmission)(e);
             } else {
+              const errors = form.formState.errors;
+              console.log('Validation errors:', errors);
               toast.error('Please fix all validation errors before submitting.');
             }
           }}
