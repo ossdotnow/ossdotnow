@@ -11,3 +11,4 @@ export * from './project-votes';
 export * from './project-comments';
 export * from './project-claims';
 export * from './project-reports';
+export * from './contributions';
