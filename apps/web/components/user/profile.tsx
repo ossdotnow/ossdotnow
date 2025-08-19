@@ -1,5 +1,6 @@
 'use client';
 
+import { useTRPC } from '@/hooks/use-trpc';
 import { Avatar, AvatarFallback, AvatarImage } from '@workspace/ui/components/avatar';
 import { Award, Calendar, Globe, MapPin, Share } from 'lucide-react';
 import ResponsiveNumber from '@/components/user/responsive-numbers';
@@ -12,13 +13,14 @@ import { RecentActivity } from './recent-activity';
 import Link from '@workspace/ui/components/link';
 import { ProfileTabs } from './profile-tabs';
 import { useEffect, useState } from 'react';
-import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
+import {isValidProvider, RepoContent} from '@/lib/constants'
+import { projectProviderEnum } from '@workspace/db/schema';
 
 export default function ProfilePage({ id }: { id: string }) {
   const trpc = useTRPC();
   const [tab, setTab] = useQueryState('tab', {
-    defaultValue: 'projects',
+    defaultValue: 'about',
   });
   const [showShadow, setShowShadow] = useState(false);
 
@@ -67,6 +69,32 @@ export default function ProfilePage({ id }: { id: string }) {
     }
     return `https://${url}`;
   };
+
+  const [profileReadme, setProfileReadme] = useState<RepoContent | null >(null);
+
+// 2️⃣ TRPC query to fetch profile README
+const readmeQuery = useQueries({
+  queries: [
+    trpc.repository.getReadme.queryOptions(
+      {
+        url: `${profile?.username}/${profile?.username}`, // repo name = username
+        provider: profile?.git?.provider  as (typeof projectProviderEnum.enumValues)[number],
+      },
+      {
+        enabled: !!profile?.username && isValidProvider(profile?.git.provider),
+        retry: false,
+      }
+    ),
+  ],
+});
+
+
+// 3️⃣ Update state when query finishes
+useEffect(() => {
+  if (readmeQuery?.[0]?.data) {
+    setProfileReadme(readmeQuery[0].data as RepoContent);
+  }
+}, [readmeQuery]);
 
   const projectQueries = useQueries({
     queries: (projects?.data || []).map((project) => {
@@ -250,6 +278,7 @@ export default function ProfilePage({ id }: { id: string }) {
 
             <div className="space-y-4 lg:col-span-8">
               <ProfileTabs
+                profileReadme={profileReadme}
                 profile={profile}
                 isProfileLoading={isProfileLoading}
                 tab={tab}
