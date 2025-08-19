@@ -9,6 +9,7 @@ import {
   projectLaunch,
   projectVote,
   projectComment,
+  projectCommentLike,
   projectReport,
   user,
 } from '@workspace/db/schema';
@@ -17,6 +18,7 @@ import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
 import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
+import { moderateComment } from '../utils/content-moderation';
 
 async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').db) {
   const now = new Date();
@@ -877,6 +879,17 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Moderate the comment content using PurgoMalum API
+      const { isClean } = await moderateComment(input.content);
+
+      // If inappropriate content is found, throw an error to show toast
+      if (!isClean) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Inappropriate content detected. Please review your comment and try again.',
+        });
+      }
+
       const [comment] = await ctx.db
         .insert(projectComment)
         .values({
@@ -911,7 +924,81 @@ export const launchesRouter = createTRPCRouter({
         .where(eq(projectComment.projectId, input.projectId))
         .orderBy(desc(projectComment.createdAt));
 
-      return comments;
+      // Get like counts for all comments
+      const commentIds = comments.map(c => c.id);
+      const likeCounts = commentIds.length > 0 ? await ctx.db
+        .select({
+          commentId: projectCommentLike.commentId,
+          likeCount: sql<number>`count(*)::int`.as('likeCount'),
+        })
+        .from(projectCommentLike)
+        .where(inArray(projectCommentLike.commentId, commentIds))
+        .groupBy(projectCommentLike.commentId) : [];
+
+      // Get user's likes if authenticated
+      const userLikes = ctx.session?.userId && commentIds.length > 0 ? await ctx.db
+        .select({
+          commentId: projectCommentLike.commentId,
+        })
+        .from(projectCommentLike)
+        .where(
+          and(
+            eq(projectCommentLike.userId, ctx.session.userId),
+            inArray(projectCommentLike.commentId, commentIds)
+          )
+        ) : [];
+
+      // Combine comments with like data
+      const commentsWithLikes = comments.map(comment => {
+        const likeData = likeCounts.find(lc => lc.commentId === comment.id);
+        const isLiked = userLikes.some(ul => ul.commentId === comment.id);
+
+        return {
+          ...comment,
+          likeCount: likeData?.likeCount || 0,
+          isLiked: isLiked,
+        };
+      });
+
+      return commentsWithLikes;
+    }),
+
+  toggleCommentLike: protectedProcedure
+    .input(z.object({ commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Try to like first; if the row already exists, do nothing (idempotent)
+      const inserted = await ctx.db
+        .insert(projectCommentLike)
+        .values({
+          commentId: input.commentId,
+          userId: ctx.session.userId!,
+        })
+        .onConflictDoNothing({
+          target: [projectCommentLike.commentId, projectCommentLike.userId],
+        })
+        .returning();
+      // If nothing was inserted, the like already existed; toggle off by deleting it
+      if (inserted.length === 0) {
+        await ctx.db
+          .delete(projectCommentLike)
+          .where(
+            and(
+              eq(projectCommentLike.commentId, input.commentId),
+              eq(projectCommentLike.userId, ctx.session.userId!),
+            ),
+          );
+      }
+      // Get updated like count
+      const [likeCountResult] = await ctx.db
+        .select({
+          likeCount: sql<number>`count(*)::int`.as('likeCount'),
+        })
+        .from(projectCommentLike)
+        .where(eq(projectCommentLike.commentId, input.commentId));
+      return {
+        likeCount: likeCountResult?.likeCount || 0,
+        isLiked: inserted.length > 0,
+      };
     }),
 
   launchProject: protectedProcedure
