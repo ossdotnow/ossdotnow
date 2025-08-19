@@ -70,31 +70,21 @@ export default function ProfilePage({ id }: { id: string }) {
     return `https://${url}`;
   };
 
-  const [profileReadme, setProfileReadme] = useState<RepoContent | null >(null);
-
-// 2️⃣ TRPC query to fetch profile README
-const readmeQuery = useQueries({
-  queries: [
+  const {
+    data: profileReadme,
+    isPending: isReadmeLoading,
+  } = useQuery(
     trpc.repository.getReadme.queryOptions(
       {
-        url: `${profile?.username}/${profile?.username}`, // repo name = username
-        provider: profile?.git?.provider  as (typeof projectProviderEnum.enumValues)[number],
+        url: `${profile?.username}/${profile?.username}`,
+        provider: profile?.git?.provider as (typeof projectProviderEnum.enumValues)[number],
       },
       {
-        enabled: !!profile?.username && isValidProvider(profile?.git.provider),
+        enabled: !!profile?.username && isValidProvider(profile?.git?.provider),
         retry: false,
-      }
+      },
     ),
-  ],
-});
-
-
-// 3️⃣ Update state when query finishes
-useEffect(() => {
-  if (readmeQuery?.[0]?.data) {
-    setProfileReadme(readmeQuery[0].data as RepoContent);
-  }
-}, [readmeQuery]);
+  );
 
   const projectQueries = useQueries({
     queries: (projects?.data || []).map((project) => {
@@ -278,6 +268,7 @@ useEffect(() => {
 
             <div className="space-y-4 lg:col-span-8">
               <ProfileTabs
+                isReadmeLoading={isReadmeLoading}
                 profileReadme={profileReadme}
                 profile={profile}
                 isProfileLoading={isProfileLoading}
