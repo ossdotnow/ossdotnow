@@ -25,6 +25,7 @@ import { useQueryState } from 'nuqs';
 import { UnSubmittedRepo } from '@workspace/api';
 import UnsubmittedRepoCard from './unsubmitted-project-card';
 import { MarkdownContent } from '@/components/project/markdown-content';
+import { RepoContent } from '@/lib/constants';
 
 interface Profile {
   git?: {
@@ -54,7 +55,8 @@ interface PullRequestData {
 }
 
 interface ProfileTabsProps {
-  profileReadme:any;
+  isReadmeLoading: boolean;
+  profileReadme: RepoContent | null;
   profile: Profile | undefined;
   isProfileLoading: boolean;
   tab: string;
@@ -65,6 +67,7 @@ interface ProfileTabsProps {
 }
 
 export function ProfileTabs({
+  isReadmeLoading,
   profileReadme,
   profile,
   isProfileLoading,
@@ -148,17 +151,26 @@ export function ProfileTabs({
                 }
               />
             </div>
+          ) : isReadmeLoading ? (
+            <Card className="rounded-none border-neutral-800 bg-neutral-900/50 p-0">
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <Skeleton className="h-5 w-3/4 rounded-none" />
+                  <Skeleton className="h-4 w-1/2 rounded-none" />
+                  <Skeleton className="h-4 w-5/6 rounded-none" />
+                  <Skeleton className="h-4 w-2/3 rounded-none" />
+                  <Skeleton className="h-4 w-4/5 rounded-none" />
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <div className="rounded-none border border-neutral-800 bg-neutral-900/50 p-6">
               <div className="py-8 text-center">
                 <FileText className="mx-auto mb-4 h-12 w-12 text-neutral-600" />
-                <h3 className="mb-2 text-lg font-medium text-neutral-300">
-                  No README found
-                </h3>
+                <h3 className="mb-2 text-lg font-medium text-neutral-300">No README found</h3>
                 <p className="mx-auto mb-4 max-w-md text-sm text-neutral-400">
-                  A README file typically contains information about the project, how to
-                  install and use it, and other important details for users and
-                  contributors.
+                  A profile README typically includes a short bio, interests, skills, and links to
+                  notable projects or socials.
                 </p>
                 <p className="text-xs text-neutral-500">
                   Common filenames: README.md, README.rst, README.txt
