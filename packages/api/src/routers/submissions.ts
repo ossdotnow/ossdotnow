@@ -61,16 +61,16 @@ export const submissionRouter = createTRPCRouter({
     .input(z.object({ gitRepoUrl: z.string(), gitHost: z.string().optional(), }))
     .query(async ({ ctx, input }) => {
       // return await checkProjectDuplicate(ctx.db, input.gitRepoUrl);
-      let repoId: string | undefined;if (input.gitHost) {
+      let repoId: number | undefined;if (input.gitHost) {
         try {
           const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
           const repoData = await driver.getRepo(input.gitRepoUrl);
-          repoId = repoData.id?.toString();
+          repoId = typeof repoData.id === 'number' ? repoData.id : undefined;
         } catch (error) {
           console.warn('Could not fetch repo data for duplicate check:', error);
         }
       }
-      
+
       return await checkProjectDuplicate(ctx.db, input.gitRepoUrl, repoId);
     }),
   checkUserOwnsProject: publicProcedure
@@ -95,13 +95,13 @@ export const submissionRouter = createTRPCRouter({
 
     // Validate repository and get privacy status
     let isRepoPrivate = false;
-    let repoId: string | null = null;
+    let repoId: number | null = null;
     if (input.gitHost && input.gitRepoUrl) {
       try {
         const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
         const repoData = await driver.getRepo(input.gitRepoUrl);
         isRepoPrivate = repoData.isPrivate || false;
-        repoId = repoData.id?.toString() || null;
+        repoId = typeof repoData.id === 'number' ? repoData.id : null;
       } catch (error) {
         // If there's an error fetching the repo, we'll continue with the flow
         // This allows for cases where the repo might be temporarily unavailable
@@ -115,7 +115,7 @@ export const submissionRouter = createTRPCRouter({
         message: `This repository has already been submitted! The project "${duplicateCheck.projectName}" has ${duplicateCheck.statusMessage}. If you think this is an error, please contact support.`,
       });
     }
-    
+
 
     const ownerCheck = await checkUserOwnsProject(ctx, input.gitRepoUrl);
     if (ownerCheck.error) {
