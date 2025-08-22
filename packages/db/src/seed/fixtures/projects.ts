@@ -151,7 +151,7 @@ export const projectsData = {
         logoUrl: null,
         gitRepoUrl: 'microsoft/TypeScript',
         gitHost: 'github' as const,
-        repoId: 11730342,
+        repoId: 20929025,
         name: 'TypeScript',
         description:
           'TypeScript is a superset of JavaScript that compiles to clean JavaScript output',
@@ -437,7 +437,7 @@ export const projectsData = {
         logoUrl: null,
         gitRepoUrl: 'webpack/webpack',
         gitHost: 'github' as const,
-        repoId: 11730342,
+        repoId: 3678731,
         name: 'webpack',
         description: 'A bundler for javascript and friends',
         socialLinks: {
