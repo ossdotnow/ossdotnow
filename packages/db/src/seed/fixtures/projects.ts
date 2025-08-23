@@ -1,7 +1,60 @@
 import { categoryProjectStatuses, categoryProjectTypes } from '../../schema';
 import { eq, inArray } from 'drizzle-orm';
 import { project } from '../../schema';
+// @ts-ignore - Ignoring type issues for node-fetch in seed script
+import fetch from 'node-fetch';
 import { db } from '../..';
+
+async function fetchGitHubRepoId(repoPath: string): Promise<string | null> {
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repoPath}`, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'OSSLaunch-Seeding',
+      },
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as any;
+      if (data && typeof data.id !== 'undefined') {
+        return data.id.toString();
+      }
+      console.error(`Missing ID in GitHub API response for ${repoPath}`);
+    } else {
+      console.error(`GitHub API error for ${repoPath}: ${response.status} ${response.statusText}`);
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error fetching GitHub repo ID for ${repoPath}:`, error);
+    return null;
+  }
+}
+
+
+async function fetchGitLabRepoId(repoPath: string): Promise<string | null> {
+  try {
+    const encodedPath = encodeURIComponent(repoPath);
+    const response = await fetch(`https://gitlab.com/api/v4/projects/${encodedPath}`, {
+      headers: {
+        'User-Agent': 'OSSLaunch-Seeding',
+      },
+    });
+
+    if (response.ok) {
+      const data = (await response.json()) as any;
+      if (data && typeof data.id !== 'undefined') {
+        return data.id.toString();
+      }
+      console.error(`Missing ID in GitLab API response for ${repoPath}`);
+    } else {
+      console.error(`GitLab API error for ${repoPath}: ${response.status} ${response.statusText}`);
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error fetching GitLab repo ID for ${repoPath}:`, error);
+    return null;
+  }
+}
 
 export const projectsData = {
   async run(database: typeof db) {
@@ -849,7 +902,35 @@ export const projectsData = {
     const newProjects = projectsToInsert.filter((p) => !existingGitRepoUrls.has(p.gitRepoUrl));
 
     if (newProjects.length > 0) {
-      await database.insert(project).values(newProjects);
+      const projectsWithRepoId = [];
+
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      for (const p of newProjects) {
+        let repoId = null;
+
+        if (p.gitHost === 'github') {
+          repoId = await fetchGitHubRepoId(p.gitRepoUrl);
+          await sleep(1000);
+        } else if (p.gitHost === 'gitlab') {
+          repoId = await fetchGitLabRepoId(p.gitRepoUrl);
+          await sleep(1000);
+        }
+
+        if (!repoId) {
+          repoId = `${p.gitRepoUrl}`;
+          console.log(`⚠️  Couldn't fetch repository ID for ${p.gitRepoUrl}, using fallback`);
+        } else {
+          console.log(`✓ Got repository ID ${repoId} for ${p.gitRepoUrl}`);
+        }
+
+        projectsWithRepoId.push({
+          ...p,
+          repoId,
+        });
+      }
+
+      await database.insert(project).values(projectsWithRepoId);
       console.log(`✅ Seeded projects with ${newProjects.length} new records`);
       if (existingGitRepoUrls.size > 0) {
         console.log(`⏭️  Skipped ${existingGitRepoUrls.size} existing projects`);

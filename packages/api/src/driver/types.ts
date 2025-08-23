@@ -118,7 +118,7 @@ export interface UnSubmittedRepo {
   repoUrl: string;
   stars: number;
   forks: number;
-  isOwner : boolean,
+  isOwner: boolean;
   description?: string | null;
   gitHost: 'github' | 'gitlab';
   owner: {
@@ -254,5 +254,6 @@ export interface GitManager {
   ): Promise<RestEndpointMethodTypes['orgs']['getMembershipForUser']['response']['data']>;
   getContributions(username: string): Promise<ContributionData>;
   getUserDetails(username: string): Promise<UserData>;
-  getUnsubmittedRepos(ctx: any, username:string,userId : string): Promise<UnSubmittedRepo[]>;
+  getUnsubmittedRepos(ctx: any, username: string, userId: string): Promise<UnSubmittedRepo[]>;
+  updateRepoIds(ctx: { db: any }): Promise<{ updated: number; failed: number; skipped: number }>;
 }

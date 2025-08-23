@@ -130,7 +130,7 @@ function useSubmission(onSuccess?: () => void) {
 export default function SubmissionForm({
   earlySubmission = false,
   onSuccess,
-  quickSubmit
+  quickSubmit,
 }: {
   earlySubmission?: boolean;
   onSuccess?: () => void;
@@ -420,6 +420,7 @@ export default function SubmissionForm({
       ...formData,
       status: formData.status || '',
       type: formData.type || '',
+      repoId: 'pending',
     });
   }
 

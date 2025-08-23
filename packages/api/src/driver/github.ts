@@ -19,7 +19,7 @@ import {
   restEndpointMethods,
   RestEndpointMethodTypes,
 } from '@octokit/plugin-rest-endpoint-methods';
-import {project, projectClaim } from '@workspace/db/schema';
+import { project, projectClaim } from '@workspace/db/schema';
 import { createCacheKey, getCached } from '../utils/cache';
 import { and, eq, isNull } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -29,6 +29,64 @@ const MyOctokit = Octokit.plugin(restEndpointMethods);
 
 export class GithubManager implements GitManager {
   private octokit: InstanceType<typeof MyOctokit>;
+
+  async updateRepoIds(ctx: {
+    db: any;
+  }): Promise<{ updated: number; failed: number; skipped: number }> {
+    const result = { updated: 0, failed: 0, skipped: 0 };
+
+    try {
+      const projects = await ctx.db
+        .select()
+        .from(project)
+        .where(
+          and(
+            eq(project.gitHost, 'github'),
+          ),
+        );
+
+      if (projects.length === 0) {
+        return result;
+      }
+
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      for (const p of projects) {
+        try {
+          if (p.repoId && !isNaN(Number(p.repoId)) && p.repoId !== p.gitRepoUrl) {
+            result.skipped++;
+            continue;
+          }
+
+          const { owner, repo } = this.parseRepoIdentifier(p.gitRepoUrl);
+
+          const { data } = await this.octokit.rest.repos.get({ owner, repo });
+
+          if (data && typeof data.id !== 'undefined') {
+            const repoId = data.id.toString();
+
+            await ctx.db.update(project).set({ repoId }).where(eq(project.id, p.id));
+
+            console.log(`✓ Updated repo_id to ${repoId} for ${p.gitRepoUrl}`);
+            result.updated++;
+          } else {
+            console.error(`Missing ID in GitHub API response for ${p.gitRepoUrl}`);
+            result.failed++;
+          }
+
+          await sleep(1000);
+        } catch (error) {
+          console.error(`Error updating repo_id for ${p.gitRepoUrl}:`, error);
+          result.failed++;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error in updateRepoIds:', error);
+      throw error;
+    }
+  }
 
   constructor(config: GitManagerConfig) {
     this.octokit = new MyOctokit({ auth: config.token });
@@ -948,7 +1006,11 @@ export class GithubManager implements GitManager {
     );
   }
 
-  async getUnsubmittedRepos(ctx: Context , username : string , userId: string): Promise<UnSubmittedRepo[]> {
+  async getUnsubmittedRepos(
+    ctx: Context,
+    username: string,
+    userId: string,
+  ): Promise<UnSubmittedRepo[]> {
     try {
       return getCached(
         createCacheKey('github', 'unsubmitted', username),
@@ -991,7 +1053,7 @@ export class GithubManager implements GitManager {
                 repoUrl: repo.full_name,
                 stars: repo.stargazers_count || 0,
                 forks: repo.forks_count || 0,
-                isOwner  : repo.owner.login === username,
+                isOwner: repo.owner.login === username,
                 gitHost: 'github',
                 owner: {
                   avatar_url: repo.owner?.avatar_url || '',
