@@ -112,9 +112,9 @@ export default function ProjectCard({
               {isLoading ? (
                 <span className="inline-block h-3 w-10 animate-pulse rounded bg-neutral-700"></span>
               ) : isError || !repo ? (
-                project.starsCount || 0
+                project.starsCount ?? 0
               ) : (
-                repo?.stargazers_count || repo?.star_count || project.starsCount || 0
+                repo?.stargazers_count ?? repo?.star_count ?? project.starsCount ?? 0
               )}
             </span>
           </div>
@@ -124,9 +124,9 @@ export default function ProjectCard({
               {isLoading ? (
                 <span className="inline-block h-3 w-8 animate-pulse rounded bg-neutral-700"></span>
               ) : isError || !repo ? (
-                project.forksCount || 0
+                project.forksCount ?? 0
               ) : (
-                repo?.forks_count || project.forksCount || 0
+                repo?.forks_count ?? project.forksCount ?? 0
               )}
             </span>
           </div>

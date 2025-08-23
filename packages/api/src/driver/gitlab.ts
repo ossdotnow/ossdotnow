@@ -42,11 +42,7 @@ export class GitlabManager implements GitManager {
       const projects = await ctx.db
         .select()
         .from(project)
-        .where(
-          and(
-            eq(project.gitHost, 'gitlab'),
-          ),
-        );
+        .where(and(eq(project.gitHost, 'gitlab')));
 
       if (projects.length === 0) {
         return result;
@@ -62,7 +58,7 @@ export class GitlabManager implements GitManager {
           }
 
           const encodedPath = encodeURIComponent(p.gitRepoUrl);
-          const response = await this.gitlab.Projects.show(p.gitRepoUrl);
+          const response = await this.gitlab.Projects.show(encodedPath);
 
           if (response && typeof response.id !== 'undefined') {
             const repoId = response.id.toString();
