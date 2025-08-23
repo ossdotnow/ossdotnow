@@ -57,8 +57,8 @@ export class GitlabManager implements GitManager {
             continue;
           }
 
-          const encodedPath = encodeURIComponent(p.gitRepoUrl);
-          const response = await this.gitlab.Projects.show(encodedPath);
+          // const encodedPath = encodeURIComponent(p.gitRepoUrl);
+          const response = await this.gitlab.Projects.show(p.gitRepoUrl);
 
           if (response && typeof response.id !== 'undefined') {
             const repoId = response.id.toString();
