@@ -57,7 +57,7 @@ export async function resolveTagIds(db: DB, tagNames: string[]) {
 
   return tags.map((tag) => tag.id);
 }
-export async function checkProjectDuplicate(db: DB, gitRepoUrl: string, repoId?: number) {
+export async function checkProjectDuplicate(db: DB, gitRepoUrl: string, repoId?: string) {
   // First priority: Check by repoId if available (most reliable)
   if (repoId) {
     const existingProjectByRepoId = await db.query.project.findFirst({
