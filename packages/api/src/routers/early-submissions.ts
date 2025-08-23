@@ -29,12 +29,12 @@ export const earlySubmissionRouter = createTRPCRouter({
   checkDuplicateRepo: publicProcedure
     .input(z.object({ gitRepoUrl: z.string(), gitHost: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      let repoId: number | undefined;
+      let repoId: string | undefined;
       if (input.gitHost) {
         try {
           const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
           const repoData = await driver.getRepo(input.gitRepoUrl);
-          repoId = typeof repoData.id === 'number' ? repoData.id : undefined;
+          repoId = repoData.id?.toString();
         } catch (error) {
           console.warn('Could not fetch repo data for duplicate check:', error);
         }
@@ -58,13 +58,13 @@ export const earlySubmissionRouter = createTRPCRouter({
 
     // Validate repository and get privacy status
     let isRepoPrivate = false;
-    let repoId: number | null = null;
+    let repoId: string | null = null;
     if (input.gitHost && input.gitRepoUrl) {
       try {
         const driver = await getActiveDriver(input.gitHost as 'github' | 'gitlab', ctx);
         const repoData = await driver.getRepo(input.gitRepoUrl);
         isRepoPrivate = repoData.isPrivate || false;
-        repoId = typeof repoData.id === 'number' ? repoData.id : null;
+        repoId = repoData.id?.toString() || null;
       } catch (error) {
         // If there's an error fetching the repo, we'll continue with the flow
         // This allows for cases where the repo might be temporarily unavailable

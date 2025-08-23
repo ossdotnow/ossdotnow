@@ -1,14 +1,4 @@
-import {
-  boolean,
-  integer,
-  jsonb,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  index,
-} from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgEnum, pgTable, text, timestamp, uuid, index } from 'drizzle-orm/pg-core';
 import { categoryTags, categoryProjectTypes, categoryProjectStatuses } from './categories';
 import { projectCompetitors } from './project-competitors';
 import { gitHostEnum } from './shared-enums';
@@ -20,7 +10,7 @@ export const acquisitionTypeEnum = pgEnum('acquisition_type', ['ipo', 'acquisiti
 export const projectApprovalStatusEnum = pgEnum('project_approval_status', [
   'pending',
   'approved',
-  'rejected',
+  'rejected', 
 ]);
 
 export const project = pgTable(
@@ -32,7 +22,7 @@ export const project = pgTable(
     logoUrl: text('logo_url'),
     gitRepoUrl: text('git_repo_url').unique().notNull(),
     gitHost: gitHostEnum('git_host'),
-    repoId: integer('repo_id').notNull(),
+    repoId: text("repo_id").notNull(),
     name: text('name').notNull(),
     description: text('description'),
     socialLinks: jsonb('social_links').$type<{
@@ -77,7 +67,7 @@ export const project = pgTable(
     index('project_type_id_idx').on(table.typeId),
     index('project_stars_count_desc_idx').on(table.starsCount.desc()),
     index('project_forks_count_desc_idx').on(table.forksCount.desc()),
-  ],
+],
 );
 export const projectTagRelations = pgTable(
   'project_tag_relations',
