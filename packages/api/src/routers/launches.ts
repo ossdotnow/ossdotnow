@@ -921,12 +921,6 @@ export const launchesRouter = createTRPCRouter({
         columns: { ownerId: true, name: true },
       });
 
-      // Get project details for notification
-      const projectData = await ctx.db.query.project.findFirst({
-        where: eq(project.id, input.projectId),
-        columns: { ownerId: true, name: true },
-      });
-
       const [comment] = await ctx.db
         .insert(projectComment)
         .values({
