@@ -915,6 +915,15 @@ export const launchesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Content moderation check
+      const { isClean } = await moderateComment(input.content);
+      if (!isClean) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Inappropriate content detected. Please review your comment and try again.',
+        });
+      }
+
       // Get project details for notification
       const projectData = await ctx.db.query.project.findFirst({
         where: eq(project.id, input.projectId),
