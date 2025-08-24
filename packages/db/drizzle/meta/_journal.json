@@ -155,6 +155,20 @@
       "when": 1753793933429,
       "tag": "0021_ambitious_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1756062828591,
+      "tag": "0022_premium_zaladane",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1756063027028,
+      "tag": "0023_real_wither",
+      "breakpoints": true
     }
   ]
 }

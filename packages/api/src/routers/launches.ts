@@ -32,8 +32,8 @@ async function updateScheduledLaunchesToLive(db: typeof import('@workspace/db').
       and(
         eq(projectLaunch.status, 'scheduled'),
         lte(projectLaunch.launchDate, now),
-        eq(projectLaunch.projectId, project.id)
-      )
+        eq(projectLaunch.projectId, project.id),
+      ),
     )
     .returning({
       launchId: projectLaunch.id,
@@ -1184,29 +1184,6 @@ export const launchesRouter = createTRPCRouter({
       }
 
       // Create notifications based on launch status
-<<<<<<< HEAD
-      if (status === 'scheduled') {
-        await createNotification({
-          userId: foundProject.ownerId!,
-          type: 'launch_scheduled',
-          title: `"${foundProject.name}" launch scheduled`,
-          message: `Your project launch is scheduled for ${finalLaunchDate.toLocaleDateString()} at ${finalLaunchDate.toLocaleTimeString()}`,
-          data: {
-            projectId: input.projectId,
-            launchId: launch.id,
-          },
-        });
-      } else if (status === 'live') {
-        await createNotification({
-          userId: foundProject.ownerId!,
-          type: 'launch_live',
-          title: `"${foundProject.name}" is now live!`,
-          message: `Your project has been launched successfully. Check out your launch page!`,
-          data: {
-            projectId: input.projectId,
-            launchId: launch.id,
-          },
-=======
       try {
         if (status === 'scheduled') {
           await createNotification({
@@ -1216,7 +1193,7 @@ export const launchesRouter = createTRPCRouter({
             message: `Your project launch is scheduled for ${finalLaunchDate.toLocaleDateString()} at ${finalLaunchDate.toLocaleTimeString()}`,
             data: {
               projectId: input.projectId,
-              launchId: launch.id
+              launchId: launch.id,
             },
           });
         } else if (status === 'live') {
@@ -1227,7 +1204,7 @@ export const launchesRouter = createTRPCRouter({
             message: `Your project has been launched successfully. Check out your launch page!`,
             data: {
               projectId: input.projectId,
-              launchId: launch.id
+              launchId: launch.id,
             },
           });
         }
@@ -1237,8 +1214,7 @@ export const launchesRouter = createTRPCRouter({
           projectId: input.projectId,
           launchId: launch.id,
           notificationType: status === 'scheduled' ? 'launch_scheduled' : 'launch_live',
-          error
->>>>>>> b156d2b (fixed some errors)
+          error,
         });
       }
 

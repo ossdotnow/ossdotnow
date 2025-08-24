@@ -102,28 +102,27 @@ function NotificationItem({ notification, onMarkAsRead }: NotificationItemProps)
 }
 
 export function NotificationsDropdown() {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading, hasError } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, isLoading, hasError } =
+    useNotifications();
   const [showAllNotifications, setShowAllNotifications] = useState(false);
 
   if (isLoading) {
     return null;
   }
 
-<<<<<<< HEAD
-  const displayNotifications =
-    activeTab === 'all' ? notifications : notifications.filter((n) => !n.read);
-=======
-  const shouldShowCaughtUpState = unreadCount === 0 && notifications.length > 0 && !showAllNotifications;
+  const shouldShowCaughtUpState =
+    unreadCount === 0 && notifications.length > 0 && !showAllNotifications;
 
   const displayNotifications = shouldShowCaughtUpState ? [] : notifications;
->>>>>>> b156d2b (fixed some errors)
 
   return (
-    <DropdownMenu onOpenChange={(open) => {
-      if (!open) {
-        setShowAllNotifications(false);
-      }
-    }}>
+    <DropdownMenu
+      onOpenChange={(open) => {
+        if (!open) {
+          setShowAllNotifications(false);
+        }
+      }}
+    >
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
@@ -147,66 +146,19 @@ export function NotificationsDropdown() {
         collisionPadding={16}
       >
         {/* Header */}
-<<<<<<< HEAD
-        <div className="p-4 pb-2">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-white">Notifications</h3>
-              <p className="mt-1 text-sm text-neutral-400">You're all caught up on what's new.</p>
-            </div>
-            {unreadCount > 0 && (
-              <Button variant="outline" onClick={markAllAsRead} className="gap-2 rounded-none">
-=======
         <div className="p-3 pb-1">
-          <div className="flex items-center justify-between mb-2">
+          <div className="mb-2 flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-white">Notifications</h3>
             </div>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                onClick={markAllAsRead}
-                className="gap-2 rounded-none border"
-              >
->>>>>>> b156d2b (fixed some errors)
+              <Button variant="ghost" onClick={markAllAsRead} className="gap-2 rounded-none border">
                 <CheckCheck className="h-4 w-4" />
                 Mark all as read
               </Button>
             )}
           </div>
 
-<<<<<<< HEAD
-          {/* Tab Buttons */}
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTab('all')}
-              className={cn(
-                'rounded-none px-4',
-                activeTab === 'all' && 'border border-neutral-600',
-              )}
-            >
-              All
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTab('unread')}
-              className={cn(
-                'rounded-none px-4',
-                activeTab === 'unread' && 'border border-neutral-600',
-              )}
-            >
-              Unread
-            </Button>
-          </div>
-        </div>
-
-        <div className="scrollbar-hide max-h-80 overflow-y-auto">
-          {displayNotifications.length > 0 ? (
-            displayNotifications.map((notification) => (
-=======
           {/* Tab Buttons - Show when there are unread notifications OR when showing all notifications */}
           {(unreadCount > 0 || showAllNotifications) && (
             <div className="flex gap-1">
@@ -215,8 +167,8 @@ export function NotificationsDropdown() {
                 size="sm"
                 onClick={() => setShowAllNotifications(false)}
                 className={cn(
-                  "rounded-none px-4",
-                  !showAllNotifications && "border border-neutral-600"
+                  'rounded-none px-4',
+                  !showAllNotifications && 'border border-neutral-600',
                 )}
               >
                 Unread
@@ -226,8 +178,8 @@ export function NotificationsDropdown() {
                 size="sm"
                 onClick={() => setShowAllNotifications(true)}
                 className={cn(
-                  "rounded-none px-4",
-                  showAllNotifications && "border border-neutral-600"
+                  'rounded-none px-4',
+                  showAllNotifications && 'border border-neutral-600',
                 )}
               >
                 All
@@ -236,21 +188,17 @@ export function NotificationsDropdown() {
           )}
         </div>
 
-        <div className="max-h-80 overflow-y-auto scrollbar-hide">
+        <div className="scrollbar-hide max-h-80 overflow-y-auto">
           {hasError ? (
             <div className="px-3 py-6 text-center">
               <Bell className="mx-auto mb-2 h-8 w-8 text-red-500" />
-              <p className="text-sm text-red-400 mb-2">
-                Failed to load notifications
-              </p>
-              <p className="text-xs text-neutral-500">
-                Please try again or check your connection
-              </p>
+              <p className="mb-2 text-sm text-red-400">Failed to load notifications</p>
+              <p className="text-xs text-neutral-500">Please try again or check your connection</p>
             </div>
           ) : shouldShowCaughtUpState ? (
             <div className="px-3 py-6 text-center">
               <Bell className="mx-auto mb-3 h-8 w-8 text-green-500" />
-              <p className="text-sm text-neutral-300 mb-3">
+              <p className="mb-3 text-sm text-neutral-300">
                 You&apos;re all caught up on what&apos;s new!
               </p>
               <Button
@@ -263,10 +211,9 @@ export function NotificationsDropdown() {
             </div>
           ) : displayNotifications.length > 0 ? (
             (unreadCount > 0 && !showAllNotifications
-              ? displayNotifications.filter(n => !n.read)
+              ? displayNotifications.filter((n) => !n.read)
               : displayNotifications
             ).map((notification) => (
->>>>>>> b156d2b (fixed some errors)
               <NotificationItem
                 key={notification.id}
                 notification={notification}
@@ -276,9 +223,7 @@ export function NotificationsDropdown() {
           ) : (
             <div className="px-3 py-6 text-center">
               <Bell className="mx-auto mb-2 h-8 w-8 text-neutral-600" />
-              <p className="text-sm text-neutral-400">
-                No notifications yet
-              </p>
+              <p className="text-sm text-neutral-400">No notifications yet</p>
             </div>
           )}
         </div>
