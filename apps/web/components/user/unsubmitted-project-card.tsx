@@ -19,9 +19,29 @@ export default function UnsubmittedRepoCard({
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (event.key === ' ') {
+        event.preventDefault();
+      }
+      handleClick();
+    }
+  };
+
+  const handleSubmissionDialogClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+  };
+
+  const handleSubmissionDialogKeyDown = (event: React.KeyboardEvent) => {
+    event.stopPropagation();
+  };
+
   return (
     <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       className="group/project relative flex h-full cursor-pointer flex-col bg-[#171717] p-1 transition-colors hover:bg-[#1a1a1a]"
     >
       <span className="sr-only">Submit {repo.name}</span>
@@ -74,7 +94,7 @@ export default function UnsubmittedRepoCard({
             </div>
           </div>
           {isOwnProfile && (
-            <div>
+            <div onClick={handleSubmissionDialogClick} onKeyDown={handleSubmissionDialogKeyDown}>
               <SubmissionDialog
                 quickSubmit={{
                   provider: repo.gitHost,
