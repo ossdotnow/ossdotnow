@@ -265,7 +265,7 @@ export function ProfileTabs({
           </div>
 
           <div>
-            <div className="space-y-4">
+            <div className="space-y-4 grid grid-cols-1 gap-4">
               {showUnsubmitted === 'true' ? (
                 filteredUnSubmitted.length > 0 ? (
                   filteredUnSubmitted.map((project, id) => (
