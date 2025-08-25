@@ -10,8 +10,7 @@ export const projectLaunch = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     projectId: uuid('project_id')
       .references(() => project.id, { onDelete: 'cascade' })
-      .notNull()
-      .unique(),
+      .notNull(),
     tagline: text('tagline').notNull(),
     detailedDescription: text('detailed_description'),
     launchDate: timestamp('launch_date', { mode: 'date', withTimezone: true })

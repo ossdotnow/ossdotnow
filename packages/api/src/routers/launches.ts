@@ -14,8 +14,8 @@ import {
   user,
 } from '@workspace/db/schema';
 import { createTRPCRouter, publicProcedure, protectedProcedure } from '../trpc';
+import { startOfDay, endOfDay, subDays, differenceInDays } from 'date-fns';
 import { eq, desc, and, sql, gte, lt, lte, inArray } from 'drizzle-orm';
-import { startOfDay, endOfDay, subDays } from 'date-fns';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod/v4';
 import { moderateComment } from '../utils/content-moderation';
@@ -1081,13 +1081,20 @@ export const launchesRouter = createTRPCRouter({
 
       const existingLaunch = await ctx.db.query.projectLaunch.findFirst({
         where: eq(projectLaunch.projectId, input.projectId),
+        orderBy: desc(projectLaunch.createdAt),
       });
 
       if (existingLaunch) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'This project has already been launched',
-        });
+        const now = new Date();
+        const daysPassed = differenceInDays(now, existingLaunch.createdAt);
+
+        if (daysPassed < 7) {
+          const remainingDays = 7 - daysPassed;
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: `This project has already been launched. You can launch it again in ${remainingDays} day(s).`,
+          });
+        }
       }
 
       let status: 'live' | 'scheduled';
