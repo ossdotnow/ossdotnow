@@ -53,7 +53,7 @@ export default function UnsubmittedRepoCard({
               alt={repo.name ?? 'Repository Logo'}
               width={256}
               height={256}
-              className="h-[78px] w-[78px] rounded-none"
+              className="md:h-[78px] md:w-[78px] h-[50px] w-[50px] rounded-none"
               loading="lazy"
             />
           ) : (
