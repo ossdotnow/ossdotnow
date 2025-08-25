@@ -8,24 +8,25 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@workspace/ui/components/tabs';
 import { Heart, TrendingUp, GitFork, Clock, ExternalLink, FileText } from 'lucide-react';
 import ProjectCard from '@/app/(public)/(projects)/projects/project-card';
+import { MarkdownContent } from '@/components/project/markdown-content';
 import { Card, CardContent } from '@workspace/ui/components/card';
 import { Skeleton } from '@workspace/ui/components/skeleton';
+import UnsubmittedRepoCard from './unsubmitted-project-card';
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '@workspace/ui/components/button';
 import { ContributionGraph } from './contribution-graph';
 import { ProjectWithGithubData } from '@/types/project';
 import { Badge } from '@workspace/ui/components/badge';
+import { EndorsementList } from './endorsement-list';
 import { authClient } from '@workspace/auth/client';
 import Icons from '@workspace/ui/components/icons';
 import Link from '@workspace/ui/components/link';
 import { useQuery } from '@tanstack/react-query';
+import { UnSubmittedRepo } from '@workspace/api';
+import { RepoContent } from '@/lib/constants';
 import { cn } from '@workspace/ui/lib/utils';
 import { useTRPC } from '@/hooks/use-trpc';
 import { useQueryState } from 'nuqs';
-import { UnSubmittedRepo } from '@workspace/api';
-import UnsubmittedRepoCard from './unsubmitted-project-card';
-import { MarkdownContent } from '@/components/project/markdown-content';
-import { RepoContent } from '@/lib/constants';
 
 interface Profile {
   git?: {
@@ -63,7 +64,7 @@ interface ProfileTabsProps {
   setTab: (value: string) => void;
   featuredProjects: ProjectWithGithubData[];
   projectsWithGithubData: ProjectWithGithubData[];
-  unsubmittedProjects : UnSubmittedRepo[]
+  unsubmittedProjects: UnSubmittedRepo[];
 }
 
 export function ProfileTabs({
@@ -75,7 +76,7 @@ export function ProfileTabs({
   setTab,
   featuredProjects,
   projectsWithGithubData,
-  unsubmittedProjects
+  unsubmittedProjects,
 }: ProfileTabsProps) {
   const featuredCarouselRef = useRef<HTMLDivElement>(null);
 
@@ -101,7 +102,10 @@ export function ProfileTabs({
       });
   }, []);
 
-  const filteredUnSubmitted = filterState === "owned" ? unsubmittedProjects.filter((proj)=> proj.isOwner) : unsubmittedProjects
+  const filteredUnSubmitted =
+    filterState === 'owned'
+      ? unsubmittedProjects.filter((proj) => proj.isOwner)
+      : unsubmittedProjects;
   const sessionUserId = session?.data?.user?.id;
 
   const isOwnProfile =
@@ -122,14 +126,14 @@ export function ProfileTabs({
         <ContributionGraph username={profile.git.login} provider={profile.git.provider} />
       )}
       <Tabs defaultValue={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 rounded-none border-neutral-800 bg-neutral-900/50">
+        <TabsList className="grid w-full grid-cols-6 rounded-none border-neutral-800 bg-neutral-900/50">
           <TabsTrigger value="about" className="rounded-none">
             About
           </TabsTrigger>
           <TabsTrigger value="projects" className="rounded-none">
             Projects
           </TabsTrigger>
-           <TabsTrigger value="unsubmitted" className="rounded-none">
+          <TabsTrigger value="unsubmitted" className="rounded-none">
             Unsubmitted
           </TabsTrigger>
           <TabsTrigger value="contributions" className="rounded-none">
@@ -137,6 +141,9 @@ export function ProfileTabs({
           </TabsTrigger>
           <TabsTrigger value="collections" className="rounded-none">
             Collections
+          </TabsTrigger>
+          <TabsTrigger value="endorsements" className="rounded-none">
+            Endorsements
           </TabsTrigger>
         </TabsList>
         <TabsContent value="about" className="mt-2">
@@ -258,28 +265,37 @@ export function ProfileTabs({
           </div>
         </TabsContent>
 
-        <TabsContent value='unsubmitted'>
-              {unsubmittedProjects.length>0 ? (
-                <div className='mt-2'>
-                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <h2 className="text-xl font-semibold">Quicksubmit Projects</h2>
-                    <div className="xs:flex-row xs:gap-2 flex w-full gap-2 sm:w-auto">
-                      <Select value={filterState} onValueChange={(value:string)=> setFilterState(value)}>
-                        <SelectTrigger className="xs:w-[140px] w-full rounded-none">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="left-0 rounded-none">
-                          <SelectItem value="all">All</SelectItem>
-                          <SelectItem value="owned">Owned</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className='space-y-4'>
-                  {filteredUnSubmitted.map((project, id)=> (<UnsubmittedRepoCard isOwnProfile={isOwnProfile} key={id} repo={project}/>))}
-                  </div>
+        <TabsContent value="unsubmitted">
+          {unsubmittedProjects.length > 0 ? (
+            <div className="mt-2">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-xl font-semibold">Quicksubmit Projects</h2>
+                <div className="xs:flex-row xs:gap-2 flex w-full gap-2 sm:w-auto">
+                  <Select
+                    value={filterState}
+                    onValueChange={(value: string) => setFilterState(value)}
+                  >
+                    <SelectTrigger className="xs:w-[140px] w-full rounded-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="left-0 rounded-none">
+                      <SelectItem value="all">All</SelectItem>
+                      <SelectItem value="owned">Owned</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : null }
+              </div>
+              <div className="space-y-4">
+                {filteredUnSubmitted.map((project, id) => (
+                  <UnsubmittedRepoCard isOwnProfile={isOwnProfile} key={id} repo={project} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="endorsements" className="mt-2">
+          <EndorsementList userId={profile?.id || ''} />
         </TabsContent>
       </Tabs>
     </>
